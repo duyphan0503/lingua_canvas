@@ -5,6 +5,8 @@ on:
     branches:
       - main
       - master
+      - staging
+      - develop
     paths:
       - 'app/**'
       - '.github/workflows/ci-flutter.yml'
@@ -12,6 +14,8 @@ on:
     branches:
       - main
       - master
+      - staging
+      - develop
     paths:
       - 'app/**'
       - '.github/workflows/ci-flutter.yml'

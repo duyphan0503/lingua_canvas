@@ -5,10 +5,14 @@ on:
     branches:
       - main
       - master
+      - staging
+      - develop
   pull_request:
     branches:
       - main
       - master
+      - staging
+      - develop
   schedule:
     - cron: '0 2 * * 1' # Run weekly on Mondays at 02:00 UTC
 
