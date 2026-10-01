@@ -71,7 +71,7 @@ class HandwritingRecognizer {
 
     // Calculate stroke difference penalty
     final strokeDiff = (totalStrokes - expectedStrokes).abs();
-    double strokeScore = max(0.4, 1.0 - (strokeDiff * 0.15));
+    double strokeScore = max(0.0, 1.0 - (strokeDiff * 0.2));
 
     // Calculate bounding box aspect ratio and bounds
     double minX = double.infinity, maxX = -double.infinity;
@@ -98,7 +98,10 @@ class HandwritingRecognizer {
       0.0,
       1.0,
     );
-    final isAccurate = similarityScore >= 0.75;
+    final isAccurate =
+        similarityScore >= 0.75 &&
+        totalStrokes >= expectedStrokes &&
+        totalStrokes <= expectedStrokes + 2;
 
     String feedback;
     if (isAccurate) {

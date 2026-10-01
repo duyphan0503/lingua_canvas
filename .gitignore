@@ -58,6 +58,7 @@ local.properties
 *.ipr
 *.iws
 .vscode/
+.claude/
 *.swp
 *.swo
 *~
@@ -94,6 +95,17 @@ Desktop.ini
 **/*.log
 
 # ------------------------------------------------------------------------------
-# Agent Internal Metadata
+# Agent Internal Metadata & Code Intelligence Cache
 # ------------------------------------------------------------------------------
 .agents/
+.gitnexus/
+
+# ------------------------------------------------------------------------------
+# Python & Test Cache
+# ------------------------------------------------------------------------------
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+**/.pytest_cache/

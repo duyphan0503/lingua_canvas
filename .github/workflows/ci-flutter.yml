@@ -1,0 +1,56 @@
+name: CI Frontend (Flutter)
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'app/**'
+      - '.github/workflows/ci-flutter.yml'
+  pull_request:
+    branches:
+      - main
+      - master
+    paths:
+      - 'app/**'
+      - '.github/workflows/ci-flutter.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  flutter-ci:
+    name: Flutter Analyze, Format & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies (flutter pub get)
+        run: flutter pub get
+
+      - name: Check code formatting (dart format)
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze code (flutter analyze)
+        run: flutter analyze
+
+      - name: Run unit and widget tests (flutter test)
+        run: flutter test --coverage

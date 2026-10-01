@@ -20,6 +20,12 @@ pub struct AIService {
     model_name: String,
 }
 
+impl Default for AIService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AIService {
     pub fn new() -> Self {
         let client = reqwest::Client::builder()

@@ -1,0 +1,117 @@
+# ==============================================================================
+# Lingua Canvas - Container Orchestration (Docker Compose)
+# ==============================================================================
+
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: lingua-server
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - HOST=0.0.0.0
+      - DATABASE_URL=postgres://lingua:lingua_pass@postgres:5432/lingua_canvas
+      - REDIS_URL=redis://redis:6379
+      - AI_ENDPOINT=http://ai-stub:11434/api/generate
+      - AI_MODEL=qwen2.5:3b
+      - RUST_LOG=info,server=debug
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ai-stub:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: lingua-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=lingua
+      - POSTGRES_PASSWORD=lingua_pass
+      - POSTGRES_DB=lingua_canvas
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lingua -d lingua_canvas"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: lingua-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 3s
+    restart: unless-stopped
+
+  ai-stub:
+    image: python:3.11-alpine
+    container_name: lingua-ai-stub
+    ports:
+      - "11434:11434"
+    command:
+      - python3
+      - -u
+      - -c
+      - |
+        import json
+        from http.server import HTTPServer, BaseHTTPRequestHandler
+
+        class AIHandler(BaseHTTPRequestHandler):
+            def do_POST(self):
+                if self.path == "/api/generate":
+                    content_len = int(self.headers.get("Content-Length", 0))
+                    _ = self.rfile.read(content_len) if content_len > 0 else b""
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.end_headers()
+                    response = {"response": "Mock Local AI response: Konnichiwa! Code review and IT standup ready."}
+                    self.wfile.write(json.dumps(response).encode("utf-8"))
+                else:
+                    self.send_response(404)
+                    self.end_headers()
+
+            def do_GET(self):
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(b"{\"status\":\"ready\"}")
+
+            def log_message(self, format, *args):
+                return
+
+        server = HTTPServer(("0.0.0.0", 11434), AIHandler)
+        print("AI Stub server listening on port 11434...")
+        server.serve_forever()
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:11434/')\" || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 3s
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+    driver: local

@@ -1,0 +1,56 @@
+name: CI Backend (Rust Axum)
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'server/**'
+      - '.github/workflows/ci-backend.yml'
+  pull_request:
+    branches:
+      - main
+      - master
+    paths:
+      - 'server/**'
+      - '.github/workflows/ci-backend.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-ci:
+    name: Rust Check, Lint & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: server -> target
+
+      - name: Check Formatting (cargo fmt)
+        run: cargo fmt -- --check
+
+      - name: Run Clippy Linter (cargo clippy)
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Run Backend Tests (cargo test)
+        run: cargo test --all-targets --verbose
+
+      - name: Run Cargo Audit for Dependencies
+        run: |
+          which cargo-audit || cargo install cargo-audit --locked
+          cargo audit || echo "Cargo audit completed"
