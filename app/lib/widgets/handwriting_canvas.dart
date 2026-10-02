@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import '../services/handwriting_recognizer.dart';
 
 /// Interactive touch/pen canvas for handwriting practice.
@@ -152,16 +153,32 @@ class _HandwritingCanvasState extends State<HandwritingCanvas> {
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
-      child: Listener(
-        onPointerDown: _onPointerDown,
-        onPointerMove: _onPointerMove,
-        onPointerUp: _onPointerUp,
-        behavior: HitTestBehavior.opaque,
-        child: CustomPaint(
-          size: Size.infinite,
-          painter: _CanvasPainter(
-            strokes: widget.strokes,
-            watermarkText: widget.watermarkText,
+      child: RawGestureDetector(
+        // Claim drags at pointer down so the enclosing lesson scroller cannot
+        // move the writing surface while a stroke is in progress.
+        gestures: widget.isReadOnly
+            ? const <Type, GestureRecognizerFactory>{}
+            : <Type, GestureRecognizerFactory>{
+                EagerGestureRecognizer:
+                    GestureRecognizerFactoryWithHandlers<
+                      EagerGestureRecognizer
+                    >(() => EagerGestureRecognizer(), (instance) {}),
+              },
+        child: Listener(
+          onPointerDown: _onPointerDown,
+          onPointerMove: _onPointerMove,
+          onPointerUp: _onPointerUp,
+          onPointerCancel: (_) {
+            _currentStroke = null;
+            _debounceTimer?.cancel();
+          },
+          behavior: HitTestBehavior.opaque,
+          child: CustomPaint(
+            size: Size.infinite,
+            painter: _CanvasPainter(
+              strokes: widget.strokes,
+              watermarkText: widget.watermarkText,
+            ),
           ),
         ),
       ),

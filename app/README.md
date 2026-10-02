@@ -1,16 +1,14 @@
-# app
+# Lingua Canvas
 
-A new Flutter project.
+Lingua Canvas is a Flutter application targeting Android and Linux.
 
-## Getting Started
+## Development
 
-This project is a starting point for a Flutter application.
+Install the Flutter SDK and the platform toolchains for Android or Linux, then run commands from this directory.
 
-A few resources to get you started if this is your first Flutter project:
+```sh
+flutter pub get
+flutter run -d <device-id>
+```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Use `flutter devices` to list available devices. For Linux desktop development, install the Flutter Linux prerequisites described in the [Flutter Linux setup guide](https://docs.flutter.dev/platform-integration/linux/install-linux).

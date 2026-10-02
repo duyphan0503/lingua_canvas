@@ -9,7 +9,7 @@ import '../services/fsrs_engine.dart';
 import '../services/handwriting_recognizer.dart';
 import '../widgets/handwriting_canvas.dart';
 
-/// Main interactive Canvas Practice Screen for IT workplace Japanese and English.
+/// Japanese writing and English recall practice for workplace lessons.
 ///
 /// Refined with:
 /// - Google ML Kit Digital Ink recognition model status & download manager
@@ -66,7 +66,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
     _apiService = widget.apiService ?? ApiService();
     _digitalInkEngine =
         widget.digitalInkEngine ??
-        (!kIsWeb && (Platform.isAndroid || Platform.isIOS)
+        (!kIsWeb && Platform.isAndroid
             ? MlKitDigitalInkEngine()
             : MockDigitalInkEngine());
     _recognizer =
@@ -153,7 +153,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
       _isLoading = false;
     });
 
-    await _checkModelStatus();
+    if (_currentLesson?.language == 'ja') await _checkModelStatus();
     _syncInBackground();
   }
 
@@ -171,11 +171,12 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
 
   Future<void> _checkModelStatus() async {
     final lang = _currentLesson?.language ?? 'ja';
-    if (!mounted) return;
+    if (!mounted || lang != 'ja') return;
+    final lessonId = _currentLesson?.id;
     setState(() => _isCheckingModel = true);
 
     final downloaded = await _digitalInkEngine.isModelDownloaded(lang);
-    if (!mounted) return;
+    if (!mounted || _currentLesson?.id != lessonId) return;
     setState(() {
       _isModelDownloaded = downloaded;
       _isCheckingModel = false;
@@ -184,7 +185,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
 
   Future<void> _downloadModel() async {
     final lang = _currentLesson?.language ?? 'ja';
-    if (!mounted) return;
+    if (!mounted || lang != 'ja') return;
     setState(() => _isDownloadingModel = true);
 
     final success = await _digitalInkEngine.downloadModel(lang);
@@ -204,7 +205,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
       _selectedLanguage = lang;
       _filterLessons();
     });
-    _checkModelStatus();
+    if (_currentLesson?.language == 'ja') _checkModelStatus();
   }
 
   LessonItem? get _currentLesson {
@@ -225,19 +226,29 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
 
   Future<void> _evaluateHandwriting() async {
     final lesson = _currentLesson;
-    if (lesson == null) return;
-    if (_strokes.isEmpty) return;
+    if (lesson == null ||
+        lesson.language != 'ja' ||
+        _strokes.isEmpty ||
+        _isRecognizing) {
+      return;
+    }
+    final evaluatedStrokes = _strokes;
 
     setState(() => _isRecognizing = true);
 
     final result = await _recognizer.evaluate(
-      strokes: _strokes,
+      strokes: evaluatedStrokes,
       targetText: lesson.targetText,
       strokeOrderHints: lesson.strokeOrderHints,
       languageTag: lesson.language,
     );
 
     if (!mounted) return;
+    if (_currentLesson?.id != lesson.id ||
+        !identical(_strokes, evaluatedStrokes)) {
+      if (_isRecognizing) setState(() => _isRecognizing = false);
+      return;
+    }
     setState(() {
       _recognitionResult = result;
       _isRecognizing = false;
@@ -279,7 +290,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
           _filteredLessons.length;
       _clearCanvas();
     });
-    _checkModelStatus();
+    if (_currentLesson?.language == 'ja') _checkModelStatus();
   }
 
   void _goToNextLesson() {
@@ -288,7 +299,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
       _currentIndex = (_currentIndex + 1) % _filteredLessons.length;
       _clearCanvas();
     });
-    _checkModelStatus();
+    if (_currentLesson?.language == 'ja') _checkModelStatus();
   }
 
   @override
@@ -315,30 +326,36 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
               ),
             ),
             const SizedBox(width: 10),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Lingua Canvas',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 0.3,
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Lingua Canvas',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 0.3,
+                    ),
                   ),
-                ),
-                Text(
-                  'IT Workplace Handwriting Practice',
-                  style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
-                ),
-              ],
+                  Text(
+                    'IT Workplace Language Practice',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
         actions: [
           // Completed badge
           Container(
-            margin: const EdgeInsets.only(right: 16),
+            margin: const EdgeInsets.only(right: 8),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: const Color(0xFF1E293B),
@@ -375,100 +392,112 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
           ? _buildEmptyState()
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Language Filter & Lesson Navigation Bar
-                  _buildHeaderControls(),
-                  const SizedBox(height: 12),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 840),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Language Filter & Lesson Navigation Bar
+                      _buildHeaderControls(),
+                      const SizedBox(height: 12),
 
-                  // Lesson Target Info Card
-                  _buildLessonInfoCard(lesson),
-                  const SizedBox(height: 12),
+                      // Lesson Target Info Card
+                      _buildLessonInfoCard(lesson),
+                      const SizedBox(height: 12),
 
-                  // Interactive Drawing Canvas Container with Model Status
-                  _buildCanvasSection(lesson),
-                  const SizedBox(height: 12),
+                      // Interactive Drawing Canvas Container with Model Status
+                      if (lesson.language == 'ja') ...[
+                        _buildCanvasSection(lesson),
+                        const SizedBox(height: 12),
+                      ],
 
-                  // Recognition Feedback Banner
-                  if (_recognitionResult != null) ...[
-                    _buildRecognitionFeedback(_recognitionResult!),
-                    const SizedBox(height: 12),
-                  ],
+                      // Recognition Feedback Banner
+                      if (_recognitionResult != null) ...[
+                        _buildRecognitionFeedback(_recognitionResult!),
+                        const SizedBox(height: 12),
+                      ],
 
-                  // Status notification toast/banner
-                  if (_statusNotification != null) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF065F46),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.check_circle,
-                            color: Color(0xFF34D399),
-                            size: 18,
+                      // Status notification toast/banner
+                      if (_statusNotification != null) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _statusNotification!,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 13,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF065F46),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.check_circle,
+                                color: Color(0xFF34D399),
+                                size: 18,
                               ),
-                            ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _statusNotification!,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
+                        ),
+                        const SizedBox(height: 12),
+                      ],
 
-                  // Spaced Repetition (FSRS) Rating Action Bar
-                  _buildFSRSRatingBar(),
-                ],
+                      // Spaced Repetition (FSRS) Rating Action Bar
+                      _buildFSRSRatingBar(),
+                    ],
+                  ),
+                ),
               ),
             ),
     );
   }
 
   Widget _buildHeaderControls() {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Language filter chips
         Wrap(
           spacing: 6,
+          runSpacing: 4,
           children: [
             _buildLanguageChip('all', 'Tất cả'),
             _buildLanguageChip('ja', 'Tiếng Nhật (IT)'),
             _buildLanguageChip('en', 'Tiếng Anh (IT)'),
           ],
         ),
-        const Spacer(),
-        // Lesson navigation counters
-        IconButton(
-          icon: const Icon(Icons.chevron_left, color: Color(0xFF94A3B8)),
-          onPressed: _goToPreviousLesson,
-          tooltip: 'Bài trước',
-        ),
-        Text(
-          '${_currentIndex + 1}/${_filteredLessons.length}',
-          style: const TextStyle(
-            color: Color(0xFF94A3B8),
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
-          ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.chevron_right, color: Color(0xFF94A3B8)),
-          onPressed: _goToNextLesson,
-          tooltip: 'Bài tiếp theo',
+        const SizedBox(height: 4),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.chevron_left, color: Color(0xFF94A3B8)),
+              onPressed: _goToPreviousLesson,
+              tooltip: 'Bài trước',
+            ),
+            Text(
+              '${_currentIndex + 1}/${_filteredLessons.length}',
+              style: const TextStyle(
+                color: Color(0xFF94A3B8),
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.chevron_right, color: Color(0xFF94A3B8)),
+              onPressed: _goToNextLesson,
+              tooltip: 'Bài tiếp theo',
+            ),
+          ],
         ),
       ],
     );
@@ -504,8 +533,10 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               // Target text in high-contrast bold
               Text(
@@ -517,25 +548,27 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
                   letterSpacing: 1.0,
                 ),
               ),
-              const SizedBox(width: 12),
               // Phonetic / kana pill
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0F172A),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: const Color(0xFF475569)),
-                ),
-                child: Text(
-                  lesson.phoneticOrKana,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF38BDF8),
-                    fontFamily: 'monospace',
+              if (lesson.phoneticOrKana.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F172A),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFF475569)),
+                  ),
+                  child: Text(
+                    lesson.phoneticOrKana,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF38BDF8),
+                      fontFamily: 'monospace',
+                    ),
                   ),
                 ),
-              ),
-              const Spacer(),
               // Language / Category badge
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -572,35 +605,39 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
           ),
           const SizedBox(height: 8),
           // Workplace Context
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0F172A),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFF1E293B)),
+          if (lesson.workplaceContext.isNotEmpty ||
+              lesson.workplaceContextVi.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0F172A),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFF1E293B)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (lesson.workplaceContext.isNotEmpty)
+                    Text(
+                      'Ngữ cảnh công sở: ${lesson.workplaceContext}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFFCBD5E1),
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  const SizedBox(height: 2),
+                  if (lesson.workplaceContextVi.isNotEmpty)
+                    Text(
+                      lesson.workplaceContextVi,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF94A3B8),
+                      ),
+                    ),
+                ],
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Ngữ cảnh công sở: ${lesson.workplaceContext}',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFFCBD5E1),
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  lesson.workplaceContextVi,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF94A3B8),
-                  ),
-                ),
-              ],
-            ),
-          ),
 
           // Stroke Order Hints Accordion
           if (lesson.strokeOrderHints.isNotEmpty) ...[
@@ -665,8 +702,10 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
 
   Widget _buildModelStatusIndicator(String lang) {
     if (_isCheckingModel) {
-      return const Row(
-        mainAxisSize: MainAxisSize.min,
+      return const Wrap(
+        spacing: 6,
+        runSpacing: 4,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           SizedBox(
             width: 12,
@@ -676,7 +715,6 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
               color: Color(0xFF818CF8),
             ),
           ),
-          SizedBox(width: 6),
           Text(
             'Đang kiểm tra mô hình AI...',
             style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
@@ -686,8 +724,10 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
     }
 
     if (_isDownloadingModel) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
+      return Wrap(
+        spacing: 6,
+        runSpacing: 4,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           const SizedBox(
             width: 12,
@@ -697,7 +737,6 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
               color: Color(0xFF38BDF8),
             ),
           ),
-          const SizedBox(width: 6),
           Text(
             'Đang tải mô hình ($lang)...',
             style: const TextStyle(fontSize: 11, color: Color(0xFF38BDF8)),
@@ -707,11 +746,12 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
     }
 
     if (_isModelDownloaded) {
-      return const Row(
-        mainAxisSize: MainAxisSize.min,
+      return const Wrap(
+        spacing: 4,
+        runSpacing: 4,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           Icon(Icons.cloud_done_rounded, size: 14, color: Color(0xFF10B981)),
-          SizedBox(width: 4),
           Text(
             'Mô hình AI: Sẵn sàng (On-device)',
             style: TextStyle(
@@ -725,41 +765,30 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
     }
 
     // Offline / Not yet downloaded
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Wrap(
+      spacing: 8,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         const Icon(Icons.cloud_off_rounded, size: 14, color: Color(0xFFF59E0B)),
-        const SizedBox(width: 4),
         const Text(
           'Mô hình AI: Ngoại tuyến',
           style: TextStyle(fontSize: 11, color: Color(0xFFF59E0B)),
         ),
-        const SizedBox(width: 8),
-        InkWell(
-          onTap: _downloadModel,
-          borderRadius: BorderRadius.circular(4),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: const Color(0x334F46E5),
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: const Color(0xFF6366F1), width: 0.8),
-            ),
-            child: const Text(
-              'Tải mô hình',
-              style: TextStyle(
-                fontSize: 10,
-                color: Color(0xFF818CF8),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
+        TextButton(
+          onPressed: _downloadModel,
+          style: TextButton.styleFrom(minimumSize: const Size(88, 48)),
+          child: const Text('Tải mô hình'),
         ),
       ],
     );
   }
 
   Widget _buildCanvasSection(LessonItem lesson) {
+    final canvasHeight = (MediaQuery.sizeOf(context).height * 0.34).clamp(
+      200.0,
+      300.0,
+    );
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF111827),
@@ -768,63 +797,72 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
       ),
       child: Column(
         children: [
-          // Canvas toolbar
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            padding: const EdgeInsets.all(10),
             decoration: const BoxDecoration(
               color: Color(0xFF1E293B),
               borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Icon(Icons.gesture, size: 16, color: Color(0xFF38BDF8)),
-                const SizedBox(width: 6),
-                const Text(
-                  'Vùng Luyện Viết (Canvas)',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFFE2E8F0),
-                  ),
-                ),
-                const Spacer(),
-                // Watermark trace guide toggle
-                IconButton(
-                  icon: Icon(
-                    _showWatermark
-                        ? Icons.visibility
-                        : Icons.visibility_off_outlined,
-                    color: _showWatermark
-                        ? const Color(0xFF38BDF8)
-                        : const Color(0xFF64748B),
-                    size: 18,
-                  ),
-                  tooltip: _showWatermark ? 'Tắt chữ mẫu' : 'Bật chữ mẫu mờ',
-                  onPressed: () =>
-                      setState(() => _showWatermark = !_showWatermark),
-                ),
-                // Clear button
-                TextButton.icon(
-                  onPressed: _strokes.isEmpty ? null : _clearCanvas,
-                  icon: const Icon(Icons.refresh_rounded, size: 16),
-                  label: const Text('Xóa', style: TextStyle(fontSize: 12)),
-                  style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFFEF4444),
-                  ),
-                ),
-                // Evaluate button
-                ElevatedButton.icon(
-                  onPressed: _strokes.isEmpty ? null : _evaluateHandwriting,
-                  icon: const Icon(Icons.spellcheck_rounded, size: 16),
-                  label: const Text('Đánh giá', style: TextStyle(fontSize: 12)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4F46E5),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
+                const Row(
+                  children: [
+                    Icon(Icons.gesture, size: 18, color: Color(0xFF38BDF8)),
+                    SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Vùng Luyện Viết (Canvas)',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFE2E8F0),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        _showWatermark
+                            ? Icons.visibility
+                            : Icons.visibility_off_outlined,
+                        color: const Color(0xFF38BDF8),
+                      ),
+                      tooltip: _showWatermark
+                          ? 'Tắt chữ mẫu'
+                          : 'Bật chữ mẫu mờ',
+                      onPressed: () =>
+                          setState(() => _showWatermark = !_showWatermark),
+                    ),
+                    TextButton.icon(
+                      onPressed: _strokes.isEmpty ? null : _clearCanvas,
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Xóa'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFFEF4444),
+                        minimumSize: const Size(72, 48),
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: _strokes.isEmpty || _isRecognizing
+                          ? null
+                          : _evaluateHandwriting,
+                      icon: const Icon(Icons.spellcheck_rounded),
+                      label: const Text('Đánh giá'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4F46E5),
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(110, 48),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -834,10 +872,12 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
             color: const Color(0xFF0F172A),
-            child: Row(
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 _buildModelStatusIndicator(lesson.language),
-                const Spacer(),
                 if (_isRecognizing) ...[
                   const SizedBox(
                     width: 12,
@@ -857,17 +897,19 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
             ),
           ),
 
-          // Handwriting canvas area (Height 280)
+          // A bounded surface gives strokes room without swallowing the phone.
           SizedBox(
-            height: 280,
+            height: canvasHeight,
             width: double.infinity,
             child: HandwritingCanvas(
               strokes: _strokes,
               watermarkText: _showWatermark ? lesson.targetText : null,
               onStrokesChanged: (newStrokes) {
-                setState(() => _strokes = newStrokes);
+                setState(() {
+                  _strokes = newStrokes;
+                  _recognitionResult = null;
+                });
               },
-              onStrokeCompleted: _evaluateHandwriting,
               onDebouncedEvaluation: _evaluateHandwriting,
             ),
           ),
@@ -967,55 +1009,67 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
             children: [
               Icon(Icons.schedule_rounded, size: 16, color: Color(0xFF818CF8)),
               SizedBox(width: 6),
-              Text(
-                'Đánh Giá Ôn Tập FSRS (Spaced Repetition)',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFE2E8F0),
+              Expanded(
+                child: Text(
+                  'Đánh Giá Ôn Tập FSRS (Spaced Repetition)',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFE2E8F0),
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: _buildRatingButton(
-                  label: 'Again',
-                  subtitle: '< 10p',
-                  color: const Color(0xFFEF4444),
-                  onTap: () => _submitFSRSRating(FSRSRating.again),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildRatingButton(
-                  label: 'Hard',
-                  subtitle: '1-2 ngày',
-                  color: const Color(0xFFF59E0B),
-                  onTap: () => _submitFSRSRating(FSRSRating.hard),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildRatingButton(
-                  label: 'Good',
-                  subtitle: '3-5 ngày',
-                  color: const Color(0xFF3B82F6),
-                  onTap: () => _submitFSRSRating(FSRSRating.good),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildRatingButton(
-                  label: 'Easy',
-                  subtitle: '> 7 ngày',
-                  color: const Color(0xFF10B981),
-                  onTap: () => _submitFSRSRating(FSRSRating.easy),
-                ),
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final columns = constraints.maxWidth >= 560 ? 4 : 2;
+              final buttonWidth =
+                  (constraints.maxWidth - (columns - 1) * 8) / columns;
+              return Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  SizedBox(
+                    width: buttonWidth,
+                    child: _buildRatingButton(
+                      label: 'Again',
+                      subtitle: '< 10p',
+                      color: const Color(0xFFEF4444),
+                      onTap: () => _submitFSRSRating(FSRSRating.again),
+                    ),
+                  ),
+                  SizedBox(
+                    width: buttonWidth,
+                    child: _buildRatingButton(
+                      label: 'Hard',
+                      subtitle: '1-2 ngày',
+                      color: const Color(0xFFF59E0B),
+                      onTap: () => _submitFSRSRating(FSRSRating.hard),
+                    ),
+                  ),
+                  SizedBox(
+                    width: buttonWidth,
+                    child: _buildRatingButton(
+                      label: 'Good',
+                      subtitle: '3-5 ngày',
+                      color: const Color(0xFF3B82F6),
+                      onTap: () => _submitFSRSRating(FSRSRating.good),
+                    ),
+                  ),
+                  SizedBox(
+                    width: buttonWidth,
+                    child: _buildRatingButton(
+                      label: 'Easy',
+                      subtitle: '> 7 ngày',
+                      color: const Color(0xFF10B981),
+                      onTap: () => _submitFSRSRating(FSRSRating.easy),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -1034,7 +1088,8 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
         backgroundColor: color.withValues(alpha: 0.15),
         foregroundColor: color,
         side: BorderSide(color: color.withValues(alpha: 0.5)),
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        minimumSize: const Size(0, 52),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         elevation: 0,
       ),

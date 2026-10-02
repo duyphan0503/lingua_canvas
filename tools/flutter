@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+version="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["flutter"])' "$repo_root/.fvmrc")"
+sdk="$repo_root/.toolchains/flutter/$version/flutter"
+export FLUTTER_SUPPRESS_ANALYTICS=true
+export PATH="$sdk/bin:$PATH"
+android_sdk="$repo_root/.toolchains/android-sdk"
+if [[ -d "$android_sdk/platforms" ]]; then
+  export ANDROID_HOME="$android_sdk"
+  export ANDROID_SDK_ROOT="$android_sdk"
+  export ANDROID_USER_HOME="$repo_root/.toolchains/android-user"
+  export PATH="$android_sdk/platform-tools:$PATH"
+fi
+if [[ -z "${JAVA_HOME:-}" && -x /usr/lib/jvm/java-21-openjdk-amd64/bin/java ]]; then
+  export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+  export PATH="$JAVA_HOME/bin:$PATH"
+fi
+gtk_sysroot="$repo_root/.toolchains/gtk-sysroot/usr"
+if [[ -d "$gtk_sysroot/lib/x86_64-linux-gnu/pkgconfig" ]]; then
+  export PKG_CONFIG_PATH="$gtk_sysroot/lib/x86_64-linux-gnu/pkgconfig:$gtk_sysroot/share/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+  export CMAKE_PREFIX_PATH="$gtk_sysroot${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}"
+fi
+
+if [[ ! -x "$sdk/bin/flutter" ]]; then
+  printf 'Flutter %s is not installed at %s\n' "$version" "$sdk" >&2
+  printf 'Install the release archive from https://docs.flutter.dev/install/archive into that directory.\n' >&2
+  exit 1
+fi
+
+exec "$sdk/bin/flutter" "$@"

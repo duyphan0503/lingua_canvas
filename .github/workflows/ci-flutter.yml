@@ -10,6 +10,7 @@ on:
     paths:
       - 'app/**'
       - '.github/workflows/ci-flutter.yml'
+      - '.fvmrc'
   pull_request:
     branches:
       - main
@@ -19,6 +20,7 @@ on:
     paths:
       - 'app/**'
       - '.github/workflows/ci-flutter.yml'
+      - '.fvmrc'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -26,7 +28,7 @@ concurrency:
 
 jobs:
   flutter-ci:
-    name: Flutter Analyze, Format & Test
+    name: Flutter Analyze, Test & Build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -45,7 +47,11 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          flutter-version-file: '.fvmrc'
           cache: true
+
+      - name: Install Linux desktop build dependencies
+        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
 
       - name: Install dependencies (flutter pub get)
         run: flutter pub get
@@ -58,3 +64,9 @@ jobs:
 
       - name: Run unit and widget tests (flutter test)
         run: flutter test --coverage
+
+      - name: Build Linux desktop
+        run: flutter build linux --release
+
+      - name: Build Android debug APK
+        run: flutter build apk --debug
