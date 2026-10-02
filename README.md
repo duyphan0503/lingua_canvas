@@ -5,7 +5,7 @@
 [![Security Scan](https://github.com/duyphan0503/lingua_canvas/actions/workflows/security-scan.yml/badge.svg)](https://github.com/duyphan0503/lingua_canvas/actions/workflows/security-scan.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-An enterprise-ready, cross-platform language learning application tailored for IT workplace communication in Japanese (Kanji/Kana, Keigo, tech jargon) and English (Agile rituals, PR reviews, standups). Combines an interactive handwriting canvas, the Free Spaced Repetition Scheduler (FSRS v4.5), and local AI-assisted roleplay dialogues.
+An enterprise-ready, cross-platform language learning application tailored for workplace communication in Japanese (Kanji/Kana, Keigo, tech jargon, hospitality) and English (Agile rituals, PR reviews, standups, customer service). Combines an interactive handwriting canvas with Google ML Kit Digital Ink recognition, local SQLite persistent caching, bidirectional sync with Last-Write-Wins (LWW) conflict resolution, Free Spaced Repetition Scheduler (FSRS v4.5), and local AI-assisted roleplay dialogues (Ollama / Llama.cpp connector).
 
 ---
 
@@ -14,16 +14,19 @@ An enterprise-ready, cross-platform language learning application tailored for I
 ```
 lingua_canvas/
 ├── app/                           # Flutter Frontend Mobile Application
-│   ├── lib/                       # UI components, handwriting canvas, FSRS engine
-│   ├── test/                      # Unit and widget test suite
+│   ├── lib/                       # UI components, ML Kit canvas, FSRS engine, SQLite sync
+│   │   ├── screens/               # Canvas practice & study screens
+│   │   ├── services/              # DigitalInkEngine, ModelManager, LocalDatabase, SyncCoordinator
+│   │   └── widgets/               # HandwritingCanvas with velocity tapering & smoothing
+│   ├── test/                      # Unit and widget tests, SQLite and sync regressions
 │   └── pubspec.yaml               # Flutter SDK (>=3.10.3) & Dart dependencies
 ├── server/                        # Rust Axum Backend REST API
-│   ├── src/                       # Axum routes, FSRS-4.5 logic, AI client, DB pool
-│   ├── migrations/                # SQLx PostgreSQL schema migrations
-│   ├── tests/                     # Integration tests (ServiceExt::oneshot)
+│   ├── src/                       # Axum routes, FSRS-4.5 logic, Local AI client, Sync handlers
+│   ├── migrations/                # SQLx PostgreSQL schema migrations (lessons, fsrs_cards, review_logs)
+│   ├── tests/                     # API integration tests, including opt-in PostgreSQL tests
 │   ├── Cargo.toml                 # Rust dependencies (Axum 0.7, Tokio, SQLx 0.8)
 │   └── Dockerfile                 # Multi-stage production container build
-├── tests/e2e/                     # 4-Tier Opaque-Box E2E Testing Suite
+├── tests/e2e/                     # 4-Tier Opaque-Box E2E Testing Suite (47 tests)
 │   ├── run_e2e_tests.sh           # Master test runner with automated server lifecycle
 │   ├── tier1_feature_coverage.py  # Feature coverage, git cleanliness, endpoint schemas
 │   ├── tier2_boundary_cases.py    # Boundary, corner cases, error codes, offline fallback
@@ -104,6 +107,20 @@ To stop containers:
 docker compose down
 ```
 
+### 3. Run the Flutter App
+
+Set the API URL for the device running the app:
+
+```bash
+cd app
+# Android emulator: the host computer is reachable at 10.0.2.2.
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8080/api/v1
+```
+
+For a physical device, use the backend computer's LAN address. Release builds should use an HTTPS endpoint; the Android cleartext exception applies only to debug builds. The iOS target is 15.5 to match the installed ML Kit plugin.
+
+Reviews are saved to SQLite before network work. The app retries synchronization at startup, on resume, after a review, and periodically while foregrounded. A successful pull persists its cursor for the next launch.
+
 ---
 
 ## 🧪 Testing & Verification Guide
@@ -180,7 +197,10 @@ docker compose config
 | `GET` | `/api/v1/lessons/:id` | Retrieve single lesson item by UUID |
 | `POST` | `/api/v1/fsrs/review` | Submit card review rating (`1: Again`, `2: Hard`, `3: Good`, `4: Easy`) |
 | `GET` | `/api/v1/fsrs/due` | Retrieve cards currently due for review |
-| `POST` | `/api/v1/ai/roleplay` | Generate interactive IT workplace dialogue with breakdown |
+| `POST` | `/api/v1/ai/roleplay` | Generate workplace roleplay replies, vocabulary and writing challenges |
+| `POST` | `/api/v1/ai/dialogue` | Generate structured Japanese or English workplace dialogues |
+| `POST` | `/api/v1/sync` | Push queued reviews and completed lessons with review-ID deduplication |
+| `GET` | `/api/v1/sync/pull` | Pull cards and lessons since the last successful pull cursor |
 
 ---
 

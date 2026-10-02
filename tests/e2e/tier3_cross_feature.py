@@ -211,6 +211,118 @@ def run_tier3_tests(client: ApiClient) -> int:
             "docker-compose.yml service hierarchy scheduled for Milestone 4 (Enterprise DevOps)"
         )
 
+    # -------------------------------------------------------------------------
+    # 7. Batch Review Sync Push -> Delta Pull -> LWW Conflict Resolution
+    # -------------------------------------------------------------------------
+    t0 = time.time()
+    try:
+        card_id = f"lww_card_{int(time.time())}"
+        base_time = datetime(2026, 10, 1, 10, 0, 0, tzinfo=timezone.utc)
+        older_time = datetime(2026, 10, 1, 8, 0, 0, tzinfo=timezone.utc)
+        newer_time = datetime(2026, 10, 1, 12, 0, 0, tzinfo=timezone.utc)
+
+        # Step A: Push initial batch review at base_time (10:00 UTC) with rating 3 (Good)
+        payload_init = {
+            "client_id": "lww_device_a",
+            "reviews": [
+                {
+                    "review_id": f"rev_{card_id}_base",
+                    "item_id": card_id,
+                    "rating": 3,
+                    "review_time": base_time.isoformat(),
+                    "elapsed_days": 0.0,
+                    "scheduled_days": 1,
+                }
+            ],
+            "completed_lessons": [
+                {
+                    "lesson_id": card_id,
+                    "completed_at": base_time.isoformat(),
+                    "score": 1.0,
+                }
+            ],
+        }
+        s_init, b_init, _ = client.post("/sync", data=payload_init)
+        assert s_init == 200, f"Initial sync push failed: {s_init}: {b_init}"
+        assert b_init.get("synced_reviews") == 1
+        assert card_id in b_init.get("synced_completed_lesson_ids", []), (
+            f"Completion for {card_id} was not acknowledged: {b_init}"
+        )
+        assert len(b_init.get("updated_cards", [])) == 1
+        card_init = b_init["updated_cards"][0]
+        assert card_init["item_id"] == card_id
+        assert card_init["state"] == "Review", f"Expected Review state, got {card_init['state']}"
+        assert card_init["reps"] == 1, f"Expected reps == 1, got {card_init['reps']}"
+
+        # Step B: Delta retrieval via GET /sync/pull?since=2026-10-01T09:00:00Z
+        s_pull, b_pull, _ = client.get("/sync/pull", params={"since": "2026-10-01T09:00:00Z"})
+        assert s_pull == 200, f"Pull sync failed: {s_pull}: {b_pull}"
+        pulled_cards = b_pull.get("cards", []) or b_pull.get("updated_cards", [])
+        pulled_match = next((c for c in pulled_cards if c["item_id"] == card_id), None)
+        assert pulled_match is not None, f"Card {card_id} missing from delta pull: {pulled_cards}"
+        assert pulled_match["reps"] == 1
+
+        # Step C: LWW Conflict Resolution - Stale review from offline device B at older_time (08:00 UTC)
+        # Attempt to overwrite with rating 1 (Again). LWW must ignore this older update.
+        payload_stale = {
+            "client_id": "lww_device_b_stale",
+            "reviews": [
+                {
+                    "review_id": f"rev_{card_id}_stale",
+                    "item_id": card_id,
+                    "rating": 1,
+                    "review_time": older_time.isoformat(),
+                    "elapsed_days": 0.0,
+                    "scheduled_days": 0,
+                }
+            ],
+        }
+        s_stale, b_stale, _ = client.post("/sync", data=payload_stale)
+        assert s_stale == 200, f"Stale sync push failed: {s_stale}: {b_stale}"
+        card_after_stale = next((c for c in b_stale.get("updated_cards", []) if c["item_id"] == card_id), None)
+        assert card_after_stale is not None, "Missing card in stale push response"
+        # Crucial LWW assertion: card must NOT regress to Learning / rating 1, must retain state Review & reps 1
+        assert card_after_stale["state"] == "Review", (
+            f"LWW regression! Card state changed to {card_after_stale['state']} despite older review timestamp"
+        )
+        assert card_after_stale["reps"] == 1, f"Expected reps to remain 1, got {card_after_stale['reps']}"
+
+        # Step D: LWW Conflict Resolution - Newer review from device at newer_time (12:00 UTC) with rating 3
+        # Newer timestamp should be accepted and advance reps to 2.
+        payload_newer = {
+            "client_id": "lww_device_a_newer",
+            "reviews": [
+                {
+                    "review_id": f"rev_{card_id}_newer",
+                    "item_id": card_id,
+                    "rating": 3,
+                    "review_time": newer_time.isoformat(),
+                    "elapsed_days": 0.08,
+                    "scheduled_days": 3,
+                }
+            ],
+        }
+        s_newer, b_newer, _ = client.post("/sync", data=payload_newer)
+        assert s_newer == 200, f"Newer sync push failed: {s_newer}: {b_newer}"
+        card_after_newer = next((c for c in b_newer.get("updated_cards", []) if c["item_id"] == card_id), None)
+        assert card_after_newer is not None
+        assert card_after_newer["reps"] == 2, f"Expected reps to advance to 2, got {card_after_newer['reps']}"
+        assert card_after_newer["state"] == "Review"
+
+        # Step E: Verify updated state in GET /sync/pull
+        s_pull2, b_pull2, _ = client.get("/sync/pull", params={"since": "2026-10-01T11:00:00Z"})
+        assert s_pull2 == 200
+        pulled_cards2 = b_pull2.get("cards", []) or b_pull2.get("updated_cards", [])
+        pulled_match2 = next((c for c in pulled_cards2 if c["item_id"] == card_id), None)
+        assert pulled_match2 is not None, f"Card {card_id} missing in high-water pull: {pulled_cards2}"
+        assert pulled_match2["reps"] == 2
+
+        reporter.record_pass("test_batch_sync_push_pull_and_lww_conflict_resolution", time.time() - t0)
+    except AssertionError as e:
+        reporter.record_fail("test_batch_sync_push_pull_and_lww_conflict_resolution", str(e), time.time() - t0)
+    except Exception as e:
+        reporter.record_fail("test_batch_sync_push_pull_and_lww_conflict_resolution", f"Unexpected: {e}", time.time() - t0)
+
     return reporter.print_summary()
 
 

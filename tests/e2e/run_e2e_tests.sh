@@ -105,7 +105,11 @@ echo ""
 # -----------------------------------------------------------------------------
 echo -e "${BOLD}1. Verifying Tooling Prerequisites...${NC}"
 MISSING_TOOLS=0
-for tool in python3 cargo flutter curl jq git; do
+REQUIRED_TOOLS=(python3 curl)
+if [[ "${TARGET_TIER}" == "all" || "${TARGET_TIER}" == "1" ]]; then
+    REQUIRED_TOOLS+=(flutter git)
+fi
+for tool in "${REQUIRED_TOOLS[@]}"; do
     if command -v "${tool}" >/dev/null 2>&1; then
         echo -e "  [${GREEN}FOUND${NC}] ${tool}"
     else
@@ -132,11 +136,19 @@ if check_server_healthy; then
     echo -e "  ${GREEN}Server already active and healthy on ${API_BASE_URL}.${NC}"
 else
     echo -e "  Server not running on ${API_BASE_URL}. Compiling and launching binary..."
-    SERVER_BIN="${PROJECT_ROOT}/server/target/debug/server"
-    if [[ ! -f "${SERVER_BIN}" ]]; then
-        echo -e "  Building ${SERVER_BIN} via cargo..."
-        cargo build --manifest-path "${PROJECT_ROOT}/server/Cargo.toml" --bin server
+    API_URL_PORT="$(python3 -c 'from urllib.parse import urlsplit; from sys import argv; p=urlsplit(argv[1]); print(p.port or (443 if p.scheme == "https" else 80))' "${API_BASE_URL}")"
+    if [[ -n "${PORT:-}" && "${PORT}" != "${API_URL_PORT}" ]]; then
+        echo -e "${RED}PORT (${PORT}) must match the port in API_BASE_URL (${API_URL_PORT}).${NC}"
+        exit 1
     fi
+    export PORT="${API_URL_PORT}"
+    if ! command -v cargo >/dev/null 2>&1; then
+        echo -e "${RED}cargo is required because no healthy server is available.${NC}"
+        exit 1
+    fi
+    SERVER_BIN="${PROJECT_ROOT}/server/target/debug/server"
+    echo -e "  Building ${SERVER_BIN} via cargo..."
+    cargo build --manifest-path "${PROJECT_ROOT}/server/Cargo.toml" --bin server
 
     echo -e "  Starting background server process..."
     "${SERVER_BIN}" > "${LOG_FILE}" 2>&1 &

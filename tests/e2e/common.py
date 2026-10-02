@@ -134,6 +134,7 @@ class ServerManager:
         self.base_url = base_url
         self.process: Optional[subprocess.Popen] = None
         self.spawned_by_us = False
+        self.server_log = None
 
     def is_running(self) -> bool:
         """Check if server is already running and responds to health endpoint."""
@@ -149,28 +150,44 @@ class ServerManager:
         if self.is_running():
             return True
 
-        # Ensure server binary is built
+        # Always build so source changes cannot silently use a stale binary.
         server_bin = PROJECT_ROOT / "server" / "target" / "debug" / "server"
-        if not server_bin.is_file():
-            print(f"{CYAN}Building server binary via cargo build...{RESET}")
-            build_res = subprocess.run(
-                ["cargo", "build", "--bin", "server"],
-                cwd=str(PROJECT_ROOT / "server"),
-                capture_output=True,
-                text=True,
-            )
-            if build_res.returncode != 0:
-                print(f"{RED}Server build failed:{RESET}\n{build_res.stderr}")
-                return False
-
-        print(f"{CYAN}Starting background Axum server binary...{RESET}")
-        self.process = subprocess.Popen(
-            [str(server_bin)],
+        print(f"{CYAN}Building server binary via cargo build...{RESET}")
+        build_res = subprocess.run(
+            ["cargo", "build", "--bin", "server"],
             cwd=str(PROJECT_ROOT / "server"),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             text=True,
         )
+        if build_res.returncode != 0:
+            print(f"{RED}Server build failed:{RESET}\n{build_res.stderr}")
+            return False
+
+        print(f"{CYAN}Starting background Axum server binary...{RESET}")
+        parsed_url = urllib.parse.urlsplit(self.base_url)
+        server_port = parsed_url.port or (443 if parsed_url.scheme == "https" else 80)
+        configured_port = os.environ.get("PORT")
+        if configured_port and configured_port != str(server_port):
+            print(
+                f"{RED}PORT ({configured_port}) must match API_BASE_URL port ({server_port}).{RESET}"
+            )
+            return False
+        server_env = os.environ.copy()
+        server_env["PORT"] = str(server_port)
+        self.server_log = (PROJECT_ROOT / "tests" / "e2e" / "server.log").open("w")
+        try:
+            self.process = subprocess.Popen(
+                [str(server_bin)],
+                cwd=str(PROJECT_ROOT / "server"),
+                stdout=self.server_log,
+                stderr=subprocess.STDOUT,
+                env=server_env,
+            )
+        except OSError as error:
+            self.server_log.close()
+            self.server_log = None
+            print(f"{RED}Failed to start server process: {error}{RESET}")
+            return False
         self.spawned_by_us = True
 
         start_time = time.time()
@@ -179,8 +196,15 @@ class ServerManager:
                 print(f"{GREEN}Axum server ready and healthy.{RESET}")
                 return True
             if self.process.poll() is not None:
-                _, err = self.process.communicate()
-                print(f"{RED}Server exited prematurely:{RESET}\n{err}")
+                self.server_log.flush()
+                log_path = self.server_log.name
+                self.server_log.close()
+                self.server_log = None
+                print(f"{RED}Server exited prematurely. Recent log output:{RESET}")
+                try:
+                    print(Path(log_path).read_text()[-4000:])
+                except OSError:
+                    pass
                 return False
             time.sleep(0.5)
 
@@ -190,15 +214,18 @@ class ServerManager:
 
     def stop(self):
         """Stop server if spawned by this test manager."""
-        if self.spawned_by_us and self.process and self.process.poll() is None:
-            print(f"{CYAN}Stopping Axum server process (PID {self.process.pid})...{RESET}")
-            self.process.terminate()
-            try:
-                self.process.wait(timeout=5.0)
-            except subprocess.TimeoutExpired:
-                self.process.kill()
-                self.process.wait()
+        if self.spawned_by_us:
+            if self.process and self.process.poll() is None:
+                print(f"{CYAN}Stopping Axum server process (PID {self.process.pid})...{RESET}")
+                self.process.terminate()
+                try:
+                    self.process.wait(timeout=5.0)
+                except subprocess.TimeoutExpired:
+                    self.process.kill()
+                    self.process.wait()
             self.spawned_by_us = False
+        if self.server_log and not self.server_log.closed:
+            self.server_log.close()
 
 
 class TestReporter:

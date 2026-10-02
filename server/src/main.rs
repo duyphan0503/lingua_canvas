@@ -41,6 +41,8 @@ async fn main() {
     let state = AppState {
         lessons: seed_lessons,
         cards: Arc::new(RwLock::new(HashMap::new())),
+        seen_review_ids: Arc::new(RwLock::new(HashMap::new())),
+        card_updated_at: Arc::new(RwLock::new(HashMap::new())),
         fsrs: Arc::new(FSRS::default()),
         ai: Arc::new(AIService::new()),
         pool,

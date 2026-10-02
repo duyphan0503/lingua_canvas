@@ -1,15 +1,120 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:app/main.dart';
+import 'package:app/models/lesson_item.dart';
+import 'package:app/screens/canvas_practice_screen.dart';
+import 'package:app/services/api_service.dart';
+import 'package:app/services/digital_ink_engine.dart';
+import 'package:app/services/fsrs_engine.dart';
+import 'package:app/services/sync_coordinator.dart';
 import 'package:app/widgets/handwriting_canvas.dart';
 
+class PracticeApiService extends ApiService {
+  int completed = 0;
+  int syncAttempts = 0;
+  int pulledLessons = 0;
+
+  @override
+  Future<SyncResult> sync() async {
+    syncAttempts++;
+    return SyncResult(success: true, pulledLessons: pulledLessons);
+  }
+
+  @override
+  Future<List<LessonItem>> getLessons({String? language}) async => [
+    LessonItem(
+      id: 'ja_hira_a',
+      language: 'ja',
+      category: 'alphabet',
+      targetText: 'あ',
+      phoneticOrKana: 'a',
+      meaningVi: 'Chữ cái Hiragana: A',
+      workplaceContext: '',
+      workplaceContextVi: '',
+      strokeOrderHints: [],
+      difficultyLevel: 1,
+    ),
+    LessonItem(
+      id: 'en_it_deploy',
+      language: 'en',
+      category: 'it_workplace',
+      targetText: 'deploy',
+      phoneticOrKana: '',
+      meaningVi: 'Triển khai phần mềm lên server',
+      workplaceContext: '',
+      workplaceContextVi: '',
+      strokeOrderHints: [],
+      difficultyLevel: 1,
+    ),
+  ];
+
+  @override
+  Future<int> getCompletedCount() async => completed;
+
+  @override
+  Future<void> submitReview({
+    required String itemId,
+    required FSRSRating rating,
+  }) async {
+    completed++;
+  }
+}
+
 void main() {
-  setUp(() {
-    SharedPreferences.setMockInitialValues({});
-  });
+  late PracticeApiService service;
+  setUp(() => service = PracticeApiService());
 
   group('Lingua Canvas Widget Tests', () {
+    testWidgets('syncs on launch and when app resumes', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(home: CanvasPracticeScreen(apiService: service)),
+      );
+      await tester.pumpAndSettle();
+      expect(service.syncAttempts, 1);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(service.syncAttempts, 2);
+    });
+    testWidgets('retries sync in foreground and stops while paused', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(home: CanvasPracticeScreen(apiService: service)),
+      );
+      await tester.pumpAndSettle();
+      expect(service.syncAttempts, 1);
+      await tester.pump(const Duration(seconds: 30));
+      await tester.pump();
+      expect(service.syncAttempts, 2);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump(const Duration(seconds: 30));
+      expect(service.syncAttempts, 2);
+    });
+
+    testWidgets('background lesson refresh preserves the active drawing', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        MaterialApp(home: CanvasPracticeScreen(apiService: service)),
+      );
+      await tester.pumpAndSettle();
+      final canvas = find.byType(HandwritingCanvas);
+      final gesture = await tester.startGesture(tester.getCenter(canvas));
+      await gesture.moveBy(const Offset(20, 20));
+      await tester.pump();
+      expect(tester.widget<HandwritingCanvas>(canvas).strokes, isNotEmpty);
+
+      service.pulledLessons = 1;
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(tester.widget<HandwritingCanvas>(canvas).strokes, isNotEmpty);
+      await gesture.up();
+    });
     testWidgets('Canvas practice screen smoke test renders core UI elements', (
       WidgetTester tester,
     ) async {
@@ -18,7 +123,9 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      await tester.pumpWidget(const MyApp());
+      await tester.pumpWidget(
+        MaterialApp(home: CanvasPracticeScreen(apiService: service)),
+      );
       await tester.pumpAndSettle();
 
       // 1. Verify App Bar header
@@ -36,7 +143,10 @@ void main() {
       expect(find.text('Xóa'), findsOneWidget);
       expect(find.text('Đánh giá'), findsOneWidget);
 
-      // 4. Verify FSRS Spaced Repetition rating buttons
+      // 4. Verify Model status indicator
+      expect(find.text('Mô hình AI: Sẵn sàng (On-device)'), findsOneWidget);
+
+      // 5. Verify FSRS Spaced Repetition rating buttons
       expect(find.text('Again'), findsOneWidget);
       expect(find.text('Hard'), findsOneWidget);
       expect(find.text('Good'), findsOneWidget);
@@ -51,7 +161,9 @@ void main() {
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
 
-        await tester.pumpWidget(const MyApp());
+        await tester.pumpWidget(
+          MaterialApp(home: CanvasPracticeScreen(apiService: service)),
+        );
         await tester.pumpAndSettle();
 
         final canvasFinder = find.byType(HandwritingCanvas);
@@ -95,7 +207,9 @@ void main() {
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
 
-        await tester.pumpWidget(const MyApp());
+        await tester.pumpWidget(
+          MaterialApp(home: CanvasPracticeScreen(apiService: service)),
+        );
         await tester.pumpAndSettle();
 
         // Switch to English IT Workplace
@@ -127,7 +241,9 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      await tester.pumpWidget(const MyApp());
+      await tester.pumpWidget(
+        MaterialApp(home: CanvasPracticeScreen(apiService: service)),
+      );
       await tester.pumpAndSettle();
 
       // Tap 'Good' rating button
@@ -143,5 +259,70 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       await tester.pumpAndSettle();
     });
+
+    testWidgets('Model status indicator shows ready when model is downloaded', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final engine = MockDigitalInkEngine(
+        initialDownloadedModels: {'ja': true, 'en': true},
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CanvasPracticeScreen(
+            apiService: service,
+            digitalInkEngine: engine,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Mô hình AI: Sẵn sàng (On-device)'), findsOneWidget);
+    });
+
+    testWidgets(
+      'Offline model indicator shows download button and downloads model upon tap',
+      (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final engine = MockDigitalInkEngine(
+          initialDownloadedModels: {'ja': false, 'en': false},
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: CanvasPracticeScreen(
+              apiService: service,
+              digitalInkEngine: engine,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Verify offline model status and download button
+        expect(find.text('Mô hình AI: Ngoại tuyến'), findsOneWidget);
+        final downloadBtn = find.text('Tải mô hình');
+        expect(downloadBtn, findsOneWidget);
+
+        // Tap download button
+        await tester.tap(downloadBtn);
+        await tester.pumpAndSettle();
+
+        // Status should transition to downloaded / ready
+        expect(find.text('Mô hình AI: Sẵn sàng (On-device)'), findsOneWidget);
+        expect(
+          find.textContaining('Đã tải thành công mô hình'),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }

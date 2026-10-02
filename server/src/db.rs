@@ -201,14 +201,14 @@ pub async fn fetch_lesson_by_id(
 
 /// Fetches a card record by item_id from the database.
 pub async fn fetch_card_by_id(
-    pool: &PgPool,
+    connection: &mut sqlx::PgConnection,
     item_id: &str,
 ) -> Result<Option<FSRSCard>, sqlx::Error> {
     let row = sqlx::query_as::<_, DbFsrsCard>(
         "SELECT item_id, state, stability, difficulty, reps, lapses, last_review, next_review, updated_at FROM fsrs_cards WHERE item_id = $1",
     )
     .bind(item_id)
-    .fetch_optional(pool)
+    .fetch_optional(connection)
     .await?;
 
     Ok(row.map(FSRSCard::from))
@@ -216,21 +216,24 @@ pub async fn fetch_card_by_id(
 
 /// Inserts or updates an FSRS card in PostgreSQL.
 /// Ensures parent lesson exists to maintain foreign key integrity for ad-hoc/custom practice items.
-pub async fn upsert_card(pool: &PgPool, card: &FSRSCard) -> Result<(), sqlx::Error> {
+pub async fn upsert_card(
+    connection: &mut sqlx::PgConnection,
+    card: &FSRSCard,
+) -> Result<(), sqlx::Error> {
     let hints = sqlx::types::Json(Vec::<String>::new());
     sqlx::query(
         r#"
         INSERT INTO lessons (
             id, language, category, target_text, phonetic_or_kana,
             meaning_vi, workplace_context, workplace_context_vi,
-            stroke_order_hints, difficulty_level
-        ) VALUES ($1, 'custom', 'custom', $1, '', 'Custom card', '', '', $2, 1)
+            stroke_order_hints, difficulty_level, created_at
+        ) VALUES ($1, 'custom', 'custom', $1, '', 'Custom card', '', '', $2, 1, clock_timestamp())
         ON CONFLICT (id) DO NOTHING
         "#,
     )
     .bind(&card.item_id)
     .bind(hints)
-    .execute(pool)
+    .execute(&mut *connection)
     .await?;
 
     let state_i16 = card.state as i16;
@@ -239,7 +242,7 @@ pub async fn upsert_card(pool: &PgPool, card: &FSRSCard) -> Result<(), sqlx::Err
         INSERT INTO fsrs_cards (
             item_id, state, stability, difficulty, reps, lapses,
             last_review, next_review, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, clock_timestamp())
         ON CONFLICT (item_id) DO UPDATE SET
             state = EXCLUDED.state,
             stability = EXCLUDED.stability,
@@ -248,7 +251,7 @@ pub async fn upsert_card(pool: &PgPool, card: &FSRSCard) -> Result<(), sqlx::Err
             lapses = EXCLUDED.lapses,
             last_review = EXCLUDED.last_review,
             next_review = EXCLUDED.next_review,
-            updated_at = NOW()
+            updated_at = clock_timestamp()
         "#,
     )
     .bind(&card.item_id)
@@ -259,7 +262,7 @@ pub async fn upsert_card(pool: &PgPool, card: &FSRSCard) -> Result<(), sqlx::Err
     .bind(card.lapses as i32)
     .bind(card.last_review)
     .bind(card.next_review)
-    .execute(pool)
+    .execute(&mut *connection)
     .await?;
 
     Ok(())

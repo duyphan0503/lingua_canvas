@@ -160,6 +160,115 @@ def run_tier4_tests(client: ApiClient) -> int:
     except Exception as e:
         reporter.record_fail("test_english_workplace_session_workflow", f"Unexpected: {e}", time.time() - t0)
 
+    # =========================================================================
+    # SCENARIO 3: Hospitality Worker Japanese Dialogue & Offline Review Sync
+    # =========================================================================
+    t0 = time.time()
+    try:
+        # Step 1: Request Dialogue Generation for Hotel Check-in
+        dialogue_payload = {
+            "target_language": "ja",
+            "profession": "hospitality",
+            "difficulty_level": "beginner",
+            "topic": "hotel_checkin",
+            "turn_count": 5,
+        }
+        d_status, d_body, _ = client.post("/ai/dialogue", data=dialogue_payload)
+        assert d_status == 200, f"Dialogue generation failed: {d_status}: {d_body}"
+        assert d_body.get("profession") == "hospitality"
+        assert d_body.get("difficulty_level") == "beginner"
+        assert len(d_body.get("lines", [])) >= 2, "Expected multiple dialogue lines"
+        assert len(d_body.get("vocabulary", [])) >= 1, "Expected vocabulary list"
+
+        writing_targets = d_body.get("suggested_writing_targets", [])
+        assert len(writing_targets) >= 1, "Expected suggested writing targets for handwriting canvas"
+
+        target_word_1 = writing_targets[0]
+        target_word_2 = writing_targets[1] if len(writing_targets) > 1 else "確認"
+
+        # Step 2: Simulate Offline Canvas Handwriting Practice & Queue Accumulation
+        # Worker practices handwriting offline and records ratings locally
+        offline_time = datetime.now(timezone.utc)
+        card_id_1 = f"ja_hosp_{int(time.time())}_1"
+        card_id_2 = f"ja_hosp_{int(time.time())}_2"
+
+        sync_payload = {
+            "client_id": "hosp_mobile_terminal_01",
+            "reviews": [
+                {
+                    "review_id": f"rev_{card_id_1}",
+                    "item_id": card_id_1,
+                    "rating": 3,  # Good
+                    "review_time": offline_time.isoformat(),
+                    "elapsed_days": 1.0,
+                    "scheduled_days": 3,
+                },
+                {
+                    "review_id": f"rev_{card_id_2}",
+                    "item_id": card_id_2,
+                    "rating": 4,  # Easy
+                    "review_time": offline_time.isoformat(),
+                    "elapsed_days": 1.0,
+                    "scheduled_days": 5,
+                },
+            ],
+            "completed_lessons": [
+                {
+                    "lesson_id": card_id_1,
+                    "completed_at": offline_time.isoformat(),
+                    "score": 0.98,
+                }
+            ],
+        }
+
+        # Step 3: Reconnect to Network & Flush Offline Queue to /sync
+        s_status, s_body, _ = client.post("/sync", data=sync_payload)
+        assert s_status == 200, f"Sync push failed: {s_status}: {s_body}"
+        assert s_body.get("synced_reviews") == 2, f"Expected 2 synced reviews, got {s_body.get('synced_reviews')}"
+        assert s_body.get("synced_lessons") == 1, f"Expected 1 synced lesson, got {s_body.get('synced_lessons')}"
+        assert card_id_1 in s_body.get("synced_completed_lesson_ids", []), (
+            f"Completion for {card_id_1} was not acknowledged: {s_body}"
+        )
+        assert len(s_body.get("updated_cards", [])) == 2
+
+        card1_resp = next((c for c in s_body["updated_cards"] if c["item_id"] == card_id_1), None)
+        card2_resp = next((c for c in s_body["updated_cards"] if c["item_id"] == card_id_2), None)
+        assert card1_resp is not None, f"Card 1 {card_id_1} not returned in sync response"
+        assert card2_resp is not None, f"Card 2 {card_id_2} not returned in sync response"
+
+        assert card1_resp["state"] == "Review"
+        assert card2_resp["state"] == "Review"
+        assert card1_resp["reps"] == 1
+        assert card2_resp["reps"] == 1
+        assert card1_resp["stability"] > 0.0
+        assert card2_resp["stability"] > 0.0
+
+        # Easy rating (4) should yield higher stability / interval than Good rating (3)
+        assert card2_resp["stability"] >= card1_resp["stability"], (
+            f"Easy rating stability ({card2_resp['stability']}) should be >= Good ({card1_resp['stability']})"
+        )
+
+        # Step 4: Verify Multi-Device Pull Synchronization
+        pull_status, pull_body, _ = client.get("/sync/pull", params={"since": "2026-01-01T00:00:00Z"})
+        assert pull_status == 200, f"Sync pull failed: {pull_status}: {pull_body}"
+        pulled_cards = pull_body.get("cards", []) or pull_body.get("updated_cards", [])
+        pulled_ids = [c["item_id"] for c in pulled_cards]
+        assert card_id_1 in pulled_ids, f"Card {card_id_1} missing in delta pull"
+        assert card_id_2 in pulled_ids, f"Card {card_id_2} missing in delta pull"
+
+        # Step 5: Verify Cards are Scheduled into Future and Not in Immediate Due Queue
+        due_status, due_list, _ = client.get("/fsrs/due")
+        assert due_status == 200
+        due_ids = [item["id"] for item in due_list]
+        assert card_id_1 not in due_ids, f"Card {card_id_1} scheduled in future should not be in due list"
+        assert card_id_2 not in due_ids, f"Card {card_id_2} scheduled in future should not be in due list"
+
+        reporter.record_pass("test_hospitality_japanese_learning_and_offline_sync_workflow", time.time() - t0)
+    except AssertionError as e:
+        reporter.record_fail("test_hospitality_japanese_learning_and_offline_sync_workflow", str(e), time.time() - t0)
+    except Exception as e:
+        reporter.record_fail("test_hospitality_japanese_learning_and_offline_sync_workflow", f"Unexpected: {e}", time.time() - t0)
+
     return reporter.print_summary()
 
 

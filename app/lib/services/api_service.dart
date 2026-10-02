@@ -1,13 +1,42 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/lesson_item.dart';
 import 'fsrs_engine.dart';
+import 'local_database.dart';
+import 'sync_coordinator.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://127.0.0.1:8080/api/v1';
+  static const String _configuredBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+  );
+  static final String baseUrl = _configuredBaseUrl.isNotEmpty
+      ? _configuredBaseUrl
+      : (Platform.isAndroid
+            ? 'http://10.0.2.2:8080/api/v1'
+            : 'http://127.0.0.1:8080/api/v1');
 
-  final FSRSEngine _fsrsEngine = FSRSEngine();
+  final FSRSEngine _fsrsEngine;
+  final LocalDatabase _localDb;
+  late final SyncCoordinator _syncCoordinator;
+
+  ApiService({
+    FSRSEngine? fsrsEngine,
+    LocalDatabase? localDb,
+    SyncCoordinator? syncCoordinator,
+  }) : _fsrsEngine = fsrsEngine ?? FSRSEngine(),
+       _localDb = localDb ?? LocalDatabase.instance {
+    _syncCoordinator =
+        syncCoordinator ??
+        SyncCoordinator(
+          localDb: _localDb,
+          fsrsEngine: _fsrsEngine,
+          baseUrl: baseUrl,
+        );
+  }
+
+  SyncCoordinator get syncCoordinator => _syncCoordinator;
+  LocalDatabase get localDatabase => _localDb;
 
   /// Default fallback lessons in case backend is offline
   final List<LessonItem> _fallbackLessons = [
@@ -134,64 +163,36 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        return data.map((json) => LessonItem.fromJson(json)).toList();
+        final fetched = data.map((json) => LessonItem.fromJson(json)).toList();
+        await _localDb.saveLessons(fetched);
+        return fetched;
       }
     } catch (_) {
       // Backend is offline or not reachable, use offline data
     }
 
-    if (language != null) {
-      return _fallbackLessons.where((l) => l.language == language).toList();
-    }
-    return _fallbackLessons;
+    final cached = await _localDb.getLessons(language: language);
+    if (cached.isNotEmpty) return cached;
+    final fallback = language == null
+        ? _fallbackLessons
+        : _fallbackLessons.where((l) => l.language == language).toList();
+    await _localDb.saveLessons(fallback);
+    return fallback;
   }
 
   Future<void> submitReview({
     required String itemId,
     required FSRSRating rating,
   }) async {
-    // 1. Try sync with Rust server
-    try {
-      final uri = Uri.parse('$baseUrl/fsrs/review');
-      await http
-          .post(
-            uri,
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'item_id': itemId, 'rating': rating.index + 1}),
-          )
-          .timeout(const Duration(seconds: 2));
-    } catch (_) {
-      // Offline fallback
-    }
-
-    // 2. Save locally with SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
-    final cardJsonStr = prefs.getString('fsrs_card_$itemId');
-    FSRSCard card;
-    if (cardJsonStr != null) {
-      card = FSRSCard.fromJson(jsonDecode(cardJsonStr));
-    } else {
-      card = FSRSCard.initial(itemId);
-    }
-
-    final updatedCard = _fsrsEngine.review(
-      card,
-      rating,
-      DateTime.now().toUtc(),
-    );
-    await prefs.setString(
-      'fsrs_card_$itemId',
-      jsonEncode(updatedCard.toJson()),
-    );
-
-    // Increment completed handwriting counter
-    final currentCount = prefs.getInt('handwriting_completed_count') ?? 0;
-    await prefs.setInt('handwriting_completed_count', currentCount + 1);
+    await _syncCoordinator.reviewCardOffline(itemId: itemId, rating: rating);
   }
 
   Future<int> getCompletedCount() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt('handwriting_completed_count') ?? 0;
+    return _localDb.getCompletedCount();
+  }
+
+  Future<SyncResult> sync() async {
+    return await _syncCoordinator.synchronize();
   }
 
   Future<Map<String, dynamic>> sendRoleplayMessage({

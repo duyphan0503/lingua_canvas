@@ -1,12 +1,20 @@
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../services/handwriting_recognizer.dart';
 
 /// Interactive touch/pen canvas for handwriting practice.
-/// Uses CustomPaint and GestureDetector to capture and render smooth strokes.
+///
+/// Features:
+/// - 3-point moving average smoothing to eliminate sensor jitter
+/// - Dynamic velocity-dependent stroke width tapering for Japanese/English calligraphy
+/// - 750ms debounced recognition callback on finger lift
 class HandwritingCanvas extends StatefulWidget {
   final List<HandwritingStroke> strokes;
   final ValueChanged<List<HandwritingStroke>> onStrokesChanged;
   final VoidCallback? onStrokeCompleted;
+  final VoidCallback? onDebouncedEvaluation;
+  final Duration debounceDuration;
   final String? watermarkText;
   final Color strokeColor;
   final double strokeWidth;
@@ -17,6 +25,8 @@ class HandwritingCanvas extends StatefulWidget {
     required this.strokes,
     required this.onStrokesChanged,
     this.onStrokeCompleted,
+    this.onDebouncedEvaluation,
+    this.debounceDuration = const Duration(milliseconds: 750),
     this.watermarkText,
     this.strokeColor = const Color(0xFF38BDF8),
     this.strokeWidth = 4.5,
@@ -29,9 +39,42 @@ class HandwritingCanvas extends StatefulWidget {
 
 class _HandwritingCanvasState extends State<HandwritingCanvas> {
   HandwritingStroke? _currentStroke;
+  Timer? _debounceTimer;
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
+
+  /// Applies a 3-point moving average filter:
+  /// P_i' = 0.25 * P_{i-1} + 0.50 * P_i + 0.25 * P_{i+1}
+  static List<StrokePoint> smoothPoints(List<StrokePoint> raw) {
+    if (raw.length <= 2) return List.from(raw);
+    final smoothed = <StrokePoint>[raw.first];
+
+    for (int i = 1; i < raw.length - 1; i++) {
+      final prev = raw[i - 1];
+      final curr = raw[i];
+      final next = raw[i + 1];
+
+      smoothed.add(
+        StrokePoint(
+          x: 0.25 * prev.x + 0.50 * curr.x + 0.25 * next.x,
+          y: 0.25 * prev.y + 0.50 * curr.y + 0.25 * next.y,
+          timestamp: curr.timestamp,
+        ),
+      );
+    }
+
+    smoothed.add(raw.last);
+    return smoothed;
+  }
 
   void _onPointerDown(PointerDownEvent event) {
     if (widget.isReadOnly) return;
+    _debounceTimer?.cancel();
+
     final initialPoint = StrokePoint(
       x: event.localPosition.dx,
       y: event.localPosition.dy,
@@ -52,6 +95,7 @@ class _HandwritingCanvasState extends State<HandwritingCanvas> {
 
   void _onPointerMove(PointerMoveEvent event) {
     if (widget.isReadOnly || _currentStroke == null) return;
+
     final newPoint = StrokePoint(
       x: event.localPosition.dx,
       y: event.localPosition.dy,
@@ -59,6 +103,7 @@ class _HandwritingCanvasState extends State<HandwritingCanvas> {
     );
 
     _currentStroke!.points.add(newPoint);
+
     if (!widget.strokes.contains(_currentStroke)) {
       final updated = List<HandwritingStroke>.from(widget.strokes)
         ..add(_currentStroke!);
@@ -70,15 +115,37 @@ class _HandwritingCanvasState extends State<HandwritingCanvas> {
 
   void _onPointerUp(PointerUpEvent event) {
     if (widget.isReadOnly) return;
+
     if (_currentStroke != null) {
-      if (!widget.strokes.contains(_currentStroke)) {
-        final updated = List<HandwritingStroke>.from(widget.strokes)
-          ..add(_currentStroke!);
-        widget.onStrokesChanged(updated);
+      // Apply 3-point moving average smoothing to the completed stroke
+      final smoothedPoints = smoothPoints(_currentStroke!.points);
+      final smoothedStroke = HandwritingStroke(
+        points: smoothedPoints,
+        color: _currentStroke!.color,
+        strokeWidth: _currentStroke!.strokeWidth,
+      );
+
+      final updated = List<HandwritingStroke>.from(widget.strokes);
+      final existingIndex = updated.indexOf(_currentStroke!);
+      if (existingIndex >= 0) {
+        updated[existingIndex] = smoothedStroke;
+      } else {
+        updated.add(smoothedStroke);
       }
+
+      widget.onStrokesChanged(updated);
       _currentStroke = null;
     }
+
     widget.onStrokeCompleted?.call();
+
+    // Trigger debounced evaluation after finger lift
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(widget.debounceDuration, () {
+      if (mounted) {
+        widget.onDebouncedEvaluation?.call();
+      }
+    });
   }
 
   @override
@@ -118,7 +185,7 @@ class _CanvasPainter extends CustomPainter {
       _drawWatermark(canvas, size, watermarkText!);
     }
 
-    // 3. Render strokes with smooth quadratic bezier curves
+    // 3. Render strokes with velocity-dependent width tapering and quadratic Bézier
     for (final stroke in strokes) {
       _drawSmoothStroke(canvas, stroke);
     }
@@ -203,46 +270,90 @@ class _CanvasPainter extends CustomPainter {
   }
 
   void _drawSmoothStroke(Canvas canvas, HandwritingStroke stroke) {
-    if (stroke.points.isEmpty) return;
-
-    final paint = Paint()
-      ..color = stroke.color
-      ..strokeWidth = stroke.strokeWidth
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..isAntiAlias = true
-      ..style = PaintingStyle.stroke;
-
     final points = stroke.points;
+    if (points.isEmpty) return;
+
+    final baseWidth = stroke.strokeWidth;
+
     if (points.length == 1) {
+      final dotPaint = Paint()
+        ..color = stroke.color
+        ..style = PaintingStyle.fill
+        ..isAntiAlias = true;
       canvas.drawCircle(
         Offset(points[0].x, points[0].y),
-        stroke.strokeWidth / 2,
-        paint..style = PaintingStyle.fill,
+        baseWidth / 2,
+        dotPaint,
       );
       return;
     }
 
     if (points.length == 2) {
-      canvas.drawLine(
-        Offset(points[0].x, points[0].y),
-        Offset(points[1].x, points[1].y),
-        paint,
+      final p0 = points[0];
+      final p1 = points[1];
+      final dt = max((p1.timestamp - p0.timestamp).abs(), 1);
+      final dist = sqrt(pow(p1.x - p0.x, 2) + pow(p1.y - p0.y, 2));
+      final velocity = dist / dt;
+      final vNorm = (velocity / 2.0).clamp(0.0, 1.0);
+      final width = (baseWidth * (1.0 - 0.4 * vNorm)).clamp(
+        0.6 * baseWidth,
+        1.3 * baseWidth,
       );
+
+      final linePaint = Paint()
+        ..color = stroke.color
+        ..strokeWidth = width
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..style = PaintingStyle.stroke
+        ..isAntiAlias = true;
+
+      canvas.drawLine(Offset(p0.x, p0.y), Offset(p1.x, p1.y), linePaint);
       return;
     }
 
-    final path = Path();
-    path.moveTo(points[0].x, points[0].y);
-
+    // Multiple points: draw segments with velocity-tapered width and Bézier curves
     for (int i = 1; i < points.length - 1; i++) {
-      final midX = (points[i].x + points[i + 1].x) / 2;
-      final midY = (points[i].y + points[i + 1].y) / 2;
-      path.quadraticBezierTo(points[i].x, points[i].y, midX, midY);
-    }
+      final p0 = points[i - 1];
+      final p1 = points[i];
+      final p2 = points[i + 1];
 
-    path.lineTo(points.last.x, points.last.y);
-    canvas.drawPath(path, paint);
+      final mid1X = (p0.x + p1.x) / 2;
+      final mid1Y = (p0.y + p1.y) / 2;
+      final mid2X = (p1.x + p2.x) / 2;
+      final mid2Y = (p1.y + p2.y) / 2;
+
+      // Velocity-dependent tapering
+      final dt = max((p1.timestamp - p0.timestamp).abs(), 1);
+      final dist = sqrt(pow(p1.x - p0.x, 2) + pow(p1.y - p0.y, 2));
+      final velocity = dist / dt;
+      final vNorm = (velocity / 2.0).clamp(0.0, 1.0);
+      final segmentWidth = (baseWidth * (1.0 - 0.4 * vNorm)).clamp(
+        0.6 * baseWidth,
+        1.3 * baseWidth,
+      );
+
+      final segPaint = Paint()
+        ..color = stroke.color
+        ..strokeWidth = segmentWidth
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..style = PaintingStyle.stroke
+        ..isAntiAlias = true;
+
+      final segPath = Path();
+      if (i == 1) {
+        segPath.moveTo(p0.x, p0.y);
+        segPath.quadraticBezierTo(p1.x, p1.y, mid2X, mid2Y);
+      } else if (i == points.length - 2) {
+        segPath.moveTo(mid1X, mid1Y);
+        segPath.quadraticBezierTo(p1.x, p1.y, p2.x, p2.y);
+      } else {
+        segPath.moveTo(mid1X, mid1Y);
+        segPath.quadraticBezierTo(p1.x, p1.y, mid2X, mid2Y);
+      }
+      canvas.drawPath(segPath, segPaint);
+    }
   }
 
   @override

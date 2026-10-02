@@ -13,7 +13,7 @@ import os
 import subprocess
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Add tests/e2e directory to python path
@@ -316,6 +316,128 @@ def run_tier1_tests(client: ApiClient) -> int:
         reporter.record_fail("test_api_ai_roleplay", str(e), time.time() - t0)
     except Exception as e:
         reporter.record_fail("test_api_ai_roleplay", f"Unexpected: {e}", time.time() - t0)
+
+    # -------------------------------------------------------------------------
+    # 13. REST API: /ai/dialogue (Curriculum Dialogue Generation)
+    # -------------------------------------------------------------------------
+    t0 = time.time()
+    try:
+        # Japanese IT Standup Dialogue
+        payload_ja = {
+            "target_language": "ja",
+            "profession": "it",
+            "difficulty_level": "beginner",
+            "topic": "daily_standup",
+            "turn_count": 4,
+        }
+        status, body_ja, _ = client.post("/ai/dialogue", data=payload_ja)
+        assert status == 200, f"Expected 200 for ja /ai/dialogue, got {status}: {body_ja}"
+        assert isinstance(body_ja, dict), f"Expected dict body, got {type(body_ja)}"
+        assert body_ja.get("profession") == "it", f"Expected profession it, got {body_ja.get('profession')}"
+        assert body_ja.get("difficulty_level") == "beginner"
+        assert "title" in body_ja and len(body_ja["title"]) > 0, "Missing or empty 'title'"
+        assert "title_vi" in body_ja and len(body_ja["title_vi"]) > 0, "Missing 'title_vi'"
+        assert "lines" in body_ja and isinstance(body_ja["lines"], list), "Missing or invalid 'lines'"
+        assert len(body_ja["lines"]) >= 2, f"Expected at least 2 lines, got {len(body_ja['lines'])}"
+
+        first_line = body_ja["lines"][0]
+        for field in ["speaker", "text", "translation_vi", "phonetic_or_romaji"]:
+            assert field in first_line and len(str(first_line[field])) > 0, f"Line missing field '{field}': {first_line}"
+
+        assert "vocabulary" in body_ja and isinstance(body_ja["vocabulary"], list) and len(body_ja["vocabulary"]) > 0
+        vocab0 = body_ja["vocabulary"][0]
+        for field in ["word", "meaning_vi", "kana_or_phonetic"]:
+            assert field in vocab0 and len(str(vocab0[field])) > 0, f"Vocab item missing field '{field}': {vocab0}"
+
+        assert "grammar_hints" in body_ja and isinstance(body_ja["grammar_hints"], list) and len(body_ja["grammar_hints"]) > 0
+        hint0 = body_ja["grammar_hints"][0]
+        for field in ["pattern", "explanation_vi", "example"]:
+            assert field in hint0 and len(str(hint0[field])) > 0, f"Grammar hint missing field '{field}': {hint0}"
+
+        assert "suggested_writing_targets" in body_ja and isinstance(body_ja["suggested_writing_targets"], list)
+        assert len(body_ja["suggested_writing_targets"]) > 0, "Expected non-empty suggested_writing_targets"
+
+        # English Hospitality Dialogue
+        payload_en = {
+            "target_language": "en",
+            "profession": "hospitality",
+            "difficulty_level": "intermediate",
+            "topic": "hotel_guest_services",
+            "turn_count": 4,
+        }
+        status_en, body_en, _ = client.post("/ai/dialogue", data=payload_en)
+        assert status_en == 200, f"Expected 200 for en /ai/dialogue, got {status_en}: {body_en}"
+        assert body_en.get("profession") == "hospitality"
+        assert len(body_en.get("lines", [])) >= 2
+
+        reporter.record_pass("test_api_ai_dialogue_schema", time.time() - t0)
+    except AssertionError as e:
+        reporter.record_fail("test_api_ai_dialogue_schema", str(e), time.time() - t0)
+    except Exception as e:
+        reporter.record_fail("test_api_ai_dialogue_schema", f"Unexpected: {e}", time.time() - t0)
+
+    # -------------------------------------------------------------------------
+    # 14. REST API: /sync & /sync/pull (Offline Synchronization Schema)
+    # -------------------------------------------------------------------------
+    t0 = time.time()
+    try:
+        now_iso = datetime.now(timezone.utc).isoformat()
+        sync_push_payload = {
+            "client_id": "tier1_tester_client",
+            "reviews": [
+                {
+                    "review_id": "tier1_rev_001",
+                    "item_id": "ja_hira_a",
+                    "rating": 3,
+                    "review_time": now_iso,
+                    "elapsed_days": 1.0,
+                    "scheduled_days": 3,
+                }
+            ],
+            "completed_lessons": [
+                {
+                    "lesson_id": "ja_hira_a",
+                    "completed_at": now_iso,
+                    "score": 0.95,
+                }
+            ],
+        }
+
+        # 14a: POST /sync
+        status_push, push_resp, _ = client.post("/sync", data=sync_push_payload)
+        assert status_push == 200, f"Expected 200 for POST /sync, got {status_push}: {push_resp}"
+        assert isinstance(push_resp, dict), f"Expected dict body, got {type(push_resp)}"
+        assert push_resp.get("synced_reviews") == 1, f"Expected 1 synced review, got {push_resp.get('synced_reviews')}"
+        assert push_resp.get("synced_lessons") == 1, f"Expected 1 synced lesson, got {push_resp.get('synced_lessons')}"
+        assert "tier1_rev_001" in push_resp.get("synced_review_ids", []), "Missing tier1_rev_001 in synced_review_ids"
+        assert "ja_hira_a" in push_resp.get("synced_completed_lesson_ids", []), "Missing ja_hira_a in synced_completed_lesson_ids"
+        assert "updated_cards" in push_resp and len(push_resp["updated_cards"]) >= 1, "Missing updated_cards"
+
+        synced_card = push_resp["updated_cards"][0]
+        card_required_fields = [
+            "item_id", "state", "stability", "difficulty", "reps", "lapses",
+            "last_review", "next_review", "updated_at"
+        ]
+        for f in card_required_fields:
+            assert f in synced_card, f"Updated card missing field '{f}': {synced_card}"
+
+        assert synced_card["item_id"] == "ja_hira_a"
+        assert synced_card["reps"] >= 1
+        assert "timestamp" in push_resp and "server_time" in push_resp
+
+        # 14b: GET /sync/pull
+        status_pull, pull_resp, _ = client.get("/sync/pull", params={"since": "2026-01-01T00:00:00Z"})
+        assert status_pull == 200, f"Expected 200 for GET /sync/pull, got {status_pull}: {pull_resp}"
+        assert isinstance(pull_resp, dict), f"Expected dict body, got {type(pull_resp)}"
+        assert "cards" in pull_resp or "updated_cards" in pull_resp, "Missing cards array in pull response"
+        assert "lessons" in pull_resp or "new_lessons" in pull_resp, "Missing lessons array in pull response"
+        assert "server_time" in pull_resp, "Missing server_time in pull response"
+
+        reporter.record_pass("test_api_sync_endpoints_schema", time.time() - t0)
+    except AssertionError as e:
+        reporter.record_fail("test_api_sync_endpoints_schema", str(e), time.time() - t0)
+    except Exception as e:
+        reporter.record_fail("test_api_sync_endpoints_schema", f"Unexpected: {e}", time.time() - t0)
 
     return reporter.print_summary()
 

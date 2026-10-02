@@ -14,12 +14,20 @@ use tokio::sync::RwLock;
 use crate::ai::AIService;
 use crate::db;
 use crate::fsrs::{FSRSCard, Rating, FSRS};
-use crate::models::{LessonItem, ReviewRequest, ReviewResponse, RoleplayRequest};
+use crate::models::{
+    DialogueRequest, DialogueResponse, LessonItem, ReviewRequest, ReviewResponse, RoleplayRequest,
+    RoleplayResponse,
+};
+
+pub mod sync;
+pub use sync::{pull_sync, push_sync};
 
 #[derive(Clone)]
 pub struct AppState {
     pub lessons: Vec<LessonItem>,
     pub cards: Arc<RwLock<HashMap<String, FSRSCard>>>,
+    pub seen_review_ids: Arc<RwLock<HashMap<String, String>>>,
+    pub card_updated_at: Arc<RwLock<HashMap<String, chrono::DateTime<Utc>>>>,
     pub fsrs: Arc<FSRS>,
     pub ai: Arc<AIService>,
     pub pool: Option<PgPool>,
@@ -109,17 +117,32 @@ pub async fn submit_review(
         _ => return Err(StatusCode::BAD_REQUEST),
     };
 
-    let mut existing_card = None;
-
-    if let Some(ref pool) = state.pool {
-        match db::fetch_card_by_id(pool, &req.item_id).await {
-            Ok(card_opt) => existing_card = card_opt,
-            Err(e) => tracing::warn!(
-                "DB error in fetch_card_by_id: {}. Falling back to in-memory.",
-                e
-            ),
-        }
-    }
+    let mut transaction = if let Some(ref pool) = state.pool {
+        let mut tx = pool
+            .begin()
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        sqlx::query("SELECT pg_advisory_xact_lock(0, 1)")
+            .execute(&mut *tx)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        sqlx::query("SELECT pg_advisory_xact_lock(2, hashtext($1))")
+            .bind(&req.item_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        Some(tx)
+    } else {
+        None
+    };
+    let existing_card = if let Some(ref mut tx) = transaction {
+        db::fetch_card_by_id(tx, &req.item_id).await.map_err(|e| {
+            tracing::warn!("Failed to fetch FSRS card: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+    } else {
+        None
+    };
 
     let mut cards = state.cards.write().await;
     let card = match existing_card {
@@ -144,12 +167,24 @@ pub async fn submit_review(
         interval_days,
     };
 
-    if let Some(ref pool) = state.pool {
-        if let Err(e) = db::upsert_card(pool, &updated).await {
+    if let Some(ref mut tx) = transaction {
+        db::upsert_card(tx, &updated).await.map_err(|e| {
             tracing::warn!("Failed to persist FSRS card in DB: {}", e);
-        }
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+    }
+    if let Some(tx) = transaction {
+        tx.commit().await.map_err(|e| {
+            tracing::warn!("Failed to commit FSRS card: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
     }
 
+    state
+        .card_updated_at
+        .write()
+        .await
+        .insert(req.item_id.clone(), now);
     cards.insert(req.item_id, updated);
 
     Ok(Json(response))
@@ -210,7 +245,37 @@ pub async fn get_due_reviews(State(state): State<AppState>) -> impl IntoResponse
 pub async fn roleplay_chat(
     State(state): State<AppState>,
     Json(req): Json<RoleplayRequest>,
-) -> impl IntoResponse {
-    let response = state.ai.generate_roleplay(&req).await;
-    (StatusCode::OK, Json(response))
+) -> Result<(StatusCode, Json<RoleplayResponse>), (StatusCode, Json<serde_json::Value>)> {
+    match state.ai.generate_roleplay(&req).await {
+        Ok(response) => Ok((StatusCode::OK, Json(response))),
+        Err(e) => {
+            tracing::error!("Roleplay generation failed: {}", e);
+            Err((
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(serde_json::json!({
+                    "error": e.to_string(),
+                    "code": "AI_SERVICE_UNAVAILABLE"
+                })),
+            ))
+        }
+    }
+}
+
+pub async fn generate_dialogue(
+    State(state): State<AppState>,
+    Json(req): Json<DialogueRequest>,
+) -> Result<(StatusCode, Json<DialogueResponse>), (StatusCode, Json<serde_json::Value>)> {
+    match state.ai.generate_dialogue(&req).await {
+        Ok(response) => Ok((StatusCode::OK, Json(response))),
+        Err(e) => {
+            tracing::error!("Dialogue generation failed: {}", e);
+            Err((
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(serde_json::json!({
+                    "error": e.to_string(),
+                    "code": "AI_SERVICE_UNAVAILABLE"
+                })),
+            ))
+        }
+    }
 }

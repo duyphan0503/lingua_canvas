@@ -1,22 +1,42 @@
+import 'dart:async';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../models/lesson_item.dart';
 import '../services/api_service.dart';
+import '../services/digital_ink_engine.dart';
 import '../services/fsrs_engine.dart';
 import '../services/handwriting_recognizer.dart';
 import '../widgets/handwriting_canvas.dart';
 
 /// Main interactive Canvas Practice Screen for IT workplace Japanese and English.
+///
+/// Refined with:
+/// - Google ML Kit Digital Ink recognition model status & download manager
+/// - Smooth velocity-tapered handwriting canvas
+/// - Real-time 750ms debounced recognition feedback and multi-tier scoring
 class CanvasPracticeScreen extends StatefulWidget {
   final ApiService? apiService;
+  final DigitalInkEngine? digitalInkEngine;
+  final HandwritingRecognizer? recognizer;
 
-  const CanvasPracticeScreen({super.key, this.apiService});
+  const CanvasPracticeScreen({
+    super.key,
+    this.apiService,
+    this.digitalInkEngine,
+    this.recognizer,
+  });
 
   @override
   State<CanvasPracticeScreen> createState() => _CanvasPracticeScreenState();
 }
 
-class _CanvasPracticeScreenState extends State<CanvasPracticeScreen> {
+class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
+    with WidgetsBindingObserver {
   late final ApiService _apiService;
+  late final DigitalInkEngine _digitalInkEngine;
+  late final HandwritingRecognizer _recognizer;
+
   List<LessonItem> _allLessons = [];
   List<LessonItem> _filteredLessons = [];
   int _currentIndex = 0;
@@ -30,11 +50,94 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen> {
   bool _showHints = true;
   String? _statusNotification;
 
+  // ML Kit model management state
+  bool _isCheckingModel = true;
+  bool _isDownloadingModel = false;
+  bool _isModelDownloaded = false;
+  bool _isRecognizing = false;
+  bool _syncInProgress = false;
+  Timer? _syncTimer;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _startSyncTimer();
     _apiService = widget.apiService ?? ApiService();
+    _digitalInkEngine =
+        widget.digitalInkEngine ??
+        (!kIsWeb && (Platform.isAndroid || Platform.isIOS)
+            ? MlKitDigitalInkEngine()
+            : MockDigitalInkEngine());
+    _recognizer =
+        widget.recognizer ?? HandwritingRecognizer(engine: _digitalInkEngine);
     _loadInitialData();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _syncTimer?.cancel();
+    // Only dispose if we created the default engine
+    if (widget.digitalInkEngine == null) {
+      _digitalInkEngine.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _startSyncTimer();
+      _syncInBackground();
+    } else if (state == AppLifecycleState.paused) {
+      _syncTimer?.cancel();
+      _syncTimer = null;
+    }
+  }
+
+  void _startSyncTimer() {
+    _syncTimer?.cancel();
+    _syncTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _syncInBackground(),
+    );
+  }
+
+  Future<void> _syncInBackground() async {
+    if (_syncInProgress) return;
+    _syncInProgress = true;
+    try {
+      final result = await _apiService.sync();
+      if (!result.success || !mounted) return;
+      if (result.pulledLessons == 0) return;
+      final lessons = await _apiService.getLessons();
+      final count = await _apiService.getCompletedCount();
+      if (!mounted) return;
+      final currentLessonId = _currentLesson?.id;
+      setState(() {
+        _allLessons = lessons;
+        _completedCount = count;
+        _filteredLessons = _selectedLanguage == 'all'
+            ? List.from(_allLessons)
+            : _allLessons
+                  .where((lesson) => lesson.language == _selectedLanguage)
+                  .toList();
+        final retainedIndex = _filteredLessons.indexWhere(
+          (lesson) => lesson.id == currentLessonId,
+        );
+        if (retainedIndex >= 0) {
+          _currentIndex = retainedIndex;
+        } else {
+          _currentIndex = 0;
+          _clearCanvas();
+        }
+      });
+    } catch (_) {
+      // Local lessons and queued reviews remain available until the next attempt.
+    } finally {
+      _syncInProgress = false;
+    }
   }
 
   Future<void> _loadInitialData() async {
@@ -49,6 +152,9 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen> {
       _filterLessons();
       _isLoading = false;
     });
+
+    await _checkModelStatus();
+    _syncInBackground();
   }
 
   void _filterLessons() {
@@ -63,12 +169,42 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen> {
     _clearCanvas();
   }
 
+  Future<void> _checkModelStatus() async {
+    final lang = _currentLesson?.language ?? 'ja';
+    if (!mounted) return;
+    setState(() => _isCheckingModel = true);
+
+    final downloaded = await _digitalInkEngine.isModelDownloaded(lang);
+    if (!mounted) return;
+    setState(() {
+      _isModelDownloaded = downloaded;
+      _isCheckingModel = false;
+    });
+  }
+
+  Future<void> _downloadModel() async {
+    final lang = _currentLesson?.language ?? 'ja';
+    if (!mounted) return;
+    setState(() => _isDownloadingModel = true);
+
+    final success = await _digitalInkEngine.downloadModel(lang);
+    if (!mounted) return;
+    setState(() {
+      _isDownloadingModel = false;
+      _isModelDownloaded = success;
+      _statusNotification = success
+          ? 'Đã tải thành công mô hình Digital Ink ($lang)!'
+          : 'Không thể tải mô hình. Sử dụng chế độ ngoại tuyến.';
+    });
+  }
+
   void _onLanguageSelected(String lang) {
     if (_selectedLanguage == lang) return;
     setState(() {
       _selectedLanguage = lang;
       _filterLessons();
     });
+    _checkModelStatus();
   }
 
   LessonItem? get _currentLesson {
@@ -83,21 +219,28 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen> {
       _strokes = [];
       _recognitionResult = null;
       _statusNotification = null;
+      _isRecognizing = false;
     });
   }
 
-  void _evaluateHandwriting() {
+  Future<void> _evaluateHandwriting() async {
     final lesson = _currentLesson;
     if (lesson == null) return;
+    if (_strokes.isEmpty) return;
 
-    final result = HandwritingRecognizer.evaluate(
+    setState(() => _isRecognizing = true);
+
+    final result = await _recognizer.evaluate(
       strokes: _strokes,
       targetText: lesson.targetText,
       strokeOrderHints: lesson.strokeOrderHints,
+      languageTag: lesson.language,
     );
 
+    if (!mounted) return;
     setState(() {
       _recognitionResult = result;
+      _isRecognizing = false;
     });
   }
 
@@ -136,6 +279,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen> {
           _filteredLessons.length;
       _clearCanvas();
     });
+    _checkModelStatus();
   }
 
   void _goToNextLesson() {
@@ -144,6 +288,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen> {
       _currentIndex = (_currentIndex + 1) % _filteredLessons.length;
       _clearCanvas();
     });
+    _checkModelStatus();
   }
 
   @override
@@ -241,7 +386,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen> {
                   _buildLessonInfoCard(lesson),
                   const SizedBox(height: 12),
 
-                  // Interactive Drawing Canvas Container
+                  // Interactive Drawing Canvas Container with Model Status
                   _buildCanvasSection(lesson),
                   const SizedBox(height: 12),
 
@@ -518,6 +663,102 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen> {
     );
   }
 
+  Widget _buildModelStatusIndicator(String lang) {
+    if (_isCheckingModel) {
+      return const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 12,
+            height: 12,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Color(0xFF818CF8),
+            ),
+          ),
+          SizedBox(width: 6),
+          Text(
+            'Đang kiểm tra mô hình AI...',
+            style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+          ),
+        ],
+      );
+    }
+
+    if (_isDownloadingModel) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(
+            width: 12,
+            height: 12,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Color(0xFF38BDF8),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            'Đang tải mô hình ($lang)...',
+            style: const TextStyle(fontSize: 11, color: Color(0xFF38BDF8)),
+          ),
+        ],
+      );
+    }
+
+    if (_isModelDownloaded) {
+      return const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.cloud_done_rounded, size: 14, color: Color(0xFF10B981)),
+          SizedBox(width: 4),
+          Text(
+            'Mô hình AI: Sẵn sàng (On-device)',
+            style: TextStyle(
+              fontSize: 11,
+              color: Color(0xFF10B981),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Offline / Not yet downloaded
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.cloud_off_rounded, size: 14, color: Color(0xFFF59E0B)),
+        const SizedBox(width: 4),
+        const Text(
+          'Mô hình AI: Ngoại tuyến',
+          style: TextStyle(fontSize: 11, color: Color(0xFFF59E0B)),
+        ),
+        const SizedBox(width: 8),
+        InkWell(
+          onTap: _downloadModel,
+          borderRadius: BorderRadius.circular(4),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: const Color(0x334F46E5),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: const Color(0xFF6366F1), width: 0.8),
+            ),
+            child: const Text(
+              'Tải mô hình',
+              style: TextStyle(
+                fontSize: 10,
+                color: Color(0xFF818CF8),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildCanvasSection(LessonItem lesson) {
     return Container(
       decoration: BoxDecoration(
@@ -589,6 +830,33 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen> {
             ),
           ),
 
+          // Model status sub-bar
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+            color: const Color(0xFF0F172A),
+            child: Row(
+              children: [
+                _buildModelStatusIndicator(lesson.language),
+                const Spacer(),
+                if (_isRecognizing) ...[
+                  const SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFF38BDF8),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Text(
+                    'Đang nhận diện...',
+                    style: TextStyle(fontSize: 11, color: Color(0xFF38BDF8)),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
           // Handwriting canvas area (Height 280)
           SizedBox(
             height: 280,
@@ -600,6 +868,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen> {
                 setState(() => _strokes = newStrokes);
               },
               onStrokeCompleted: _evaluateHandwriting,
+              onDebouncedEvaluation: _evaluateHandwriting,
             ),
           ),
         ],
