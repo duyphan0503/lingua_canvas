@@ -147,7 +147,7 @@ The test runner handles the Axum backend process automatically:
 | **Flutter Tests** | 100% pass (82/82) | `flutter test` verified in Tier 1 |
 | **Backend Tests** | 100% pass (38/38) | `TEST_DATABASE_URL=... cargo test --all-targets` in `server/` |
 | **Backend Lints** | 0 warnings, 0 errors | `cargo clippy --all-targets -- -D warnings` |
-| **Security Hygiene** | Required `.gitignore` exclusions | Tier 1 checks exclusions; a full secret audit has not been run |
+| **Security Hygiene** | Required `.gitignore` exclusions; no Gitleaks findings | Tier 1 checks exclusions; Gitleaks history/current source scans are recorded in `TEST_READY.md` |
 | **Sync Conflict Resolution** | Last-Write-Wins (LWW) | Validated in Tier 3 cross-feature test |
 | **Clock Skew Safety** | Clamped to <= 5 min future | Validated in Tier 2 boundary test |
 | **FSRS Difficulty** | Clamped in [1.0, 10.0] | Validated in Tier 3 under extreme ratings |

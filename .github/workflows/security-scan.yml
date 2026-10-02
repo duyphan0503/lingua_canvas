@@ -44,7 +44,7 @@ jobs:
       - name: Audit Backend Dependencies (cargo-audit)
         run: |
           which cargo-audit || cargo install cargo-audit --locked
-          cd server && cargo audit || echo "Rust dependency audit check evaluated"
+          cd server && cargo audit
 
       - name: Set up Flutter SDK
         uses: subosito/flutter-action@v2

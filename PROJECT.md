@@ -65,7 +65,7 @@ Every feature from the Survey phase and user requirements is cataloged and assig
 | M1 | Backend Local AI Integration | Rust Axum Ollama/Llama.cpp connector, roleplay/dialogue endpoints, fallbacks, tests | M0 | DONE (automated verification) |
 | M2 | Mobile ML Kit & Smooth Canvas | Digital Ink model manager, smoothing, scoring, headless mock engine, widget tests | M0 | DONE (implementation and automated tests; device checks pending) |
 | M3 | Offline Storage & Bidirectional Sync | SQLite local tables, FSRS offline review, PostgreSQL sync routes, LWW conflict resolution | M1, M2 | DONE (SQLite and PostgreSQL verified) |
-| M4 | Comprehensive E2E Tests & Remote Sync | 100% test pass across server/app/e2e, GitNexus update, secure commit & push | M3 | LOCAL_VERIFIED; remote integration pending |
+| M4 | Comprehensive E2E Tests & Remote Sync | 100% test pass across server/app/e2e, GitNexus update, secure commit & push | M3 | LOCAL_TESTS_VERIFIED; dependency audit clearance and remote integration pending |
 
 ## Continuation Verification — 2026-10-02
 
@@ -80,7 +80,11 @@ Reviews now persist locally before network work. Sync retries on startup, resume
 
 Server reviews and logs commit together; failed DB writes return errors, and retries remain idempotent. PostgreSQL mutations and pulls share an advisory lock with receipt timestamps to keep the timestamp cursor consistent. This serializes operations; higher throughput would require a different cursor design. Memory fallback remains process-local.
 
-Remaining validation: build and run on Android/iOS, download and recognize with native ML Kit, exercise airplane-mode recovery on a device, and check a real Ollama/Llama.cpp deployment. iOS configuration requires 15.5; its native build needs macOS/Xcode. Remote push/PR integration is the remaining M4 step. See `TEST_READY.md` for reproducible commands and verification scope.
+Remaining validation: install/run the Android build on a device, build/run on iOS, download and recognize with native ML Kit, exercise airplane-mode recovery on a device, and check a real Ollama/Llama.cpp deployment. iOS configuration requires 15.5; its native build needs macOS/Xcode. Dependency audit clearance and remote push/PR integration are remaining M4 steps. See `TEST_READY.md` for reproducible commands and verification scope.
+
+Further continuation: Gitleaks scanned the five-commit history and current source without findings. The security workflow now fails on cargo-audit errors. `quinn-proto` was updated to 0.11.15; the unpatched `rsa` advisory remains in optional SQLx lock dependencies, although it is inactive with current features on all targets. The audit still fails and has not been suppressed. All 38 Rust tests passed again with PostgreSQL after the lockfile patch. Device and live-provider procedures are prepared in `DEVICE_VALIDATION.md`; no device or real AI provider is currently available on this host.
+
+Android debug compilation is now verified: `app/build/app/outputs/flutter-apk/app-debug.apk` was produced using an isolated Android SDK 36 and passed ZIP/checksum checks. Device installation and native recognition accuracy are still pending. Build-only SDK/cache copies were cleaned up and the original local configuration restored.
 
 ## Interface Contracts
 

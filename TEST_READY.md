@@ -1,6 +1,6 @@
 # Lingua Canvas verification record
 
-Date: 2026-10-02. Local implementation and automated verification are complete; native device checks and remote integration remain pending.
+Date: 2026-10-02. Implementation and functional automated checks are verified; native device checks, live-provider inference, dependency audit clearance and remote integration remain pending.
 
 ## Verified results
 
@@ -16,8 +16,11 @@ Date: 2026-10-02. Local implementation and automated verification are complete; 
 | E2E runner lifecycle unit tests | 3 passed |
 | Live Flutter SQLite → Rust HTTP → PostgreSQL smoke | 1 passed |
 | iOS 15.5 configuration consistency and whitespace checks | Passed |
-| Android debug APK build | Blocked by missing Android SDK platforms/build-tools and uncached Gradle dependencies |
-| GitNexus full change analysis | Complete without partial/truncated flags; aggregate risk CRITICAL |
+| Android debug APK build | Passed with isolated SDK 36; device installation untested |
+| Gen 2 GitNexus full change analysis | Complete without partial/truncated flags; aggregate risk CRITICAL |
+| Gitleaks 8.30.1 | No findings in five-commit history and a current source snapshot |
+| cargo-audit 0.22.2 after dependency patch | One unpatched optional-lockfile advisory remains: RUSTSEC-2023-0071 (`rsa` 0.9.10) |
+| Security workflow audit failure propagation | YAML parsed; simulated audit exit 7 fails the step |
 
 The live Flutter smoke saved one offline review, synchronized its actual payload, confirmed a persisted server card with one FSRS repetition, cleared the local queue, and repeated sync without advancing the card again.
 
@@ -61,10 +64,14 @@ API_BASE_URL=http://127.0.0.1:18080/api/v1 python3 -B tests/adversarial_challeng
 
 Flutter tests use SQLite FFI and injected HTTP/recognition engines; native ML Kit recognition is not exercised on Linux. The AI fixture suite uses controlled local HTTP providers, while the four E2E tiers exercised offline fallback. A real Ollama/Llama.cpp deployment remains to be checked.
 
-Android/iOS builds, handwriting recognition accuracy and airplane-mode recovery on a device remain unverified. iOS configuration is aligned to ML Kit's 15.5 minimum and needs macOS/Xcode for its build. Android debug builds allow local HTTP; release builds should use HTTPS.
+The Android debug APK build is verified. iOS compilation, device installation, handwriting recognition accuracy and airplane-mode recovery on a device remain unverified. iOS configuration is aligned to ML Kit's 15.5 minimum and needs macOS/Xcode for its build. Android debug builds allow local HTTP; release builds should use HTTPS.
 
-The Android debug build resolved Flutter packages, but no APK was produced. A bounded offline Gradle diagnostic failed because Android Gradle Plugin dependencies were absent from cache. The configured `/usr/lib/android-sdk` contains only `platform-tools`, with no `platforms` or `build-tools`; this Flutter version requests compile SDK 36. Complete the SDK and Gradle dependency setup before retrying `flutter build apk --debug` from `app/`.
+The debug APK was built using official Android tooling in an isolated SDK with compile SDK 36, NDK 28.2.13676358 and CMake 3.22.1. Network-enabled Gradle resolved the missing dependencies. Its SHA-256 is `9f983261247484ab11709c26e6ae78ed0f9513670277025547d597b50297f5df`; ZIP integrity passed. The artifact is `app/build/app/outputs/flutter-apk/app-debug.apk` (175,895,374 bytes), package `com.linguacanvas.app`, minimum Android SDK 24. Temporary SDK/Gradle/Flutter copies were removed and `local.properties` restored. The host's original `/usr/lib/android-sdk` still lacks platforms/build-tools, so another native build requires completing SDK setup first.
 
-A lightweight scan found no common private-key/token patterns in source files; this is not a complete secret or dependency audit. `cargo-audit` and Gitleaks were unavailable locally.
+Official Gitleaks 8.30.1 was verified against its release SHA-256. It found no leaks in the five-commit Git history at `e55287c` or a snapshot of current source files (tracked files plus non-ignored additions). Ignored build caches and local credentials are outside this source-scan scope.
+
+`cargo-audit` 0.22.2 scanned 260 lockfile dependencies using the fetched RustSec database. `quinn-proto` was patched from 0.11.14 to 0.11.15 for [RUSTSEC-2026-0185](https://github.com/RustSec/advisory-db/blob/main/crates/quinn-proto/RUSTSEC-2026-0185.md). The audit still exits 1 for [RUSTSEC-2023-0071](https://rustsec.org/advisories/RUSTSEC-2023-0071.html): `rsa` 0.9.10 has no fixed release. It remains in optional SQLx MySQL lock dependencies; `cargo tree --locked --target all -i rsa` prints no active dependency with the current feature set. No advisory was suppressed. The security workflow now propagates audit failures, so this remaining finding will fail its audit step until resolved or an explicit audit policy is adopted.
+
+Real-host checks found no Ollama/llama.cpp binary or process. The expected local provider endpoints refused connections. No Android device was attached, and this Linux host has no Xcode. Follow [DEVICE_VALIDATION.md](DEVICE_VALIDATION.md) for the remaining recognition, offline recovery and fallback-disabled provider scenarios.
 
 The PostgreSQL timestamp cursor currently relies on a global advisory lock, so writes and pulls serialize. Review batches commit per review; retry IDs prevent earlier committed reviews from being applied twice after a later batch failure. In-memory fallback does not survive a server restart.
