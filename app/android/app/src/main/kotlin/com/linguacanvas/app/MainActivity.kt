@@ -1,6 +1,8 @@
 package com.linguacanvas.app
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.os.Handler
 import android.os.Looper
@@ -9,6 +11,9 @@ import android.util.Log
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -27,6 +32,16 @@ import java.util.concurrent.ConcurrentHashMap
 class MainActivity : FlutterActivity() {
     private val DIGITAL_INK_CHANNEL = "com.linguacanvas.app/digital_ink_native"
     private val TTS_CHANNEL = "com.linguacanvas.app/tts_native"
+    private val STT_CHANNEL = "com.linguacanvas.app/stt_native"
+    private val SPEECH_PERMISSION_REQUEST = 7041
+    private val speechHandler = Handler(Looper.getMainLooper())
+    private var speechMethodChannel: MethodChannel? = null
+    private var speechRecognizer: SpeechRecognizer? = null
+    private var activeSpeechSessionId: Long? = null
+    private var latestSpeechSessionId = 0L
+    private var pendingSpeechLanguage = "ja-JP"
+    private var speechPermissionRequested = false
+    private var speechTimeout: Runnable? = null
 
     private val recognizers = ConcurrentHashMap<String, com.google.mlkit.vision.digitalink.recognition.DigitalInkRecognizer>()
 
@@ -42,6 +57,8 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        configureSpeechChannel(flutterEngine)
 
         // Initialize Android TextToSpeech engine
         initTextToSpeech()
@@ -222,6 +239,136 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    private fun configureSpeechChannel(flutterEngine: FlutterEngine) {
+        speechMethodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, STT_CHANNEL).apply {
+            setMethodCallHandler { call, result ->
+                runOnUiThread {
+                    when (call.method) {
+                        "isAvailable" -> result.success(SpeechRecognizer.isRecognitionAvailable(applicationContext))
+                        "startListening" -> {
+                            val sessionId = call.argument<Number>("sessionId")?.toLong()
+                            if (sessionId == null || sessionId <= latestSpeechSessionId) {
+                                result.error("cancelled", "Stale speech session", null)
+                            } else if (!SpeechRecognizer.isRecognitionAvailable(applicationContext)) {
+                                result.error("unavailable", "No speech recognition service installed", null)
+                            } else {
+                                activeSpeechSessionId?.let { finishSpeechError(it, "cancelled", "Recording replaced") }
+                                latestSpeechSessionId = sessionId
+                                activeSpeechSessionId = sessionId
+                                pendingSpeechLanguage = if ((call.argument<String>("language") ?: "ja-JP").startsWith("ja", true)) "ja-JP" else "en-US"
+                                // A bounded session also covers an unanswered permission prompt.
+                                speechTimeout = Runnable { finishSpeechError(sessionId, "timeout", "Recording timed out") }.also {
+                                    speechHandler.postDelayed(it, 30000)
+                                }
+                                result.success(true)
+                                if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                                    startSpeechRecognition(sessionId, pendingSpeechLanguage)
+                                } else if (!speechPermissionRequested) {
+                                    speechPermissionRequested = true
+                                    requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), SPEECH_PERMISSION_REQUEST)
+                                }
+                            }
+                        }
+                        "stopListening" -> {
+                            val sessionId = call.argument<Number>("sessionId")?.toLong()
+                            if (sessionId != null && sessionId == activeSpeechSessionId) {
+                                finishSpeechError(sessionId, "cancelled", "Recording cancelled")
+                            }
+                            result.success(true)
+                        }
+                        else -> result.notImplemented()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun startSpeechRecognition(sessionId: Long, language: String) {
+        if (activeSpeechSessionId != sessionId) return
+        try {
+            val recognizer = SpeechRecognizer.createSpeechRecognizer(this)
+            speechRecognizer = recognizer
+            recognizer.setRecognitionListener(object : RecognitionListener {
+                override fun onReadyForSpeech(params: Bundle?) {}
+                override fun onBeginningOfSpeech() {}
+                override fun onRmsChanged(rmsdB: Float) {}
+                override fun onBufferReceived(buffer: ByteArray?) {}
+                override fun onEndOfSpeech() {}
+                override fun onEvent(eventType: Int, params: Bundle?) {}
+
+                override fun onPartialResults(partialResults: Bundle?) {
+                    if (activeSpeechSessionId != sessionId) return
+                    val transcript = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty()
+                    speechMethodChannel?.invokeMethod("onSpeechPartial", mapOf("sessionId" to sessionId, "transcript" to transcript))
+                }
+
+                override fun onResults(results: Bundle?) {
+                    if (activeSpeechSessionId != sessionId) return
+                    val transcript = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull { it.isNotBlank() }
+                    if (transcript == null) {
+                        finishSpeechError(sessionId, "recognition_failed", "No speech recognized")
+                    } else {
+                        releaseSpeechRecognizer()
+                        speechMethodChannel?.invokeMethod("onSpeechResult", mapOf("sessionId" to sessionId, "transcript" to transcript))
+                    }
+                }
+
+                override fun onError(error: Int) {
+                    val code = when (error) {
+                        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "permission_denied"
+                        SpeechRecognizer.ERROR_SPEECH_TIMEOUT, SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "timeout"
+                        else -> "recognition_failed"
+                    }
+                    finishSpeechError(sessionId, code, "Speech recognition error $error")
+                }
+            })
+            recognizer.startListening(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, language)
+                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
+            })
+        } catch (_: SecurityException) {
+            finishSpeechError(sessionId, "permission_denied", "Microphone permission denied")
+        } catch (_: Exception) {
+            finishSpeechError(sessionId, "recognition_failed", "Could not start speech recognition")
+        }
+    }
+
+    private fun finishSpeechError(sessionId: Long, code: String, message: String) {
+        if (activeSpeechSessionId != sessionId) return
+        releaseSpeechRecognizer()
+        speechMethodChannel?.invokeMethod("onSpeechError", mapOf("sessionId" to sessionId, "code" to code, "message" to message))
+    }
+
+    private fun releaseSpeechRecognizer() {
+        // Clear identity before cancel/destroy, which can dispatch late callbacks.
+        activeSpeechSessionId = null
+        speechTimeout?.let { speechHandler.removeCallbacks(it) }
+        speechTimeout = null
+        val recognizer = speechRecognizer
+        speechRecognizer = null
+        try { recognizer?.cancel() } catch (_: Exception) {}
+        try { recognizer?.destroy() } catch (_: Exception) {}
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode != SPEECH_PERMISSION_REQUEST) return
+        speechPermissionRequested = false
+        val sessionId = activeSpeechSessionId ?: return
+        if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            startSpeechRecognition(sessionId, pendingSpeechLanguage)
+        } else {
+            finishSpeechError(sessionId, "permission_denied", "Microphone permission denied")
+        }
+    }
+
+    override fun onStop() {
+        activeSpeechSessionId?.let { finishSpeechError(it, "cancelled", "Activity stopped") }
+        super.onStop()
+    }
+
     private fun withTtsReady(result: MethodChannel.Result, action: (TextToSpeech) -> Unit) {
         val engine = tts
         if (ttsInitStatus == TextToSpeech.SUCCESS && engine != null) {
@@ -309,6 +456,9 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
+        releaseSpeechRecognizer()
+        speechMethodChannel?.setMethodCallHandler(null)
+        speechMethodChannel = null
         for (recognizer in recognizers.values) {
             recognizer.close()
         }

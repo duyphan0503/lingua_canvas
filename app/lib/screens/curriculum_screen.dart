@@ -296,7 +296,8 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
                 const SizedBox(width: 6),
                 for (final category in {
                   'jlpt_n5': 'JLPT N5 (Kanji)',
-                  'jlpt_n4': 'JLPT N4',
+                  'jlpt_n4': 'JLPT N4 (Công sở)',
+                  'toeic_business': 'TOEIC & Business',
                   'business_toeic': 'Business / TOEIC',
                   'custom': 'Từ tự tạo',
                 }.entries) ...[
@@ -406,7 +407,8 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
                       label: Text(switch (item.category) {
                         'alphabet' => 'Bảng chữ cái',
                         'jlpt_n5' => 'JLPT N5 (Kanji)',
-                        'jlpt_n4' => 'JLPT N4',
+                        'jlpt_n4' => 'JLPT N4 (Công sở)',
+                        'toeic_business' => 'TOEIC & Business',
                         'business_toeic' => 'Business / TOEIC',
                         'custom' => 'Từ tự tạo',
                         _ => 'IT Chuyên ngành',

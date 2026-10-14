@@ -16,6 +16,8 @@ pub struct LessonItem {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ReviewRequest {
+    pub user_id: Option<String>,
+    pub sync_token: Option<String>,
     pub item_id: String,
     pub rating: u8, // 1=Again, 2=Hard, 3=Good, 4=Easy
 }
@@ -324,7 +326,7 @@ pub struct SyncReviewItem {
     pub client_card_snapshot: Option<serde_json::Value>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct SyncCompletedLessonItem {
     pub lesson_id: String,
     pub completed_at: chrono::DateTime<chrono::Utc>,
@@ -334,6 +336,9 @@ pub struct SyncCompletedLessonItem {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct SyncPushRequest {
+    pub user_id: Option<String>,
+    pub sync_token: Option<String>,
+    pub since_seq: Option<i64>,
     #[serde(default)]
     pub client_id: Option<String>,
     #[serde(default)]
@@ -346,6 +351,7 @@ pub struct SyncPushRequest {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SyncPushResponse {
+    pub latest_sync_seq: i64,
     pub synced_reviews: usize,
     pub synced_lessons: usize,
     pub synced_review_ids: Vec<String>,
@@ -379,6 +385,10 @@ where
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct SyncPullQuery {
+    pub user_id: Option<String>,
+    pub sync_token: Option<String>,
+    pub client_id: Option<String>,
+    pub since_seq: Option<i64>,
     #[serde(default, deserialize_with = "deserialize_optional_datetime")]
     pub since: Option<chrono::DateTime<chrono::Utc>>,
     #[serde(default, deserialize_with = "deserialize_optional_datetime")]
@@ -387,6 +397,8 @@ pub struct SyncPullQuery {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SyncPullResponse {
+    pub latest_sync_seq: i64,
+    pub completed_lessons: Vec<SyncCompletedLessonItem>,
     pub cards: Vec<FsrsCardDto>,
     pub updated_cards: Vec<FsrsCardDto>,
     pub lessons: Vec<LessonItem>,

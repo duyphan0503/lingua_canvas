@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../services/account_service.dart';
+import '../widgets/account_settings_card.dart';
 
 class SettingsScreen extends StatefulWidget {
   final ApiService? apiService;
   final VoidCallback? onResetData;
+  final AccountService? accountService;
+  final VoidCallback? onAccountChanged;
 
-  const SettingsScreen({super.key, this.apiService, this.onResetData});
+  const SettingsScreen({
+    super.key,
+    this.apiService,
+    this.onResetData,
+    this.accountService,
+    this.onAccountChanged,
+  });
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -13,6 +23,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   late final ApiService _apiService;
+  late final AccountService _accountService;
   final TextEditingController _urlController = TextEditingController();
   bool _isChecking = false;
   bool? _isServerHealthy;
@@ -22,6 +33,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _apiService = widget.apiService ?? ApiService();
+    _accountService =
+        widget.accountService ?? AccountService(apiService: _apiService);
     _urlController.text = _apiService.baseUrl;
     _checkServer();
   }
@@ -64,6 +77,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
       return;
     }
+    setState(() {});
     _checkServer();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -103,6 +117,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           _buildServerConfigSection(),
+          const SizedBox(height: 16),
+          AccountSettingsCard(
+            key: ValueKey(_apiService.baseUrl),
+            service: _accountService,
+            onAccountChanged: widget.onAccountChanged,
+          ),
           const SizedBox(height: 16),
           _buildAIEngineSection(),
           const SizedBox(height: 16),

@@ -58,32 +58,40 @@ class SyncCoordinator {
     DateTime? reviewTime,
     double completionScore = 1.0,
   }) async {
-    final time = reviewTime ?? DateTime.now().toUtc();
-    final existingCard = await localDb.getCard(itemId);
-    final card = existingCard ?? FSRSCard.initial(itemId);
+    return localDb.withProfileLock(() async {
+      final time = reviewTime ?? DateTime.now().toUtc();
+      final existingCard = await localDb.getCard(itemId);
+      final card = existingCard ?? FSRSCard.initial(itemId);
 
-    final updatedCard = fsrsEngine.review(card, rating, time);
+      final updatedCard = fsrsEngine.review(card, rating, time);
 
-    final elapsedDays =
-        time
-            .difference(card.lastReview)
-            .inSeconds
-            .clamp(0, double.maxFinite.toInt()) /
-        86400.0;
-    final scheduledDays =
-        (updatedCard.nextReview.difference(time).inSeconds / 86400.0).round();
+      final elapsedDays =
+          time
+              .difference(card.lastReview)
+              .inSeconds
+              .clamp(0, double.maxFinite.toInt()) /
+          86400.0;
+      final scheduledDays =
+          (updatedCard.nextReview.difference(time).inSeconds / 86400.0).round();
 
-    await localDb.recordReviewTransaction(
-      updatedCard: updatedCard,
-      rating: rating,
-      reviewTime: time,
-      elapsedDays: elapsedDays,
-      scheduledDays: scheduledDays,
-      completionScore: completionScore,
-    );
+      await localDb.recordReviewTransaction(
+        updatedCard: updatedCard,
+        rating: rating,
+        reviewTime: time,
+        elapsedDays: elapsedDays,
+        scheduledDays: scheduledDays,
+        completionScore: completionScore,
+      );
 
-    return updatedCard;
+      return updatedCard;
+    });
   }
+
+  Future<void> changeAccount(Map<String, dynamic>? account) =>
+      localDb.withProfileLock(() async {
+        await localDb.switchAccount(account);
+        lastSyncTime = null;
+      });
 
   /// Bidirectional synchronization with the Axum server:
   /// 1. Flushes pending sync mutations to `POST /api/v1/sync`
@@ -93,13 +101,24 @@ class SyncCoordinator {
 
   Future<SyncResult> _runSync() async {
     try {
-      return await _performSync();
+      return await localDb.withProfileLock(_performSync);
     } finally {
       _syncInFlight = null;
     }
   }
 
   Future<SyncResult> _performSync() async {
+    final account = await localDb.getAccount();
+    if (account != null && account['server_url'] != baseUrl) {
+      return SyncResult(
+        success: false,
+        error: 'Hồ sơ thuộc máy chủ khác. Hãy liên kết lại tài khoản.',
+      );
+    }
+    final headers = <String, String>{
+      if (account != null) 'X-Sync-Token': account['sync_token'] as String,
+    };
+    final sequence = await localDb.getSyncSequence();
     await localDb.recoverInterruptedMutations();
     lastSyncTime ??= await localDb.getLastPullTime();
     final pullSince = lastSyncTime;
@@ -152,6 +171,8 @@ class SyncCoordinator {
 
       final pushBody = jsonEncode({
         'client_id': clientId ?? await localDb.getOrCreateClientId(),
+        if (account != null) 'user_id': account['user_id'],
+        'since_seq': ?sequence,
         if (lastSyncTime != null)
           'last_sync_time': lastSyncTime!.toIso8601String(),
         'reviews': reviewsPayload,
@@ -160,13 +181,12 @@ class SyncCoordinator {
 
       try {
         final pushUri = Uri.parse('$baseUrl/sync');
-        final response = await httpClient
-            .post(
-              pushUri,
-              headers: {'Content-Type': 'application/json'},
-              body: pushBody,
-            )
-            .timeout(const Duration(seconds: 4));
+        final response = await _send(
+          'POST',
+          pushUri,
+          headers: {...headers, 'Content-Type': 'application/json'},
+          body: pushBody,
+        ).timeout(const Duration(seconds: 4));
 
         if (response.statusCode == 200) {
           final Map<String, dynamic> data = jsonDecode(response.body);
@@ -204,17 +224,23 @@ class SyncCoordinator {
     // Phase 2: Pull updates from backend (Delta Pull)
     // -------------------------------------------------------------
     try {
-      final pullParams = <String, String>{};
-      if (pullSince != null) {
+      final pullParams = <String, String>{
+        'client_id': clientId ?? await localDb.getOrCreateClientId(),
+      };
+      if (sequence != null) pullParams['since_seq'] = '$sequence';
+      if (account != null) pullParams['user_id'] = account['user_id'] as String;
+      if (pullSince != null && sequence == null) {
         pullParams['since'] = pullSince.toIso8601String();
       }
       final pullUri = Uri.parse(
         '$baseUrl/sync/pull',
       ).replace(queryParameters: pullParams.isNotEmpty ? pullParams : null);
 
-      final pullResponse = await httpClient
-          .get(pullUri)
-          .timeout(const Duration(seconds: 4));
+      final pullResponse = await _send(
+        'GET',
+        pullUri,
+        headers: headers,
+      ).timeout(const Duration(seconds: 4));
 
       if (pullResponse.statusCode == 200) {
         final Map<String, dynamic> pullData = jsonDecode(pullResponse.body);
@@ -245,6 +271,40 @@ class SyncCoordinator {
           pulledLessonsCount = lessonsToSave.length;
         }
 
+        final localCompletions = {
+          for (final completion in await localDb.getCompletedLessons())
+            completion.lessonId: completion,
+        };
+        for (final raw
+            in pullData['completed_lessons'] as List<dynamic>? ?? []) {
+          final completion = raw as Map<String, dynamic>;
+          final lessonId = completion['lesson_id'] as String;
+          final completedAt = DateTime.parse(
+            completion['completed_at'] as String,
+          ).toUtc();
+          final local = localCompletions[lessonId];
+          if (local != null &&
+              (local.synced == 0 || !completedAt.isAfter(local.completedAt))) {
+            continue;
+          }
+          await localDb.saveCompletedLesson(
+            lessonId,
+            completedAt: completedAt,
+            score: (completion['score'] as num?)?.toDouble() ?? 1.0,
+            synced: 1,
+          );
+          localCompletions[lessonId] = LocalCompletedLesson(
+            lessonId: lessonId,
+            completedAt: completedAt,
+            score: (completion['score'] as num?)?.toDouble() ?? 1.0,
+            synced: 1,
+          );
+        }
+
+        final latestSequence = pullData['latest_sync_seq'];
+        if (latestSequence is num) {
+          await localDb.setSyncSequence(latestSequence.toInt());
+        }
         final serverTime = pullData['server_time'] ?? pullData['timestamp'];
         if (serverTime != null) {
           final pulledAt = DateTime.parse(serverTime as String).toUtc();
@@ -276,6 +336,18 @@ class SyncCoordinator {
       pulledCards: pulledCardsCount,
       pulledLessons: pulledLessonsCount,
     );
+  }
+
+  Future<http.Response> _send(
+    String method,
+    Uri uri, {
+    required Map<String, String> headers,
+    String? body,
+  }) async {
+    final request = http.Request(method, uri)..followRedirects = false;
+    request.headers.addAll(headers);
+    if (body != null) request.body = body;
+    return http.Response.fromStream(await httpClient.send(request));
   }
 
   /// Reconciles a card from the server with local card using Last-Write-Wins (LWW).

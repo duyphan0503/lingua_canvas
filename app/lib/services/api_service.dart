@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'package:http/http.dart' as http;
 import '../models/lesson_item.dart';
+import 'phase3_lessons.dart';
+import 'account_service.dart';
 import 'fsrs_engine.dart';
 import 'local_database.dart';
 import 'sync_coordinator.dart';
@@ -2165,6 +2167,7 @@ class ApiService {
       ],
       difficultyLevel: 2,
     ),
+    ...phase3Lessons,
   ];
 
   Future<List<LessonItem>> getLessons({String? language}) async {
@@ -2211,7 +2214,7 @@ class ApiService {
     String? meaningVi,
     String? workplaceContext,
     String? workplaceContextVi,
-  }) async {
+  }) => _localDb.withProfileLock(() async {
     final target = word.trim();
     if (target.isEmpty || !const ['ja', 'en'].contains(language)) {
       throw ArgumentError('Cần từ vựng và ngôn ngữ ja hoặc en.');
@@ -2249,7 +2252,7 @@ class ApiService {
     );
     await _localDb.saveLessons([lesson]);
     return lesson;
-  }
+  });
 
   Future<void> submitReview({
     required String itemId,
@@ -2274,20 +2277,25 @@ class ApiService {
     String userLevel = 'beginner',
   }) async {
     try {
-      final uri = Uri.parse('$baseUrl/ai/roleplay');
-      final response = await http
-          .post(
-            uri,
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'target_language': targetLanguage,
-              'topic': topic,
-              'profession': profession.toLowerCase(),
-              'user_level': userLevel.toLowerCase(),
-              'user_message': message,
-            }),
-          )
-          .timeout(const Duration(seconds: 12));
+      final requestBaseUrl = baseUrl;
+      final uri = Uri.parse('$requestBaseUrl/ai/roleplay');
+      final response = await AccountService.sendRequest(
+        method: 'POST',
+        uri: uri,
+        headers: {
+          'Content-Type': 'application/json',
+          ...await AccountService(
+            apiService: this,
+          ).currentHeaders(serverUrl: requestBaseUrl),
+        },
+        body: jsonEncode({
+          'target_language': targetLanguage,
+          'topic': topic,
+          'profession': profession.toLowerCase(),
+          'user_level': userLevel.toLowerCase(),
+          'user_message': message,
+        }),
+      ).timeout(const Duration(seconds: 12));
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -2360,20 +2368,25 @@ class ApiService {
     int turnCount = 4,
   }) async {
     try {
-      final uri = Uri.parse('$_baseUrl/ai/dialogue');
-      final response = await http
-          .post(
-            uri,
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'target_language': targetLanguage,
-              'profession': profession.toLowerCase(),
-              'difficulty_level': level.toLowerCase(),
-              'topic': topic,
-              'turn_count': turnCount,
-            }),
-          )
-          .timeout(const Duration(seconds: 12));
+      final requestBaseUrl = baseUrl;
+      final uri = Uri.parse('$requestBaseUrl/ai/dialogue');
+      final response = await AccountService.sendRequest(
+        method: 'POST',
+        uri: uri,
+        headers: {
+          'Content-Type': 'application/json',
+          ...await AccountService(
+            apiService: this,
+          ).currentHeaders(serverUrl: requestBaseUrl),
+        },
+        body: jsonEncode({
+          'target_language': targetLanguage,
+          'profession': profession.toLowerCase(),
+          'difficulty_level': level.toLowerCase(),
+          'topic': topic,
+          'turn_count': turnCount,
+        }),
+      ).timeout(const Duration(seconds: 12));
 
       if (response.statusCode == 200) {
         final payload = jsonDecode(response.body) as Map<String, dynamic>;

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import '../services/handwriting_recognizer.dart';
+import '../services/stroke_guide_service.dart';
 
 enum HandwritingGrid { japanese, english }
 
@@ -23,6 +24,9 @@ class HandwritingCanvas extends StatefulWidget {
   final double strokeWidth;
   final bool isReadOnly;
   final HandwritingGrid grid;
+  final List<StrokeGuidePath>? guidePaths;
+  final bool isAnimatingGuide;
+  final VoidCallback? onGuideAnimationCompleted;
 
   const HandwritingCanvas({
     super.key,
@@ -36,19 +40,60 @@ class HandwritingCanvas extends StatefulWidget {
     this.strokeWidth = 4.5,
     this.isReadOnly = false,
     this.grid = HandwritingGrid.japanese,
+    this.guidePaths,
+    this.isAnimatingGuide = false,
+    this.onGuideAnimationCompleted,
   });
 
   @override
   State<HandwritingCanvas> createState() => _HandwritingCanvasState();
 }
 
-class _HandwritingCanvasState extends State<HandwritingCanvas> {
+class _HandwritingCanvasState extends State<HandwritingCanvas>
+    with SingleTickerProviderStateMixin {
   HandwritingStroke? _currentStroke;
   Timer? _debounceTimer;
+  late final AnimationController _guideController;
+  bool _guideSuppressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _guideController = AnimationController(vsync: this)
+      ..addListener(() {
+        if (mounted) setState(() {});
+      })
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed && mounted) {
+          widget.onGuideAnimationCompleted?.call();
+        }
+      });
+    _updateGuide();
+  }
+
+  @override
+  void didUpdateWidget(covariant HandwritingCanvas oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isAnimatingGuide != widget.isAnimatingGuide ||
+        !identical(oldWidget.guidePaths, widget.guidePaths)) {
+      _updateGuide();
+    }
+  }
+
+  void _updateGuide() {
+    _guideController.stop();
+    _guideSuppressed = false;
+    final count = widget.guidePaths?.length ?? 0;
+    if (widget.isAnimatingGuide && count > 0) {
+      _guideController.duration = Duration(milliseconds: 650 * count);
+      _guideController.forward(from: 0);
+    }
+  }
 
   @override
   void dispose() {
     _debounceTimer?.cancel();
+    _guideController.dispose();
     super.dispose();
   }
 
@@ -78,6 +123,10 @@ class _HandwritingCanvasState extends State<HandwritingCanvas> {
 
   void _onPointerDown(PointerDownEvent event) {
     if (widget.isReadOnly) return;
+    if (widget.isAnimatingGuide) {
+      _guideController.stop();
+      setState(() => _guideSuppressed = true);
+    }
     _debounceTimer?.cancel();
 
     final initialPoint = StrokePoint(
@@ -183,6 +232,10 @@ class _HandwritingCanvasState extends State<HandwritingCanvas> {
               strokes: widget.strokes,
               watermarkText: widget.watermarkText,
               grid: widget.grid,
+              guidePaths: widget.isAnimatingGuide && !_guideSuppressed
+                  ? widget.guidePaths
+                  : null,
+              guideProgress: _guideController.value,
             ),
           ),
         ),
@@ -196,11 +249,15 @@ class _CanvasPainter extends CustomPainter {
   final String? watermarkText;
 
   final HandwritingGrid grid;
+  final List<StrokeGuidePath>? guidePaths;
+  final double guideProgress;
 
   _CanvasPainter({
     required this.strokes,
     this.watermarkText,
     required this.grid,
+    this.guidePaths,
+    this.guideProgress = 0,
   });
 
   @override
@@ -213,9 +270,72 @@ class _CanvasPainter extends CustomPainter {
       _drawWatermark(canvas, size, watermarkText!);
     }
 
+    _drawGuides(canvas, size);
+
     // 3. Render strokes with velocity-dependent width tapering and quadratic Bézier
     for (final stroke in strokes) {
       _drawSmoothStroke(canvas, stroke);
+    }
+  }
+
+  void _drawGuides(Canvas canvas, Size size) {
+    final guides = guidePaths;
+    if (guides == null || guides.isEmpty) return;
+    final overall = guideProgress * guides.length;
+    for (var i = 0; i < guides.length && i <= overall.floor(); i++) {
+      final guide = guides[i];
+      if (guide.normalizedPoints.isEmpty) continue;
+      final points = guide.normalizedPoints
+          .map((p) => Offset(p.dx * size.width, p.dy * size.height))
+          .toList();
+      final path = Path()..moveTo(points.first.dx, points.first.dy);
+      for (final point in points.skip(1)) {
+        path.lineTo(point.dx, point.dy);
+      }
+      final fraction = (overall - i).clamp(0.0, 1.0);
+      final pen = Paint()
+        ..color = fraction >= 1
+            ? const Color(0x80818CF8)
+            : const Color(0xFF38BDF8)
+        ..strokeWidth = 4
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke;
+      for (final metric in path.computeMetrics()) {
+        final distance = metric.length * fraction;
+        canvas.drawPath(metric.extractPath(0, distance), pen);
+        final tip = metric.getTangentForOffset(distance);
+        if (fraction < 1 && tip != null) {
+          canvas.drawCircle(
+            tip.position,
+            6,
+            Paint()..color = const Color(0xAA38BDF8),
+          );
+          for (final offset in [-.5, .5]) {
+            final angle = tip.angle + pi + offset;
+            canvas.drawLine(
+              tip.position,
+              tip.position + Offset(cos(angle), sin(angle)) * 12,
+              pen,
+            );
+          }
+        }
+      }
+      canvas.drawCircle(
+        points.first,
+        10,
+        Paint()..color = const Color(0xFF6366F1),
+      );
+      final label = TextPainter(
+        text: TextSpan(
+          text: '${guide.strokeNumber}',
+          style: const TextStyle(color: Colors.white, fontSize: 11),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      label.paint(
+        canvas,
+        points.first - Offset(label.width / 2, label.height / 2),
+      );
     }
   }
 
@@ -400,7 +520,9 @@ class _CanvasPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _CanvasPainter oldDelegate) {
-    return oldDelegate.grid != grid ||
+    return oldDelegate.guideProgress != guideProgress ||
+        oldDelegate.guidePaths != guidePaths ||
+        oldDelegate.grid != grid ||
         oldDelegate.strokes != strokes ||
         oldDelegate.watermarkText != watermarkText;
   }

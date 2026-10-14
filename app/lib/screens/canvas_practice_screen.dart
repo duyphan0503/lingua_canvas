@@ -8,6 +8,9 @@ import '../services/digital_ink_engine.dart';
 import '../services/fsrs_engine.dart';
 import '../services/handwriting_recognizer.dart';
 import '../services/tts_service.dart';
+import '../services/stroke_guide_service.dart';
+import '../services/speech_practice_service.dart';
+import '../widgets/speech_capture_dialog.dart';
 import '../widgets/handwriting_canvas.dart';
 import '../widgets/tts_speaker_button.dart';
 
@@ -23,6 +26,8 @@ class CanvasPracticeScreen extends StatefulWidget {
   final HandwritingRecognizer? recognizer;
   final String? initialLessonId;
   final TtsService? ttsService;
+  final SpeechPracticeService? speechService;
+  final bool isActive;
 
   const CanvasPracticeScreen({
     super.key,
@@ -31,6 +36,8 @@ class CanvasPracticeScreen extends StatefulWidget {
     this.recognizer,
     this.initialLessonId,
     this.ttsService,
+    this.speechService,
+    this.isActive = true,
   });
 
   @override
@@ -50,6 +57,12 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
   bool _isLoading = true;
   int _completedCount = 0;
 
+  late final SpeechPracticeService _speech;
+  bool _playingGuide = false;
+  List<StrokeGuidePath>? _guidePaths;
+  PronunciationResult? _pronunciation;
+  bool _listening = false;
+  int _speechEpoch = 0;
   List<HandwritingStroke> _strokes = [];
   RecognitionResult? _recognitionResult;
   bool _showWatermark = true;
@@ -72,6 +85,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
     WidgetsBinding.instance.addObserver(this);
     _startSyncTimer();
     _apiService = widget.apiService ?? ApiService();
+    _speech = widget.speechService ?? SpeechPracticeService();
     _digitalInkEngine =
         widget.digitalInkEngine ??
         (!kIsWeb && Platform.isAndroid
@@ -86,6 +100,10 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _syncTimer?.cancel();
+    if (_listening) {
+      _speechEpoch++;
+      unawaited(_speech.stop());
+    }
     // Only dispose if we created the default engine
     if (widget.digitalInkEngine == null) {
       _digitalInkEngine.dispose();
@@ -172,6 +190,14 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
   @override
   void didUpdateWidget(covariant CanvasPracticeScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (!widget.isActive && oldWidget.isActive) {
+      _playingGuide = false;
+      if (_listening) {
+        _speechEpoch++;
+        _listening = false;
+        unawaited(_speech.stop());
+      }
+    }
     if (widget.initialLessonId != null &&
         widget.initialLessonId != oldWidget.initialLessonId) {
       _focusLessonById(widget.initialLessonId!);
@@ -308,12 +334,86 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
 
   void _clearCanvas() {
     _recognitionEpoch++;
+    _speechEpoch++;
+    if (_listening) unawaited(_speech.stop());
     setState(() {
+      _playingGuide = false;
+      _guidePaths = null;
+      _pronunciation = null;
+      _listening = false;
       _strokes = [];
       _recognitionResult = null;
       _statusNotification = null;
       _isRecognizing = false;
     });
+  }
+
+  void _toggleGuide() {
+    if (_playingGuide) {
+      setState(() => _playingGuide = false);
+      return;
+    }
+    final lesson = _currentLesson;
+    if (lesson == null) return;
+    final guides = StrokeGuideService.guidesFor(
+      lesson.targetText,
+      strokeOrderHints: lesson.strokeOrderHints,
+    );
+    if (guides.isEmpty) {
+      setState(() => _statusNotification = 'Chưa có nét mẫu cho bài này.');
+      return;
+    }
+    setState(() {
+      _guidePaths = guides;
+      _playingGuide = true;
+    });
+  }
+
+  Future<void> _practiceSpeech() async {
+    if (_listening) {
+      _speechEpoch++;
+      await _speech.stop();
+      if (mounted) setState(() => _listening = false);
+      return;
+    }
+    final lesson = _currentLesson;
+    if (lesson == null) return;
+    final epoch = ++_speechEpoch;
+    setState(() => _listening = true);
+    try {
+      final transcript = await captureSpeechTranscript(
+        context,
+        _speech,
+        lesson.language,
+        isCurrent: () => mounted && widget.isActive && epoch == _speechEpoch,
+      );
+      if (!mounted ||
+          epoch != _speechEpoch ||
+          _currentLesson?.id != lesson.id ||
+          transcript == null) {
+        return;
+      }
+      setState(
+        () => _pronunciation = _speech.evaluatePronunciation(
+          recognized: transcript,
+          targetText: lesson.targetText,
+          phoneticOrKana: lesson.phoneticOrKana,
+          language: lesson.language,
+        ),
+      );
+    } catch (error) {
+      if (mounted && epoch == _speechEpoch) {
+        setState(
+          () => _statusNotification =
+              error is SpeechPracticeException &&
+                  error.code == 'permission_denied'
+              ? 'Cần cho phép microphone để luyện nói.'
+              : 'Không nhận được giọng nói. Hãy thử lại.',
+        );
+      }
+    } finally {
+      if (mounted && epoch == _speechEpoch) setState(() => _listening = false);
+    }
   }
 
   void _undoStroke() {
@@ -508,6 +608,14 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
 
                       // Lesson Target Info Card
                       _buildLessonInfoCard(lesson),
+                      if (_pronunciation != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            '${(_pronunciation!.accuracyScore * 100).round()}% • ${_pronunciation!.feedbackVi}',
+                            style: const TextStyle(color: Color(0xFF38BDF8)),
+                          ),
+                        ),
                       const SizedBox(height: 12),
 
                       // Interactive Drawing Canvas Container with Model Status
@@ -660,6 +768,15 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
                 tooltip: 'Phát âm "${lesson.targetText}"',
                 ttsService: widget.ttsService,
               ),
+              TextButton.icon(
+                onPressed: _practiceSpeech,
+                icon: Icon(
+                  _listening
+                      ? Icons.stop_circle_outlined
+                      : Icons.mic_none_rounded,
+                ),
+                label: Text(_listening ? 'Dừng thu âm' : 'Luyện nói'),
+              ),
               // Phonetic / kana pill
               if (lesson.phoneticOrKana.isNotEmpty)
                 Container(
@@ -694,7 +811,8 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
                   '${lesson.language.toUpperCase()} • ${switch (lesson.category) {
                     'alphabet' => 'Bảng chữ cái',
                     'jlpt_n5' => 'JLPT N5',
-                    'jlpt_n4' => 'JLPT N4',
+                    'jlpt_n4' => 'JLPT N4 (Công sở)',
+                    'toeic_business' => 'TOEIC & Business',
                     'business_toeic' => 'Business / TOEIC',
                     'custom' => 'Từ tự tạo',
                     _ => 'IT Workplace',
@@ -992,6 +1110,15 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
                           setState(() => _showWatermark = !_showWatermark),
                     ),
                     TextButton.icon(
+                      onPressed: _toggleGuide,
+                      icon: Icon(
+                        _playingGuide
+                            ? Icons.stop_circle_outlined
+                            : Icons.play_circle_outline_rounded,
+                      ),
+                      label: Text(_playingGuide ? 'Dừng mẫu' : 'Xem nét mẫu'),
+                    ),
+                    TextButton.icon(
                       onPressed: _strokes.isEmpty ? null : _undoStroke,
                       icon: const Icon(Icons.undo_rounded),
                       label: const Text('Hoàn tác'),
@@ -1033,8 +1160,14 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 _buildModelStatusIndicator(lesson.language),
+                if (_playingGuide &&
+                    (_guidePaths?.any((g) => g.isIllustrative) ?? false))
+                  const Text(
+                    'Nét minh họa từ gợi ý, không phải thứ tự nét chuẩn.',
+                    style: TextStyle(color: Color(0xFFFBBF24), fontSize: 11),
+                  ),
                 Text(
-                  'Nét đã viết: ${_strokes.length} / ${lesson.strokeOrderHints.length} nét gợi ý',
+                  'Nét đã viết: ${_strokes.length} • ${lesson.strokeOrderHints.length} gợi ý',
                   style: const TextStyle(
                     fontSize: 11,
                     color: Color(0xFF94A3B8),
@@ -1065,12 +1198,18 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
             width: double.infinity,
             child: HandwritingCanvas(
               strokes: _strokes,
+              guidePaths: _guidePaths,
+              isAnimatingGuide: _playingGuide,
+              onGuideAnimationCompleted: () {
+                if (mounted) setState(() => _playingGuide = false);
+              },
               grid: lesson.language == 'en'
                   ? HandwritingGrid.english
                   : HandwritingGrid.japanese,
               watermarkText: _showWatermark ? lesson.targetText : null,
               onStrokesChanged: (newStrokes) {
                 setState(() {
+                  _playingGuide = false;
                   _recognitionEpoch++;
                   _strokes = newStrokes;
                   _recognitionResult = null;

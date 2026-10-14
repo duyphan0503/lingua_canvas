@@ -9,6 +9,14 @@ An Android and Linux language learning application for workplace communication i
 
 ---
 
+## Learning and multi-device accounts
+
+The catalog has 155 lessons, including workplace JLPT N4 and TOEIC Business filters. Canvas offers animated stroke examples and spoken practice; roleplay supports Android dictation. Linux uses an explicit typed-transcript fallback. Speech scores compare recognized text, and approximate stroke examples are labeled illustrative.
+
+In Settings, register with a username and 4–12 digit PIN, or link another device with your Sync Token. Each account keeps separate local progress and offline queues. Copy the token on the first device and enter it on the second using the same backend URL. Tokens are credentials; use HTTPS for a remotely hosted backend. Logout restores the previous local profile. Custom word descriptions remain local; their review progress syncs.
+
+Set `REDIS_URL` for shared AI caching and rate limits; unavailable Redis falls back to bounded memory storage. AI responses include `X-Cache: HIT/MISS`. PostgreSQL stores accounts and device history across restarts; memory-only mode lasts for the server process.
+
 ## 🏛️ Monorepo Architecture
 
 ```
@@ -202,9 +210,14 @@ docker compose config
 | `POST` | `/api/v1/ai/roleplay` | Generate workplace roleplay replies, vocabulary and writing challenges |
 | `POST` | `/api/v1/ai/dialogue` | Generate structured Japanese or English workplace dialogues |
 | `POST` | `/api/v1/sync` | Push queued reviews and completed lessons with review-ID deduplication |
-| `GET` | `/api/v1/sync/pull` | Pull cards and lessons since the last successful pull cursor |
+| `GET` | `/api/v1/sync/pull` | Pull account cards/completions using `since_seq`; save `latest_sync_seq` only after reconciliation |
+| `POST` | `/api/v1/auth/register` | Create username/PIN account and register device |
+| `POST` | `/api/v1/auth/login` | Link device using username/PIN or `sync_token` |
+| `GET` | `/api/v1/auth/devices` | List authenticated account devices |
 
 ---
+
+Authenticated requests use `X-Sync-Token` or `Authorization: Bearer`; `user_id` only asserts the authenticated identity. Missing credentials retain the shared legacy `default_user` profile. Invalid credentials return 401.
 
 ## 📄 License
 
