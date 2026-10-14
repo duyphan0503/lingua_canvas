@@ -39,6 +39,9 @@ async fn main() {
     }
 
     let state = AppState {
+        cache: Arc::new(server::redis_cache::RedisCache::default()),
+        accounts: Default::default(),
+        memory: Default::default(),
         lessons: seed_lessons,
         cards: Arc::new(RwLock::new(HashMap::new())),
         seen_review_ids: Arc::new(RwLock::new(HashMap::new())),

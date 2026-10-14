@@ -1,4 +1,4 @@
-# Project: Lingua Canvas (Full Feature Expansion - Gen 2)
+# Project: Lingua Canvas (Learning Experience & Multi-device Sync - Gen 3)
 
 Supported Flutter targets are Android and Linux. The repository pins Flutter 3.47.6 and Dart 3.13.5 in `.fvmrc`; use `tools/flutter` from the repository root (or `../tools/flutter` from `app/`) so commands use the repository-managed SDK.
 
@@ -61,6 +61,8 @@ Every feature from the Survey phase and user requirements is cataloged and assig
 | 11 | Backend Sync Migration & Routes | PostgreSQL migration `20261001000002_sync_and_review_logs.sql` and endpoints `POST /api/v1/sync` & `GET /api/v1/sync/pull` | M3 | survey_sync |
 | 12 | Bidirectional Sync & LWW Conflict | Opportunistic syncing of queued reviews upon reconnection with Last-Write-Wins and idempotency | M3 | survey_sync |
 | 13 | E2E Test Suite Expansion | 4-tier E2E tests verifying dialogue AI, ML Kit canvas scoring, offline sync queuing and reconciliation | M4 | survey_sync |
+| M5 | Learning Experience | N4/TOEIC lessons, animated guides, speech practice/dictation | M2, M3 | IMPLEMENTED; automated tests pass; physical speech QA pending |
+| M6 | Accounts & Scalable Sync | Scoped accounts/devices, safe sequence cursors, Redis cache/rate limits | M3, M5 | IMPLEMENTED; PostgreSQL/Redis automated tests pass |
 | 14 | Security & Quality Verification | `cargo check/clippy/test`, `flutter analyze/test`, secrets scan, zero regressions | M4 | survey_sync |
 | 15 | GitNexus Graph Sync & Remote Push | Full re-index with GitNexus and secure push to `https://github.com/duyphan0503/lingua_canvas` | M4 | survey_sync |
 
@@ -72,6 +74,21 @@ Every feature from the Survey phase and user requirements is cataloged and assig
 | M2 | Mobile ML Kit & Smooth Canvas | Digital Ink model manager, smoothing, scoring, headless mock engine, widget tests | M0 | DONE (implementation and automated tests; device checks pending) |
 | M3 | Offline Storage & Bidirectional Sync | SQLite local tables, FSRS offline review, PostgreSQL sync routes, LWW conflict resolution | M1, M2 | DONE (SQLite and PostgreSQL verified) |
 | M4 | Comprehensive E2E Tests & Remote Sync | 100% test pass across server/app/e2e, GitNexus update, secure commit & push | M3 | LOCAL_TESTS_VERIFIED; remote integration pending |
+
+## Phase 3–4 verification — 2026-10-14
+
+Implemented all six tasks in `lingua_canvas_phase3_4_expansion_plan.md` on `codex/phase3-4-learning-and-sync`.
+
+- Flutter 3.47.6 / Dart 3.13.5: **194 tests passed**, analyzer clean.
+- Rust: **56 tests passed**, including live PostgreSQL 16 account isolation, concurrent sync, device and private custom-word regressions. Formatting, check and Clippy pass. Live Redis framing, TTL, rate limit and timeout tests also passed during this implementation.
+- Fresh PostgreSQL database: **47/47 E2E tests passed**. Adversarial suite: **59/59 passed**; Python harness: **5/5 passed**. Compose configuration validated.
+- Both catalogs contain **155 lessons**: the previous 135 remain unchanged, plus 10 JLPT N4 workplace and 10 TOEIC Business lessons.
+- Canvas animates sample strokes with numbers/arrows and cancels on pen input. Android speech recognition supports practice and roleplay dictation; Kotlin compilation passed. Linux offers explicit typed transcript comparison.
+- Accounts isolate local profiles, queued reviews, FSRS cards, completions, devices and sequence cursors. Tokens stay scoped to their configured server; authenticated requests disable redirects. Private custom words stay outside the public catalog.
+- Redis AI cache uses a 3600-second TTL, `X-Cache`, bounded RESP2 IO and memory fallback; AI traffic is limited per account.
+- No dependencies or lockfiles changed. Cached `cargo audit --no-fetch --stale` exited 0; the existing inactive optional RSA exception remains.
+
+Pronunciation scores measure recognized-text similarity rather than acoustic pronunciation. Eight complex glyph guides and generated unknown-word guides are explicitly illustrative. Physical Android microphone/recognizer behavior still needs device QA. Full custom lesson metadata remains local; FSRS/completion progress syncs across devices. See `PHASE3_4_EXECUTION_REPORT.md` for decisions and verification limits.
 
 ## Latest verification — 2026-10-14
 
@@ -86,7 +103,7 @@ All nine tasks in `lingua_canvas_phase1_execution_plan.md` are implemented on `c
 - Both catalogs now contain **135 lessons**, including **52 additions**. Existing lesson IDs/content are retained; upgrades insert missing IDs rather than relying on total row counts.
 - `cargo audit` exits **0**. `quinn-proto` is patched to **0.11.18**. `server/.cargo/audit.toml` explicitly ignores only `RUSTSEC-2023-0071` for inactive optional `rsa`; `cargo tree --locked --target all -i rsa` confirms no active dependency. Re-evaluate the exception if SQLx features/database support change.
 
-Custom lesson metadata is protected locally against server ID-only placeholders. Full metadata transfer to another device is not added by this plan. The canvas counter still derives suggested strokes from the number of hint paragraphs; explicit expected-stroke metadata is a deferred minor UX improvement.
+Custom lesson metadata is protected locally against server ID-only placeholders. Full metadata transfer to another device is not added by this plan. Phase 3 subsequently separates the drawn-stroke count from the hint-paragraph count.
 
 Native Android ML Kit/download behavior, physical-device handwriting accuracy, Linux desktop launch, and a real Ollama/Llama.cpp deployment remain device/live-provider checks. This verification used controlled local providers; it does not replace those checks.
 

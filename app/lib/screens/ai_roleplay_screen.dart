@@ -1,18 +1,25 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/tts_service.dart';
+import '../services/speech_practice_service.dart';
+import '../widgets/speech_capture_dialog.dart';
 import '../widgets/tts_speaker_button.dart';
 
 class AIRoleplayScreen extends StatefulWidget {
   final ApiService? apiService;
   final Function(String targetWord, String language)? onPracticeWord;
   final TtsService? ttsService;
+  final SpeechPracticeService? speechService;
+  final bool isActive;
 
   const AIRoleplayScreen({
     super.key,
     this.apiService,
     this.onPracticeWord,
     this.ttsService,
+    this.speechService,
+    this.isActive = true,
   });
 
   @override
@@ -22,6 +29,9 @@ class AIRoleplayScreen extends StatefulWidget {
 class _AIRoleplayScreenState extends State<AIRoleplayScreen>
     with SingleTickerProviderStateMixin {
   late final ApiService _apiService;
+  late final SpeechPracticeService _speech;
+  bool _listening = false;
+  int _speechEpoch = 0;
   late final TabController _tabController;
 
   String _selectedLanguage = 'ja'; // 'ja' or 'en'
@@ -79,12 +89,16 @@ class _AIRoleplayScreenState extends State<AIRoleplayScreen>
   void initState() {
     super.initState();
     _apiService = widget.apiService ?? ApiService();
+    _speech = widget.speechService ?? SpeechPracticeService();
     _tabController = TabController(length: 2, vsync: this);
     _initInitialMessages();
   }
 
   void _initInitialMessages() {
     _conversationEpoch++;
+    _speechEpoch++;
+    if (_listening) unawaited(_speech.stop());
+    _listening = false;
     _isLoading = false;
     _isLoadingDialogue = false;
     _messages.clear();
@@ -124,6 +138,10 @@ class _AIRoleplayScreenState extends State<AIRoleplayScreen>
 
   @override
   void dispose() {
+    if (_listening) {
+      _speechEpoch++;
+      unawaited(_speech.stop());
+    }
     _tabController.dispose();
     _messageController.dispose();
     _chatScrollController.dispose();
@@ -193,6 +211,55 @@ class _AIRoleplayScreenState extends State<AIRoleplayScreen>
       if (mounted && epoch == _conversationEpoch) {
         setState(() => _isLoadingDialogue = false);
       }
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant AIRoleplayScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.isActive && oldWidget.isActive && _listening) {
+      _speechEpoch++;
+      _listening = false;
+      unawaited(_speech.stop());
+    }
+  }
+
+  Future<void> _dictateMessage() async {
+    if (_listening) {
+      _speechEpoch++;
+      await _speech.stop();
+      if (mounted) setState(() => _listening = false);
+      return;
+    }
+    final epoch = ++_speechEpoch;
+    final language = _selectedLanguage;
+    setState(() => _listening = true);
+    try {
+      final transcript = await captureSpeechTranscript(
+        context,
+        _speech,
+        language,
+        isCurrent: () => mounted && widget.isActive && epoch == _speechEpoch,
+      );
+      if (!mounted ||
+          epoch != _speechEpoch ||
+          language != _selectedLanguage ||
+          transcript == null) {
+        return;
+      }
+      _messageController.text = transcript;
+    } catch (_) {
+      if (mounted && epoch == _speechEpoch) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Không nhận được giọng nói. Kiểm tra quyền microphone rồi thử lại.',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted && epoch == _speechEpoch) setState(() => _listening = false);
     }
   }
 
@@ -487,6 +554,15 @@ class _AIRoleplayScreenState extends State<AIRoleplayScreen>
           ),
           child: Row(
             children: [
+              IconButton(
+                tooltip: _listening ? 'Dừng thu âm' : 'Nhập bằng giọng nói',
+                onPressed: _dictateMessage,
+                icon: Icon(
+                  _listening
+                      ? Icons.stop_circle_outlined
+                      : Icons.mic_none_rounded,
+                ),
+              ),
               Expanded(
                 child: TextField(
                   controller: _messageController,

@@ -246,7 +246,7 @@ class LocalDatabase {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: (db, version) async {
         await _createTables(db);
       },
@@ -254,6 +254,11 @@ class LocalDatabase {
         if (oldVersion < 2) {
           await db.execute(
             'CREATE TABLE IF NOT EXISTS local_sync_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)',
+          );
+        }
+        if (oldVersion < 4) {
+          await db.execute(
+            'CREATE TABLE IF NOT EXISTS local_profile_snapshots (profile_key TEXT PRIMARY KEY, payload TEXT NOT NULL)',
           );
         }
         if (oldVersion < 3) {
@@ -281,6 +286,10 @@ class LocalDatabase {
 
     batch.execute(
       'CREATE TABLE IF NOT EXISTS local_sync_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)',
+    );
+
+    batch.execute(
+      'CREATE TABLE IF NOT EXISTS local_profile_snapshots (profile_key TEXT PRIMARY KEY, payload TEXT NOT NULL)',
     );
 
     // 1. local_lessons
@@ -652,6 +661,132 @@ class LocalDatabase {
     await db.rawUpdate(
       "UPDATE local_sync_queue SET status = 'pending' WHERE status = 'in_progress'",
     );
+  }
+
+  Future<void>? _profileQueue;
+
+  /// Serializes account changes with local reviews and network reconciliation.
+  Future<T> withProfileLock<T>(Future<T> Function() operation) {
+    final next = (_profileQueue ?? Future<void>.value()).then(
+      (_) => operation(),
+    );
+    _profileQueue = next.then<void>(
+      (_) {},
+      onError: (Object error, StackTrace stack) {},
+    );
+    return next;
+  }
+
+  Future<String?> getMetadata(String key) async {
+    final rows = await (await database).query(
+      'local_sync_metadata',
+      where: 'key = ?',
+      whereArgs: [key],
+    );
+    return rows.isEmpty ? null : rows.first['value'] as String;
+  }
+
+  Future<void> setMetadata(String key, String value) async {
+    await (await database).insert('local_sync_metadata', {
+      'key': key,
+      'value': value,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<Map<String, dynamic>?> getAccount() async {
+    final value = await getMetadata('account');
+    return value == null
+        ? null
+        : Map<String, dynamic>.from(jsonDecode(value) as Map);
+  }
+
+  Future<int?> getSyncSequence() async =>
+      int.tryParse(await getMetadata('latest_sync_seq') ?? '');
+  Future<void> setSyncSequence(int sequence) async {
+    if (sequence < 0) throw ArgumentError.value(sequence);
+    await setMetadata('latest_sync_seq', '$sequence');
+  }
+
+  /// Call under withProfileLock so old requests cannot reconcile into a new profile.
+  Future<void> switchAccount(Map<String, dynamic>? account) async {
+    final db = await database;
+    const tables = [
+      'local_sync_queue',
+      'local_review_logs',
+      'local_completed_lessons',
+      'local_fsrs_cards',
+      'local_lessons',
+      'local_daily_activity',
+    ];
+    String key(Map<String, dynamic>? a) =>
+        a == null ? 'default_user' : '${a['server_url']}|${a['user_id']}';
+    await db.transaction((txn) async {
+      final oldRows = await txn.query(
+        'local_sync_metadata',
+        where: 'key = ?',
+        whereArgs: ['account'],
+      );
+      final old = oldRows.isEmpty
+          ? null
+          : Map<String, dynamic>.from(
+              jsonDecode(oldRows.first['value'] as String) as Map,
+            );
+      if (key(old) != key(account)) {
+        final saved = <String, dynamic>{};
+        for (final table in tables) {
+          saved[table] = await txn.query(table);
+        }
+        saved['metadata'] = await txn.query(
+          'local_sync_metadata',
+          where: 'key IN (?,?)',
+          whereArgs: ['last_pull_time', 'latest_sync_seq'],
+        );
+        await txn.insert('local_profile_snapshots', {
+          'profile_key': key(old),
+          'payload': jsonEncode(saved),
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
+        for (final table in tables) {
+          await txn.delete(table);
+        }
+        await txn.delete(
+          'local_sync_metadata',
+          where: 'key IN (?,?)',
+          whereArgs: ['last_pull_time', 'latest_sync_seq'],
+        );
+        final restored = await txn.query(
+          'local_profile_snapshots',
+          where: 'profile_key = ?',
+          whereArgs: [key(account)],
+        );
+        if (restored.isNotEmpty) {
+          final payload =
+              jsonDecode(restored.first['payload'] as String) as Map;
+          for (final table in tables) {
+            for (final row in (payload[table] as List? ?? [])) {
+              await txn.insert(table, Map<String, Object?>.from(row as Map));
+            }
+          }
+          for (final row in (payload['metadata'] as List? ?? [])) {
+            await txn.insert(
+              'local_sync_metadata',
+              Map<String, Object?>.from(row as Map),
+            );
+          }
+        }
+      }
+      if (account == null) {
+        await txn.delete(
+          'local_sync_metadata',
+          where: 'key = ?',
+          whereArgs: ['account'],
+        );
+      } else {
+        await txn.insert('local_sync_metadata', {
+          'key': 'account',
+          'value': jsonEncode(account),
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+    });
   }
 
   Future<DateTime?> getLastPullTime() async {
@@ -1057,7 +1192,7 @@ class LocalDatabase {
   // Maintenance & Teardown
   // ==========================================
 
-  Future<void> clearAll() async {
+  Future<void> clearAll() => withProfileLock(() async {
     final db = await database;
     await db.transaction((txn) async {
       await txn.delete('local_sync_queue');
@@ -1066,9 +1201,10 @@ class LocalDatabase {
       await txn.delete('local_fsrs_cards');
       await txn.delete('local_lessons');
       await txn.delete('local_sync_metadata');
+      await txn.delete('local_profile_snapshots');
       await txn.delete('local_daily_activity');
     });
-  }
+  });
 
   Future<void> close() async {
     if (_database != null && _database!.isOpen) {

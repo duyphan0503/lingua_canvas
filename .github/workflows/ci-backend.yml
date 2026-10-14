@@ -16,6 +16,7 @@ on:
       - master
       - staging
       - develop
+      - 'codex/**'
     paths:
       - 'server/**'
       - '.github/workflows/ci-backend.yml'

@@ -3,6 +3,8 @@ pub mod data;
 pub mod db;
 pub mod fsrs;
 pub mod models;
+pub mod pin;
+pub mod redis_cache;
 pub mod routes;
 
 use axum::{
@@ -21,6 +23,9 @@ pub fn create_app(state: AppState) -> Router {
         .allow_headers(Any);
 
     Router::new()
+        .route("/api/v1/auth/register", post(routes::auth::register))
+        .route("/api/v1/auth/login", post(routes::auth::login))
+        .route("/api/v1/auth/devices", get(routes::auth::list_devices))
         .route("/api/v1/health", get(routes::health_check))
         .route("/api/v1/lessons", get(routes::list_lessons))
         .route("/api/v1/lessons/:id", get(routes::get_lesson))

@@ -30,6 +30,7 @@ class MainShellScreen extends StatefulWidget {
 class _MainShellScreenState extends State<MainShellScreen> {
   late final ApiService _apiService;
   int _currentIndex = 0;
+  int _profileGeneration = 0;
   String? _targetLessonId;
 
   @override
@@ -46,12 +47,13 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   Future<void> _navigateToCanvasWithWord(String word, String language) async {
+    final generation = _profileGeneration;
     try {
       final lesson = await _apiService.ensureLessonForWord(
         word: word,
         language: language,
       );
-      if (!mounted) return;
+      if (!mounted || generation != _profileGeneration) return;
       _navigateToCanvasWithLesson(lesson.id);
       return;
     } catch (_) {
@@ -73,11 +75,13 @@ class _MainShellScreenState extends State<MainShellScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F19),
       body: IndexedStack(
+        key: ValueKey(_profileGeneration),
         index: _currentIndex,
         children: [
           // 0. Canvas Practice Screen
           CanvasPracticeScreen(
             key: ValueKey('canvas_$_targetLessonId'),
+            isActive: _currentIndex == 0,
             apiService: _apiService,
             digitalInkEngine: widget.digitalInkEngine,
             recognizer: widget.recognizer,
@@ -87,6 +91,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
           // 1. AI Roleplay & Conversational Dialogue Screen
           AIRoleplayScreen(
+            isActive: _currentIndex == 1,
             apiService: _apiService,
             onPracticeWord: _navigateToCanvasWithWord,
             ttsService: widget.ttsService,
@@ -109,8 +114,16 @@ class _MainShellScreenState extends State<MainShellScreen> {
           // 4. Settings & Backend Connection
           SettingsScreen(
             apiService: _apiService,
+            onAccountChanged: () {
+              setState(() {
+                _profileGeneration++;
+                _targetLessonId = null;
+              });
+            },
             onResetData: () {
               setState(() {
+                _profileGeneration++;
+                _apiService.syncCoordinator.lastSyncTime = null;
                 _targetLessonId = null;
               });
             },

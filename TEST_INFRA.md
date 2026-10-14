@@ -1,6 +1,12 @@
 # Test Infrastructure & Dual-Track E2E Architecture
 
-The app supports Android and Linux. The repository pins Flutter 3.47.6 and Dart 3.13.5 in `.fvmrc`; use `tools/flutter` from the repository root or `../tools/flutter` from `app/`. The pass counts below are historical results recorded on 2026-10-02, before that SDK setup and the Android/Linux-only cleanup. Latest verification is pending.
+## Phase 3–4 gates
+
+Pinned Flutter: 194 unit/widget tests; Rust: 56 tests, including real PostgreSQL isolation/cursor/concurrency regressions. Additional real Redis tests exercise RESP2 UTF-8 framing, TTL expiry, distributed counters and the 300ms IO deadline. Regression tests cover private custom-word catalog exclusion, out-of-order multi-device completions, reset during sync, delayed speech availability after leaving a screen, server-scoped credentials and disabled redirects.
+
+For infrastructure coverage, set `TEST_DATABASE_URL` to a disposable PostgreSQL database and `TEST_REDIS_URL` to an isolated Redis instance before `cargo test --offline --all-targets`. Run the 47-test E2E suite against a separate freshly seeded database; it writes review data. Native speech has 19 service tests and a successful offline Kotlin compile; physical microphone/permission/recognizer QA is still manual.
+
+The app supports Android and Linux. The repository pins Flutter 3.47.6 and Dart 3.13.5 in `.fvmrc`; use `tools/flutter` from the repository root or `../tools/flutter` from `app/`. The pass counts below are historical results recorded on 2026-10-02, before that SDK setup and the Android/Linux-only cleanup. Current automated verification is recorded above.
 
 ## 1. Overview & Architectural Philosophy
 Lingua Canvas employs a **Dual-Track Testing Architecture**:

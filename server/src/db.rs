@@ -147,13 +147,14 @@ pub async fn seed_lessons_if_empty(
     Ok(())
 }
 
-/// Fetches lessons with optional language and category filters using dynamic queries.
+/// Fetches the public curriculum. Synthetic custom rows exist only for FSRS foreign keys.
+/// They must never become shared curriculum, even when explicitly requesting their category.
 pub async fn fetch_lessons(
     pool: &PgPool,
     language: Option<&str>,
     category: Option<&str>,
 ) -> Result<Vec<LessonItem>, sqlx::Error> {
-    let mut query_str = "SELECT id, language, category, target_text, phonetic_or_kana, meaning_vi, workplace_context, workplace_context_vi, stroke_order_hints, difficulty_level, created_at FROM lessons WHERE 1=1".to_string();
+    let mut query_str = "SELECT id, language, category, target_text, phonetic_or_kana, meaning_vi, workplace_context, workplace_context_vi, stroke_order_hints, difficulty_level, created_at FROM lessons WHERE category <> 'custom'".to_string();
     let mut bindings: Vec<String> = Vec::new();
 
     if let Some(lang) = language {
@@ -175,13 +176,13 @@ pub async fn fetch_lessons(
     Ok(rows.into_iter().map(LessonItem::from).collect())
 }
 
-/// Fetches a single lesson by ID from the database.
+/// Fetches a public curriculum lesson; private synthetic FSRS rows are not addressable here.
 pub async fn fetch_lesson_by_id(
     pool: &PgPool,
     id: &str,
 ) -> Result<Option<LessonItem>, sqlx::Error> {
     let row = sqlx::query_as::<_, DbLessonItem>(
-        "SELECT id, language, category, target_text, phonetic_or_kana, meaning_vi, workplace_context, workplace_context_vi, stroke_order_hints, difficulty_level, created_at FROM lessons WHERE id = $1",
+        "SELECT id, language, category, target_text, phonetic_or_kana, meaning_vi, workplace_context, workplace_context_vi, stroke_order_hints, difficulty_level, created_at FROM lessons WHERE id = $1 AND category <> 'custom'",
     )
     .bind(id)
     .fetch_optional(pool)
@@ -194,11 +195,13 @@ pub async fn fetch_lesson_by_id(
 pub async fn fetch_card_by_id(
     connection: &mut sqlx::PgConnection,
     item_id: &str,
+    user_id: &str,
 ) -> Result<Option<FSRSCard>, sqlx::Error> {
     let row = sqlx::query_as::<_, DbFsrsCard>(
-        "SELECT item_id, state, stability, difficulty, reps, lapses, last_review, next_review, updated_at FROM fsrs_cards WHERE item_id = $1",
+        "SELECT item_id, state, stability, difficulty, reps, lapses, last_review, next_review, updated_at FROM fsrs_cards WHERE item_id = $1 AND user_id = $2",
     )
     .bind(item_id)
+    .bind(user_id)
     .fetch_optional(connection)
     .await?;
 
@@ -210,6 +213,7 @@ pub async fn fetch_card_by_id(
 pub async fn upsert_card(
     connection: &mut sqlx::PgConnection,
     card: &FSRSCard,
+    user_id: &str,
 ) -> Result<(), sqlx::Error> {
     let hints = sqlx::types::Json(Vec::<String>::new());
     sqlx::query(
@@ -232,9 +236,9 @@ pub async fn upsert_card(
         r#"
         INSERT INTO fsrs_cards (
             item_id, state, stability, difficulty, reps, lapses,
-            last_review, next_review, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, clock_timestamp())
-        ON CONFLICT (item_id) DO UPDATE SET
+            last_review, next_review, updated_at, user_id
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, clock_timestamp(), $9)
+        ON CONFLICT (user_id, item_id) DO UPDATE SET
             state = EXCLUDED.state,
             stability = EXCLUDED.stability,
             difficulty = EXCLUDED.difficulty,
@@ -242,7 +246,8 @@ pub async fn upsert_card(
             lapses = EXCLUDED.lapses,
             last_review = EXCLUDED.last_review,
             next_review = EXCLUDED.next_review,
-            updated_at = clock_timestamp()
+            updated_at = clock_timestamp(),
+            sync_seq = nextval('sync_change_seq')
         "#,
     )
     .bind(&card.item_id)
@@ -253,6 +258,7 @@ pub async fn upsert_card(
     .bind(card.lapses as i32)
     .bind(card.last_review)
     .bind(card.next_review)
+    .bind(user_id)
     .execute(&mut *connection)
     .await?;
 
@@ -263,11 +269,13 @@ pub async fn upsert_card(
 pub async fn fetch_due_cards(
     pool: &PgPool,
     now: DateTime<Utc>,
+    user_id: &str,
 ) -> Result<Vec<FSRSCard>, sqlx::Error> {
     let rows = sqlx::query_as::<_, DbFsrsCard>(
-        "SELECT item_id, state, stability, difficulty, reps, lapses, last_review, next_review, updated_at FROM fsrs_cards WHERE next_review <= $1",
+        "SELECT item_id, state, stability, difficulty, reps, lapses, last_review, next_review, updated_at FROM fsrs_cards WHERE next_review <= $1 AND user_id = $2",
     )
     .bind(now)
+    .bind(user_id)
     .fetch_all(pool)
     .await?;
 
@@ -275,8 +283,12 @@ pub async fn fetch_due_cards(
 }
 
 /// Fetches item IDs for all cards that have been reviewed at least once.
-pub async fn fetch_all_reviewed_card_ids(pool: &PgPool) -> Result<Vec<String>, sqlx::Error> {
-    let rows: Vec<(String,)> = sqlx::query_as("SELECT item_id FROM fsrs_cards")
+pub async fn fetch_all_reviewed_card_ids(
+    pool: &PgPool,
+    user_id: &str,
+) -> Result<Vec<String>, sqlx::Error> {
+    let rows: Vec<(String,)> = sqlx::query_as("SELECT item_id FROM fsrs_cards WHERE user_id=$1")
+        .bind(user_id)
         .fetch_all(pool)
         .await?;
     Ok(rows.into_iter().map(|(id,)| id).collect())

@@ -17,6 +17,7 @@ on:
       - master
       - staging
       - develop
+      - 'codex/**'
     paths:
       - 'app/**'
       - '.github/workflows/ci-flutter.yml'
