@@ -40,3 +40,5 @@ PIN derivation uses self-contained PBKDF2-HMAC-SHA256 (600,000 iterations, rando
 Scores measure similarity between recognized text and target/Kana, not acoustic phoneme quality. Eight complex glyphs (発 確 認 議 連 絡 談 報) and generated unknown-word paths are labeled illustrative. Physical Android microphone permissions, recognizer availability and real speech accuracy still need device QA, along with the existing ML Kit/download, Linux desktop launch and real AI-provider checks.
 
 No merge or production deployment is performed. Phase 3–4 depends on the still-open Phase 1 PR #1; a stacked PR keeps its review scoped to this phase.
+
+Delivery CI: pull-request branch filters also accept `codex/**`, allowing stacked feature PRs to run the same backend, Flutter and security checks. Push filters and job permissions remain unchanged.
