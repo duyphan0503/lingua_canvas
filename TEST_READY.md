@@ -1,12 +1,29 @@
 # Lingua Canvas verification record
 
-Historical record date: 2026-10-02. The results below predate the Flutter 3.47.6 toolchain and Android/Linux-only platform cleanup. Latest verification for the updated toolchain and target set is pending. Native device checks, live-provider inference, dependency audit clearance and remote integration also remain pending.
+Historical record date: 2026-10-02. The results below predate the Flutter 3.47.6 toolchain and Android/Linux-only platform cleanup. Current automated verification is recorded below. Native device checks, live-provider inference and remote integration remain pending.
 
 ## Current platform and toolchain
 
-The Flutter app supports Android and Linux. Flutter 3.47.6 and Dart 3.13.5 are pinned in `.fvmrc`; use `tools/flutter` from the repository root or `../tools/flutter` from `app/`. Check the active versions with `./tools/flutter --version`. The historical pass counts below describe the earlier verification and are not current results.
+The Flutter app supports Android and Linux. Flutter 3.47.6 and Dart 3.13.5 are pinned in `.fvmrc`; use `tools/flutter` from the repository root or `../tools/flutter` from `app/`. Check the active versions with `./tools/flutter --version`. The latest automated results below use this pinned toolchain; the later historical section records earlier verification.
 
-## Verified results
+## Latest verification — 2026-10-14
+
+All nine tasks in `lingua_canvas_phase1_execution_plan.md` are implemented on `codex/phase1-learning-expansion`.
+
+- Flutter 3.47.6 / Dart 3.13.5: **145 unit/widget tests passed**, analyzer clean, repository-wide formatting passed.
+- Rust: **41 tests passed**, including opt-in PostgreSQL 16 tests and the seed-upgrade regression; formatting, check and Clippy with warnings denied passed.
+- Four E2E tiers: **47/47 passed** against a freshly seeded, disposable PostgreSQL 16 database and an isolated localhost backend. The pinned Flutter SDK was first on PATH.
+- Adversarial provider/parser/timeout suite: **59/59 passed**. E2E runner/stub Python unit tests: **5/5 passed**. Docker Compose configuration validated.
+- Live Flutter SQLite → Rust HTTP → PostgreSQL review sync → lesson reload passed, preserving custom word, language, meaning and example metadata.
+- GitNexus indexing and complete change analysis passed without partial/truncated flags. Aggregate graph risk is HIGH because the shared lesson persistence/loading and canvas lifecycle paths changed; these paths have regression coverage.
+- Both catalogs now contain **135 lessons**, including **52 additions**. Existing lesson IDs/content are retained; upgrades insert missing IDs rather than relying on total row counts.
+- `cargo audit` exits **0**. `quinn-proto` is patched to **0.11.18**. `server/.cargo/audit.toml` explicitly ignores only `RUSTSEC-2023-0071` for inactive optional `rsa`; `cargo tree --locked --target all -i rsa` confirms no active dependency. Re-evaluate the exception if SQLx features/database support change.
+
+Custom lesson metadata is protected locally against server ID-only placeholders. Full metadata transfer to another device is not added by this plan. The canvas counter still derives suggested strokes from the number of hint paragraphs; explicit expected-stroke metadata is a deferred minor UX improvement.
+
+Native Android ML Kit/download behavior, physical-device handwriting accuracy, Linux desktop launch, and a real Ollama/Llama.cpp deployment remain device/live-provider checks. This verification used controlled local providers; it does not replace those checks.
+
+## Historical verified results — 2026-10-02
 
 | Check | Result |
 | --- | --- |
@@ -74,7 +91,7 @@ Historical artifact details: the debug APK was built with official Android tooli
 
 Official Gitleaks 8.30.1 was verified against its release SHA-256. It found no leaks in the five-commit Git history at `e55287c` or a snapshot of current source files (tracked files plus non-ignored additions). Ignored build caches and local credentials are outside this source-scan scope.
 
-`cargo-audit` 0.22.2 scanned 260 lockfile dependencies using the fetched RustSec database. `quinn-proto` was patched from 0.11.14 to 0.11.15 for [RUSTSEC-2026-0185](https://github.com/RustSec/advisory-db/blob/main/crates/quinn-proto/RUSTSEC-2026-0185.md). The audit still exits 1 for [RUSTSEC-2023-0071](https://rustsec.org/advisories/RUSTSEC-2023-0071.html): `rsa` 0.9.10 has no fixed release. It remains in optional SQLx MySQL lock dependencies; `cargo tree --locked --target all -i rsa` prints no active dependency with the current feature set. No advisory was suppressed. The security workflow now propagates audit failures, so this remaining finding will fail its audit step until resolved or an explicit audit policy is adopted.
+Historical audit result (2026-10-02, superseded by the latest verification above): `cargo-audit` 0.22.2 scanned 260 lockfile dependencies using the fetched RustSec database. `quinn-proto` was patched from 0.11.14 to 0.11.15 for [RUSTSEC-2026-0185](https://github.com/RustSec/advisory-db/blob/main/crates/quinn-proto/RUSTSEC-2026-0185.md). The audit still exits 1 for [RUSTSEC-2023-0071](https://rustsec.org/advisories/RUSTSEC-2023-0071.html): `rsa` 0.9.10 has no fixed release. It remains in optional SQLx MySQL lock dependencies; `cargo tree --locked --target all -i rsa` prints no active dependency with the current feature set. No advisory was suppressed. The security workflow now propagates audit failures, so this remaining finding will fail its audit step until resolved or an explicit audit policy is adopted.
 
 Earlier real-host checks found no Ollama/llama.cpp binary or process. The expected local provider endpoints refused connections. An Android phone is available for the next device pass; confirm its current ADB connection before testing. Follow [DEVICE_VALIDATION.md](DEVICE_VALIDATION.md) for Android recognition, Linux launch, offline recovery and fallback-disabled provider scenarios.
 

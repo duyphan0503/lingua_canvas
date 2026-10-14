@@ -47,22 +47,22 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
   Future<void> _navigateToCanvasWithWord(String word, String language) async {
     try {
-      final lessons = await _apiService.getLessons();
+      final lesson = await _apiService.ensureLessonForWord(
+        word: word,
+        language: language,
+      );
       if (!mounted) return;
-      for (final lesson in lessons) {
-        if (lesson.language == language &&
-            lesson.targetText.trim() == word.trim()) {
-          _navigateToCanvasWithLesson(lesson.id);
-          return;
-        }
-      }
+      _navigateToCanvasWithLesson(lesson.id);
+      return;
     } catch (_) {
       if (!mounted) return;
     }
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('“$word” chưa có bài luyện viết trong giáo trình.'),
+          content: Text(
+            '“$word” không thể lưu bài luyện viết. Vui lòng thử lại.',
+          ),
         ),
       );
     }

@@ -132,7 +132,8 @@ class LocalCompletedLesson {
 class StudyStreak {
   final int currentStreak;
   final int longestStreak;
-  final Map<String, int> activityHistory; // last 30 days activity map {date: count}
+  final Map<String, int>
+  activityHistory; // last 30 days activity map {date: count}
 
   const StudyStreak({
     required this.currentStreak,
@@ -153,10 +154,12 @@ class StudyStreak {
   }
 
   factory StudyStreak.fromMap(Map<String, dynamic> map) {
-    final rawHistory = (map['activity_history'] ??
-        map['history'] ??
-        map['last_30_days'] ??
-        map['activity_map']) as Map?;
+    final rawHistory =
+        (map['activity_history'] ??
+                map['history'] ??
+                map['last_30_days'] ??
+                map['activity_map'])
+            as Map?;
     final Map<String, int> history = {};
     if (rawHistory != null) {
       rawHistory.forEach((k, v) {
@@ -388,7 +391,7 @@ class LocalDatabase {
     final db = await database;
     final batch = db.batch();
     for (final lesson in lessons) {
-      batch.insert('local_lessons', {
+      final values = <String, Object?>{
         'id': lesson.id,
         'language': lesson.language,
         'category': lesson.category,
@@ -400,7 +403,20 @@ class LocalDatabase {
         'stroke_order_hints': jsonEncode(lesson.strokeOrderHints),
         'difficulty_level': lesson.difficultyLevel,
         'cached_at': DateTime.now().toUtc().toIso8601String(),
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      };
+      final columns = values.keys.join(', ');
+      final placeholders = List.filled(values.length, '?').join(', ');
+      final updates = values.keys
+          .where((key) => key != 'id')
+          .map((key) => '$key = excluded.$key')
+          .join(', ');
+      // Sync may send ID-only placeholders; never replace a real local lesson.
+      batch.rawInsert(
+        'INSERT INTO local_lessons ($columns) VALUES ($placeholders) '
+        'ON CONFLICT(id) DO UPDATE SET $updates '
+        "WHERE NOT (excluded.language = 'custom' AND local_lessons.language IN ('ja', 'en'))",
+        values.values.toList(),
+      );
     }
     await batch.commit(noResult: true);
   }
@@ -924,8 +940,9 @@ class LocalDatabase {
     final Map<String, int> reviewCounts = {};
     for (final row in reviewRows) {
       try {
-        final reviewDate =
-            DateTime.parse(row['review_time'] as String).toLocal();
+        final reviewDate = DateTime.parse(
+          row['review_time'] as String,
+        ).toLocal();
         final key = _formatDateString(reviewDate);
         reviewCounts[key] = (reviewCounts[key] ?? 0) + 1;
       } catch (_) {}
@@ -951,8 +968,11 @@ class LocalDatabase {
       currentStreak = 1;
       int dayOffset = 1;
       while (true) {
-        final prevDay =
-            DateTime(today.year, today.month, today.day - dayOffset);
+        final prevDay = DateTime(
+          today.year,
+          today.month,
+          today.day - dayOffset,
+        );
         final prevKey = _formatDateString(prevDay);
         if (activeDateStrings.contains(prevKey)) {
           currentStreak++;
@@ -966,8 +986,11 @@ class LocalDatabase {
       currentStreak = 1;
       int dayOffset = 1;
       while (true) {
-        final prevDay =
-            DateTime(yesterday.year, yesterday.month, yesterday.day - dayOffset);
+        final prevDay = DateTime(
+          yesterday.year,
+          yesterday.month,
+          yesterday.day - dayOffset,
+        );
         final prevKey = _formatDateString(prevDay);
         if (activeDateStrings.contains(prevKey)) {
           currentStreak++;
@@ -988,8 +1011,7 @@ class LocalDatabase {
         int.parse(parts[1]),
         int.parse(parts[2]),
       );
-    }).toList()
-      ..sort();
+    }).toList()..sort();
 
     int longestStreak = 0;
     int currentRun = 0;
