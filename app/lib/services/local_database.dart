@@ -129,6 +129,75 @@ class LocalCompletedLesson {
   }
 }
 
+class StudyStreak {
+  final int currentStreak;
+  final int longestStreak;
+  final Map<String, int> activityHistory; // last 30 days activity map {date: count}
+
+  const StudyStreak({
+    required this.currentStreak,
+    required this.longestStreak,
+    required this.activityHistory,
+  });
+
+  Map<String, int> get history => activityHistory;
+  Map<String, int> get last30Days => activityHistory;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'current_streak': currentStreak,
+      'longest_streak': longestStreak,
+      'activity_history': activityHistory,
+      'last_30_days': activityHistory,
+    };
+  }
+
+  factory StudyStreak.fromMap(Map<String, dynamic> map) {
+    final rawHistory = (map['activity_history'] ??
+        map['history'] ??
+        map['last_30_days'] ??
+        map['activity_map']) as Map?;
+    final Map<String, int> history = {};
+    if (rawHistory != null) {
+      rawHistory.forEach((k, v) {
+        history[k.toString()] = (v as num).toInt();
+      });
+    }
+    return StudyStreak(
+      currentStreak:
+          (map['current_streak'] ?? map['currentStreak'] as num?)?.toInt() ?? 0,
+      longestStreak:
+          (map['longest_streak'] ?? map['longestStreak'] as num?)?.toInt() ?? 0,
+      activityHistory: history,
+    );
+  }
+
+  dynamic operator [](String key) {
+    switch (key) {
+      case 'current_streak':
+      case 'currentStreak':
+        return currentStreak;
+      case 'longest_streak':
+      case 'longestStreak':
+        return longestStreak;
+      case 'activity_history':
+      case 'history':
+      case 'last_30_days':
+      case 'activity_map':
+        return activityHistory;
+      default:
+        return null;
+    }
+  }
+}
+
+String _formatDateString(DateTime date) {
+  final y = date.year.toString().padLeft(4, '0');
+  final m = date.month.toString().padLeft(2, '0');
+  final d = date.day.toString().padLeft(2, '0');
+  return '$y-$m-$d';
+}
+
 class LocalDatabase {
   static LocalDatabase? _instance;
   static Database? _database;
@@ -174,7 +243,7 @@ class LocalDatabase {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: (db, version) async {
         await _createTables(db);
       },
@@ -182,6 +251,11 @@ class LocalDatabase {
         if (oldVersion < 2) {
           await db.execute(
             'CREATE TABLE IF NOT EXISTS local_sync_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)',
+          );
+        }
+        if (oldVersion < 3) {
+          await db.execute(
+            'CREATE TABLE IF NOT EXISTS local_daily_activity (activity_date TEXT PRIMARY KEY, items_count INTEGER NOT NULL DEFAULT 0)',
           );
         }
       },
@@ -196,6 +270,7 @@ class LocalDatabase {
       return;
     }
     _database = await _initDatabase(customPath: customPath);
+    await _createTables(_database!);
   }
 
   Future<void> _createTables(Database db) async {
@@ -289,6 +364,17 @@ class LocalDatabase {
     ''');
     batch.execute(
       'CREATE INDEX IF NOT EXISTS idx_local_completed_lessons_synced ON local_completed_lessons(synced);',
+    );
+
+    // 6. local_daily_activity
+    batch.execute('''
+      CREATE TABLE IF NOT EXISTS local_daily_activity (
+        activity_date TEXT PRIMARY KEY,
+        items_count INTEGER NOT NULL DEFAULT 0
+      );
+    ''');
+    batch.execute(
+      'CREATE INDEX IF NOT EXISTS idx_local_daily_activity_date ON local_daily_activity(activity_date);',
     );
 
     await batch.commit(noResult: true);
@@ -756,9 +842,193 @@ class LocalDatabase {
         'retry_count': 0,
         'status': 'pending',
       });
+
+      // 5. Update daily activity
+      final actKey = _formatDateString(reviewTime.toLocal());
+      final existingAct = await txn.query(
+        'local_daily_activity',
+        where: 'activity_date = ?',
+        whereArgs: [actKey],
+        limit: 1,
+      );
+      if (existingAct.isEmpty) {
+        await txn.insert('local_daily_activity', {
+          'activity_date': actKey,
+          'items_count': 1,
+        });
+      } else {
+        final current = (existingAct.first['items_count'] as num).toInt();
+        await txn.update(
+          'local_daily_activity',
+          {'items_count': current + 1},
+          where: 'activity_date = ?',
+          whereArgs: [actKey],
+        );
+      }
     });
 
     return logId;
+  }
+
+  // ==========================================
+  // Daily Activity & Study Streak
+  // ==========================================
+
+  Future<void> logDailyActivity(DateTime date, int itemsCount) async {
+    if (itemsCount <= 0) return;
+    final db = await database;
+    final dateKey = _formatDateString(date.toLocal());
+    await db.transaction((txn) async {
+      final existing = await txn.query(
+        'local_daily_activity',
+        where: 'activity_date = ?',
+        whereArgs: [dateKey],
+        limit: 1,
+      );
+      if (existing.isEmpty) {
+        await txn.insert('local_daily_activity', {
+          'activity_date': dateKey,
+          'items_count': itemsCount,
+        });
+      } else {
+        final current = (existing.first['items_count'] as num).toInt();
+        await txn.update(
+          'local_daily_activity',
+          {'items_count': current + itemsCount},
+          where: 'activity_date = ?',
+          whereArgs: [dateKey],
+        );
+      }
+    });
+  }
+
+  Future<StudyStreak> getStudyStreak({DateTime? asOf}) async {
+    final db = await database;
+    final ref = (asOf ?? DateTime.now()).toLocal();
+    final today = DateTime(ref.year, ref.month, ref.day);
+
+    // 1. Fetch logged daily activities
+    final activityRows = await db.query('local_daily_activity');
+    final Map<String, int> allActivity = {};
+    for (final row in activityRows) {
+      final d = row['activity_date'] as String;
+      final cnt = (row['items_count'] as num).toInt();
+      allActivity[d] = cnt;
+    }
+
+    // 2. Fetch review logs to ensure any reviews not yet logged in local_daily_activity are counted
+    final reviewRows = await db.query(
+      'local_review_logs',
+      columns: ['review_time'],
+    );
+    final Map<String, int> reviewCounts = {};
+    for (final row in reviewRows) {
+      try {
+        final reviewDate =
+            DateTime.parse(row['review_time'] as String).toLocal();
+        final key = _formatDateString(reviewDate);
+        reviewCounts[key] = (reviewCounts[key] ?? 0) + 1;
+      } catch (_) {}
+    }
+
+    for (final entry in reviewCounts.entries) {
+      allActivity[entry.key] = max(allActivity[entry.key] ?? 0, entry.value);
+    }
+
+    // 3. Set of dates with activity > 0
+    final activeDateStrings = allActivity.entries
+        .where((e) => e.value > 0)
+        .map((e) => e.key)
+        .toSet();
+
+    // 4. Calculate current streak
+    final todayKey = _formatDateString(today);
+    final yesterday = DateTime(today.year, today.month, today.day - 1);
+    final yesterdayKey = _formatDateString(yesterday);
+
+    int currentStreak = 0;
+    if (activeDateStrings.contains(todayKey)) {
+      currentStreak = 1;
+      int dayOffset = 1;
+      while (true) {
+        final prevDay =
+            DateTime(today.year, today.month, today.day - dayOffset);
+        final prevKey = _formatDateString(prevDay);
+        if (activeDateStrings.contains(prevKey)) {
+          currentStreak++;
+          dayOffset++;
+        } else {
+          break;
+        }
+      }
+    } else if (activeDateStrings.contains(yesterdayKey)) {
+      // Quiet streak: user hasn't studied today yet, but preserved from yesterday
+      currentStreak = 1;
+      int dayOffset = 1;
+      while (true) {
+        final prevDay =
+            DateTime(yesterday.year, yesterday.month, yesterday.day - dayOffset);
+        final prevKey = _formatDateString(prevDay);
+        if (activeDateStrings.contains(prevKey)) {
+          currentStreak++;
+          dayOffset++;
+        } else {
+          break;
+        }
+      }
+    } else {
+      currentStreak = 0;
+    }
+
+    // 5. Calculate longest streak across history
+    final List<DateTime> sortedDates = activeDateStrings.map((s) {
+      final parts = s.split('-');
+      return DateTime(
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+        int.parse(parts[2]),
+      );
+    }).toList()
+      ..sort();
+
+    int longestStreak = 0;
+    int currentRun = 0;
+    DateTime? prev;
+
+    for (final d in sortedDates) {
+      if (prev == null) {
+        currentRun = 1;
+      } else {
+        final diff = d.difference(prev).inDays;
+        if (diff == 1) {
+          currentRun++;
+        } else if (diff > 1) {
+          currentRun = 1;
+        }
+      }
+      if (currentRun > longestStreak) {
+        longestStreak = currentRun;
+      }
+      prev = d;
+    }
+
+    if (currentStreak > longestStreak) {
+      longestStreak = currentStreak;
+    }
+
+    // 6. Last 30 days activity map {date: count}
+    final Map<String, int> last30Days = {};
+    for (int i = 29; i >= 0; i--) {
+      final d = DateTime(today.year, today.month, today.day - i);
+      final key = _formatDateString(d);
+      last30Days[key] = allActivity[key] ?? 0;
+    }
+
+    return StudyStreak(
+      currentStreak: currentStreak,
+      longestStreak: longestStreak,
+      activityHistory: last30Days,
+    );
   }
 
   // ==========================================
@@ -774,6 +1044,7 @@ class LocalDatabase {
       await txn.delete('local_fsrs_cards');
       await txn.delete('local_lessons');
       await txn.delete('local_sync_metadata');
+      await txn.delete('local_daily_activity');
     });
   }
 

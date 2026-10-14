@@ -57,7 +57,7 @@ class HandwritingRecognizer {
   HandwritingRecognizer({DigitalInkEngine? engine})
     : engine =
           engine ??
-          (!kIsWeb && (Platform.isAndroid || Platform.isIOS)
+          (!kIsWeb && Platform.isAndroid
               ? MlKitDigitalInkEngine()
               : HeuristicDigitalInkEngine());
 
@@ -123,13 +123,19 @@ class HandwritingRecognizer {
 
     // 1. Digital Ink Engine candidates
     final candidates = await engine.getCandidates(strokes, languageTag);
-    final topCandidate = candidates.isNotEmpty ? candidates.first : "";
+    final topCandidate = candidates.isNotEmpty ? candidates.first.trim() : "";
+    final normTarget = targetText.trim();
+    final isEn = languageTag.startsWith('en');
 
     // 2. Candidate Match Score (70% weight base)
-    // Top-1 exact match gives 0.95 base score; top 2..5 matches receive rank penalty (0.85 to 0.55).
+    // Checks exact and case-insensitive matches across top candidates
     int matchRank = -1;
     for (int i = 0; i < min(candidates.length, 5); i++) {
-      if (candidates[i] == targetText) {
+      final cand = candidates[i].trim();
+      final isMatch = isEn
+          ? cand.toLowerCase() == normTarget.toLowerCase()
+          : cand == normTarget;
+      if (isMatch) {
         matchRank = i;
         break;
       }
@@ -144,7 +150,11 @@ class HandwritingRecognizer {
     } else {
       // Fuzzy / Levenshtein matching for multi-character words ("バグ", "deploy", "開発")
       for (final candidate in candidates.take(5)) {
-        final ratio = levenshteinRatio(candidate, targetText);
+        final cand = candidate.trim();
+        final ratio = levenshteinRatio(
+          isEn ? cand.toLowerCase() : cand,
+          isEn ? normTarget.toLowerCase() : normTarget,
+        );
         if (ratio > bestLevRatio) {
           bestLevRatio = ratio;
         }
@@ -203,34 +213,34 @@ class HandwritingRecognizer {
     if (isAccurate) {
       if (matchRank == 0) {
         feedback =
-            "Tuyệt vời! Nhận diện chính xác '$targetText'. Nét chữ rất chuẩn.";
+            "Tuyệt vời! Nhận diện chính xác '$normTarget'. Nét chữ rất chuẩn.";
       } else if (matchRank > 0) {
         feedback =
             "Khá tốt! ML Kit nhận diện gần đúng (Top 1 là '$topCandidate'). Chú ý nắn nót hơn.";
       } else {
         feedback =
-            "Rất tốt! Nhận diện '$topCandidate' đạt độ tương đồng cao với '$targetText'.";
+            "Rất tốt! Nhận diện '$topCandidate' đạt độ tương đồng cao với '$normTarget'.";
       }
     } else {
-      if (totalStrokes < expectedStrokes) {
+      if (totalStrokes < expectedStrokes && matchRank == -1) {
         feedback =
             "Còn thiếu nét (Đã viết: $totalStrokes/$expectedStrokes nét). Hãy viết đủ các nét theo hướng dẫn.";
-      } else if (totalStrokes > expectedStrokes + 2) {
+      } else if (totalStrokes > expectedStrokes + 3 && matchRank == -1) {
         feedback =
             "Hơi nhiều nét thừa ($totalStrokes nét). Hãy thử viết dứt khoát hơn.";
-      } else if (width < 30 || height < 30) {
+      } else if (width < 25 || height < 25) {
         feedback =
-            "Khung chữ quá nhỏ (dưới 30px). Hãy viết to và rõ ràng hơn trong khung canvas.";
+            "Khung chữ quá nhỏ (dưới 25px). Hãy viết to và rõ ràng hơn trong khung canvas.";
       } else if (topCandidate.isNotEmpty) {
         feedback =
-            "Chưa nhận diện được '$targetText'. ML Kit nhận diện: '$topCandidate'. Hãy thử lại.";
+            "Chưa nhận diện được '$normTarget'. ML Kit nhận diện: '$topCandidate'. Hãy thử lại.";
       } else {
         feedback = "Chưa nhận diện được nét chữ. Hãy thử viết lại rõ ràng hơn.";
       }
     }
 
     final recognizedText = matchRank >= 0
-        ? targetText
+        ? normTarget
         : (topCandidate.isNotEmpty ? topCandidate : "...");
 
     return RecognitionResult(

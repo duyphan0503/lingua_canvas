@@ -1,6 +1,6 @@
 # Native device and live-provider validation
 
-Status: Android debug compilation passed; device and provider scenarios remain pending. These checks require a connected device, a macOS/Xcode host for iOS, and a running model provider. Automated tests and a successful APK build do not establish recognition accuracy or device recovery.
+Status: the prior Android debug APK predates the pinned Flutter 3.47.6 toolchain. Rebuild and install from the current toolchain before recording Android validation. Phone, Linux desktop, recognition, offline recovery and live-provider scenarios remain pending. Confirm the phone's current connection with `adb devices -l` before testing. Automated tests and a successful APK build do not establish recognition accuracy or device recovery.
 
 ## Android connection
 
@@ -12,7 +12,7 @@ For a USB-connected Android device:
 adb devices -l
 adb reverse tcp:8080 tcp:8080
 cd app
-flutter run --dart-define=API_BASE_URL=http://127.0.0.1:8080/api/v1
+../tools/flutter run --dart-define=API_BASE_URL=http://127.0.0.1:8080/api/v1
 ```
 
 For an Android emulator, use `http://10.0.2.2:8080/api/v1` instead. `API_BASE_URL` must include `/api/v1`. Local HTTP is enabled in debug builds. Use an HTTPS backend for release builds.
@@ -42,9 +42,15 @@ For a debug SQLite inspection, the application ID is `com.linguacanvas.app` and 
 
 USB reverse forwarding still carries HTTP independently of Wi-Fi. To make the backend unreachable during an offline test, remove the forwarding rule with `adb reverse --remove tcp:8080` and restore it for recovery. Check airplane-mode behavior separately on a device using its normal network connection to the backend.
 
-## iOS
+## Linux desktop
 
-On a macOS host with Xcode and CocoaPods, run the same scenarios on iOS 15.5 or newer. First verify compilation from `app/` with `flutter build ios --debug --no-codesign`; device installation also requires the appropriate signing configuration. Use a reachable HTTPS backend and record the device/OS and native model versions. A simulator build alone does not verify device recognition.
+From `app/`, launch with the pinned Flutter wrapper and a reachable backend:
+
+```bash
+../tools/flutter run -d linux --dart-define=API_BASE_URL=http://127.0.0.1:8080/api/v1
+```
+
+Record the Linux distribution, desktop session, Flutter version, and launch result. Exercise navigation, lesson loading, drawing input, SQLite persistence and recovery after restarting the app. Linux uses the injected/headless recognition path; this does not validate native Android ML Kit recognition.
 
 ## Real Ollama smoke
 
@@ -75,12 +81,12 @@ For an available OpenAI-compatible Llama.cpp deployment, use `AI_PROVIDER=llama_
 
 | Scenario | Device/provider and version | Evidence | Result |
 | --- | --- | --- | --- |
-| Android native build | SDK 36, minimum Android SDK 24 | `app/build/app/outputs/flutter-apk/app-debug.apk`; checksum in `TEST_READY.md` | Passed |
+| Android debug APK build | Historical isolated SDK 36 build; minimum Android SDK 24 | Artifact checksum in `TEST_READY.md`; rebuild with pinned Flutter 3.47.6 before current verification | Historical pass |
 | Android device installation | Pending | Device/install log | Pending |
 | English and Japanese native recognition | Pending | Targets, candidates, scores | Pending |
 | Cached recognition offline | Pending | Device log/recording | Pending |
 | Offline review survives restart | Pending | Local review/queue and UI | Pending |
 | Reconnect/interrupted sync is idempotent | Pending | Local queue and server card/log | Pending |
 | Drawing survives foreground refresh | Pending | Device recording | Pending |
-| iOS build and device scenarios | Pending | Xcode log and device evidence | Pending |
+| Linux desktop launch and persistence | Pending | Distribution, Flutter version, and launch record | Pending |
 | Real provider with fallback disabled | Pending | Provider version and HTTP responses | Pending |

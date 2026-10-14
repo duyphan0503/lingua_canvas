@@ -121,9 +121,10 @@ pub async fn seed_lessons_if_empty(
     let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM lessons")
         .fetch_one(pool)
         .await?;
-    if count.0 == 0 {
+    if count.0 < lessons.len() as i64 {
         tracing::info!(
-            "Seeding PostgreSQL with {} initial lessons...",
+            "Seeding/updating PostgreSQL with initial lessons (current count: {}, target: {})...",
+            count.0,
             lessons.len()
         );
         for l in lessons {

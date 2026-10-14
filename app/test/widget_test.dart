@@ -43,7 +43,7 @@ class PracticeApiService extends ApiService {
       meaningVi: 'Triển khai phần mềm lên server',
       workplaceContext: '',
       workplaceContextVi: '',
-      strokeOrderHints: [],
+      strokeOrderHints: ['English writing hints must stay hidden'],
       difficultyLevel: 1,
     ),
   ];
@@ -165,7 +165,7 @@ void main() {
       expect(find.text('Đánh giá'), findsOneWidget);
 
       // 4. Verify Model status indicator
-      expect(find.text('Mô hình AI: Sẵn sàng (On-device)'), findsOneWidget);
+      expect(find.text('Nhận diện gần đúng (cơ bản)'), findsOneWidget);
 
       // 5. Verify FSRS Spaced Repetition rating buttons
       expect(find.text('Again'), findsOneWidget);
@@ -245,6 +245,11 @@ void main() {
         expect(find.text('Triển khai phần mềm lên server'), findsOneWidget);
         expect(find.byType(HandwritingCanvas), findsNothing);
         expect(find.textContaining('Mô hình AI:'), findsNothing);
+        expect(find.text('Hướng dẫn thứ tự nét viết'), findsNothing);
+        expect(
+          find.text('English writing hints must stay hidden'),
+          findsNothing,
+        );
 
         // Switch to Japanese IT Workplace
         final jaChip = find.text('Tiếng Nhật (IT)');
@@ -284,7 +289,7 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('Model status indicator shows ready when model is downloaded', (
+    testWidgets('Linux does not claim that a mock model is native ML Kit', (
       WidgetTester tester,
     ) async {
       tester.view.physicalSize = const Size(800, 1400);
@@ -306,48 +311,36 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Mô hình AI: Sẵn sàng (On-device)'), findsOneWidget);
+      expect(find.text('Nhận diện gần đúng (cơ bản)'), findsOneWidget);
+      expect(find.text('Tải mô hình'), findsNothing);
     });
 
-    testWidgets(
-      'Offline model indicator shows download button and downloads model upon tap',
-      (WidgetTester tester) async {
-        tester.view.physicalSize = const Size(800, 1400);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
+    testWidgets('Linux fallback does not offer unavailable ML Kit download', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-        final engine = MockDigitalInkEngine(
-          initialDownloadedModels: {'ja': false, 'en': false},
-        );
+      final engine = MockDigitalInkEngine(
+        initialDownloadedModels: {'ja': false, 'en': false},
+      );
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: CanvasPracticeScreen(
-              apiService: service,
-              digitalInkEngine: engine,
-            ),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CanvasPracticeScreen(
+            apiService: service,
+            digitalInkEngine: engine,
           ),
-        );
-        await tester.pumpAndSettle();
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        // Verify offline model status and download button
-        expect(find.text('Mô hình AI: Ngoại tuyến'), findsOneWidget);
-        final downloadBtn = find.text('Tải mô hình');
-        expect(downloadBtn, findsOneWidget);
-
-        // Tap download button
-        await tester.tap(downloadBtn);
-        await tester.pumpAndSettle();
-
-        // Status should transition to downloaded / ready
-        expect(find.text('Mô hình AI: Sẵn sàng (On-device)'), findsOneWidget);
-        expect(
-          find.textContaining('Đã tải thành công mô hình'),
-          findsOneWidget,
-        );
-      },
-    );
+      // Verify offline model status and download button
+      expect(find.text('Nhận diện gần đúng (cơ bản)'), findsOneWidget);
+      expect(find.text('Tải mô hình'), findsNothing);
+    });
 
     testWidgets('drawing keeps lesson scroll offset fixed', (tester) async {
       tester.view.physicalSize = const Size(394, 853);

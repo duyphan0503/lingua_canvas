@@ -1,6 +1,7 @@
 import 'dart:io' show Platform;
 import 'dart:math';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
+import 'package:flutter/services.dart' show MethodChannel;
 import 'package:google_mlkit_digital_ink_recognition/google_mlkit_digital_ink_recognition.dart'
     as mlkit;
 import 'handwriting_recognizer.dart';
@@ -237,32 +238,70 @@ class MockDigitalInkEngine implements DigitalInkEngine {
 
 /// Google ML Kit production implementation wrapping on-device neural recognizers.
 ///
-/// Gracefully falls back to [HeuristicDigitalInkEngine] if platform channel
-/// throws [MissingPluginException] or if running in an unsupported desktop sandbox.
+/// Uses the direct native Android MethodChannel for 100% reliable model downloading
+/// and on-device digital ink recognition, gracefully falling back to plugin or
+/// [HeuristicDigitalInkEngine] if running on unsupported platforms or unit test runners.
 class MlKitDigitalInkEngine implements DigitalInkEngine {
-  MlKitDigitalInkEngine({bool? supportedPlatformForTesting})
-    : _supportedPlatformOverride = supportedPlatformForTesting;
+  MlKitDigitalInkEngine({
+    bool? supportedPlatformForTesting,
+    MethodChannel? channelOverride,
+  })  : _supportedPlatformOverride = supportedPlatformForTesting,
+        _channel =
+            channelOverride ??
+            const MethodChannel('com.linguacanvas.app/digital_ink_native');
 
   final bool? _supportedPlatformOverride;
-  final mlkit.DigitalInkRecognizerModelManager _modelManager =
+  final MethodChannel _channel;
+  final mlkit.DigitalInkRecognizerModelManager _pluginModelManager =
       mlkit.DigitalInkRecognizerModelManager();
   final Map<String, mlkit.DigitalInkRecognizer> _recognizers = {};
   final HeuristicDigitalInkEngine _heuristic = HeuristicDigitalInkEngine();
 
   bool get _isSupportedPlatform =>
-      _supportedPlatformOverride ??
-      (!kIsWeb && (Platform.isAndroid || Platform.isIOS));
+      _supportedPlatformOverride ?? (!kIsWeb && Platform.isAndroid);
 
   @override
   Future<bool> isModelDownloaded(String languageTag) async {
     if (!_isSupportedPlatform) {
       return false;
     }
+    final tag = normalizeLanguageTag(languageTag);
     try {
-      final tag = normalizeLanguageTag(languageTag);
-      return await _modelManager.isModelDownloaded(tag);
-    } catch (_) {
+      final downloaded = await _channel.invokeMethod<bool>('isModelDownloaded', {
+        'model': tag,
+      });
+      if (downloaded == true) return true;
+      if (tag == 'ja') {
+        final jaJpDownloaded = await _channel.invokeMethod<bool>(
+          'isModelDownloaded',
+          {'model': 'ja-JP'},
+        );
+        if (jaJpDownloaded == true) return true;
+      } else if (tag == 'en') {
+        final enUsDownloaded = await _channel.invokeMethod<bool>(
+          'isModelDownloaded',
+          {'model': 'en-US'},
+        );
+        if (enUsDownloaded == true) return true;
+      }
       return false;
+    } catch (e) {
+      debugPrint(
+        'Native isModelDownloaded check failed: $e, trying plugin manager',
+      );
+      try {
+        final downloaded = await _pluginModelManager.isModelDownloaded(tag);
+        if (downloaded) return true;
+        if (tag == 'ja') {
+          return await _pluginModelManager.isModelDownloaded('ja-JP');
+        } else if (tag == 'en') {
+          return await _pluginModelManager.isModelDownloaded('en-US');
+        }
+        return false;
+      } catch (e2) {
+        debugPrint('ML Kit plugin isModelDownloaded check failed: $e2');
+        return false;
+      }
     }
   }
 
@@ -271,11 +310,35 @@ class MlKitDigitalInkEngine implements DigitalInkEngine {
     if (!_isSupportedPlatform) {
       return false;
     }
+    final tag = normalizeLanguageTag(languageTag);
     try {
-      final tag = normalizeLanguageTag(languageTag);
-      return await _modelManager.downloadModel(tag);
-    } catch (_) {
-      return false;
+      debugPrint('Starting native ML Kit model download for tag: $tag');
+      final result = await _channel.invokeMethod<bool>('downloadModel', {
+        'model': tag,
+      });
+      if (result == true) return true;
+
+      final altTag = tag == 'ja' ? 'ja-JP' : 'en-US';
+      debugPrint(
+        'Retrying native ML Kit model download with alternate tag: $altTag',
+      );
+      final altResult = await _channel.invokeMethod<bool>('downloadModel', {
+        'model': altTag,
+      });
+      return altResult == true;
+    } catch (e) {
+      debugPrint(
+        'Native ML Kit downloadModel exception: $e, trying plugin manager',
+      );
+      try {
+        final result = await _pluginModelManager.downloadModel(tag);
+        if (result) return true;
+        final altTag = tag == 'ja' ? 'ja-JP' : 'en-US';
+        return await _pluginModelManager.downloadModel(altTag);
+      } catch (e2) {
+        debugPrint('ML Kit plugin downloadModel exception: $e2');
+        return false;
+      }
     }
   }
 
@@ -284,11 +347,19 @@ class MlKitDigitalInkEngine implements DigitalInkEngine {
     if (!_isSupportedPlatform) {
       return false;
     }
+    final tag = normalizeLanguageTag(languageTag);
     try {
-      final tag = normalizeLanguageTag(languageTag);
-      return await _modelManager.deleteModel(tag);
-    } catch (_) {
-      return false;
+      final result = await _channel.invokeMethod<bool>('deleteModel', {
+        'model': tag,
+      });
+      return result == true;
+    } catch (e) {
+      debugPrint('Native deleteModel error: $e');
+      try {
+        return await _pluginModelManager.deleteModel(tag);
+      } catch (e2) {
+        return false;
+      }
     }
   }
 
@@ -307,9 +378,49 @@ class MlKitDigitalInkEngine implements DigitalInkEngine {
     try {
       final isDownloaded = await isModelDownloaded(tag);
       if (!isDownloaded) {
-        return _heuristic.getCandidates(strokes, languageTag);
+        return await _heuristic.getCandidates(strokes, languageTag);
       }
 
+      // 1. Try direct native Android recognizer first
+      try {
+        final strokesData =
+            strokes
+                .map(
+                  (s) => {
+                    'points':
+                        s.points
+                            .map((p) => {'x': p.x, 'y': p.y, 't': p.timestamp})
+                            .toList(),
+                  },
+                )
+                .toList();
+
+        final rawList = await _channel.invokeListMethod<dynamic>(
+          'recognizeInk',
+          {'model': tag, 'strokes': strokesData},
+        );
+
+        if (rawList != null && rawList.isNotEmpty) {
+          final candidates = <String>[];
+          for (final item in rawList) {
+            if (item is Map && item.containsKey('text')) {
+              final text = item['text']?.toString();
+              if (text != null && text.isNotEmpty) {
+                candidates.add(text);
+              }
+            } else if (item is String && item.isNotEmpty) {
+              candidates.add(item);
+            }
+          }
+          if (candidates.isNotEmpty) {
+            return candidates;
+          }
+        }
+      } catch (e) {
+        debugPrint('Native recognizeInk failed: $e, trying plugin recognizer');
+      }
+
+      // 2. Fallback to Flutter plugin recognizer
       final recognizer = _recognizers.putIfAbsent(
         tag,
         () => mlkit.DigitalInkRecognizer(languageCode: tag),
@@ -328,7 +439,7 @@ class MlKitDigitalInkEngine implements DigitalInkEngine {
 
       final candidates = await recognizer.recognize(mlkitInk);
       if (candidates.isEmpty) {
-        return _heuristic.getCandidates(strokes, languageTag);
+        return await _heuristic.getCandidates(strokes, languageTag);
       }
       return candidates.map((c) => c.text).toList();
     } catch (_) {

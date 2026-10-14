@@ -1,12 +1,14 @@
 # Test Infrastructure & Dual-Track E2E Architecture
 
+The app supports Android and Linux. The repository pins Flutter 3.47.6 and Dart 3.13.5 in `.fvmrc`; use `tools/flutter` from the repository root or `../tools/flutter` from `app/`. The pass counts below are historical results recorded on 2026-10-02, before that SDK setup and the Android/Linux-only cleanup. Latest verification is pending.
+
 ## 1. Overview & Architectural Philosophy
 Lingua Canvas employs a **Dual-Track Testing Architecture**:
 1. **White-Box Unit & Integration Tests**: Co-located in `server/src/` (Rust unit tests & integration tests) and `app/test/` (Flutter widget and engine unit tests).
 2. **Opaque-Box 4-Tier End-to-End (E2E) Test Suite**: Located in `tests/e2e/`, verifying live HTTP endpoints, state transitions, client-server contracts and simulated learning workflows. Tier 1 also runs Flutter analysis and unit/widget tests.
 
 ### Anti-Cheating & Integrity Mandate
-API scenarios use a real Rust server and HTTP requests. Flutter unit/widget tests use SQLite FFI, mocked HTTP transports and injected Digital Ink engines where appropriate. The separate runner lifecycle unit tests mock process creation. These tests do not establish native Android/iOS ML Kit accuracy; device checks are required. PostgreSQL persistence coverage requires a real database, as used in the 2026-10-02 verification recorded in `TEST_READY.md`.
+API scenarios use a real Rust server and HTTP requests. Flutter unit/widget tests use SQLite FFI, mocked HTTP transports and injected Digital Ink engines where appropriate. The separate runner lifecycle unit tests mock process creation. These tests do not establish native Android ML Kit accuracy; device checks are required. Linux desktop launch and persistence also require a desktop smoke check. PostgreSQL persistence coverage requires a real database, as used in the historical 2026-10-02 verification recorded in `TEST_READY.md`.
 
 ---
 
@@ -26,7 +28,7 @@ tests/e2e/
 Validates baseline features and environment cleanliness:
 - **Git Baseline**: Monorepo root `.git` presence, `.gitignore` exclusions (`target/`, `.dart_tool/`, `build/`, `.env*`) and remote origin configuration. This check is not a secret scanner.
 - **Multi-Environment Configurations**: Existence and non-emptiness of `.env.example`, `.env.development.example`, `.env.staging.example`, and `.env.production.example`.
-- **Flutter Client Health**: Automated `flutter analyze` and `flutter test` execution (82 tests in the verification record).
+- **Flutter Client Health**: Automated `../tools/flutter analyze` and `../tools/flutter test` execution (82 tests in the historical 2026-10-02 verification record; current run pending).
 - **Docker Configuration**: Syntactic validation of `docker-compose.yml` and `Dockerfile` (Progressive Testability aware).
 - **Axum REST API Endpoints**:
   - `GET /api/v1/health` -> HTTP 200, valid service metadata schema.
@@ -141,10 +143,10 @@ The test runner handles the Axum backend process automatically:
 ## 5. Quality Thresholds & Gates
 | Metric | Threshold | Verification Method |
 |---|---|---|
-| **E2E Pass Rate** | 100% (47/47 passing) | `./tests/e2e/run_e2e_tests.sh --all` exit code 0 |
+| **E2E Pass Rate** | Historical 100% (47/47 passing); current run pending | `./tests/e2e/run_e2e_tests.sh --all` exit code 0 |
 | **Health API Latency** | < 100 ms | Measured during Tier 4 health check |
-| **Flutter Analysis** | 0 warnings, 0 errors | `flutter analyze` verified in Tier 1 |
-| **Flutter Tests** | 100% pass (82/82) | `flutter test` verified in Tier 1 |
+| **Flutter Analysis** | Historical 0 warnings, 0 errors; current run pending | `../tools/flutter analyze` |
+| **Flutter Tests** | Historical 100% pass (82/82); current run pending | `../tools/flutter test` |
 | **Backend Tests** | 100% pass (38/38) | `TEST_DATABASE_URL=... cargo test --all-targets` in `server/` |
 | **Backend Lints** | 0 warnings, 0 errors | `cargo clippy --all-targets -- -D warnings` |
 | **Security Hygiene** | Required `.gitignore` exclusions; no Gitleaks findings | Tier 1 checks exclusions; Gitleaks history/current source scans are recorded in `TEST_READY.md` |

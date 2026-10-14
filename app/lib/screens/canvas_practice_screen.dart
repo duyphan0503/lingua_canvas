@@ -7,7 +7,9 @@ import '../services/api_service.dart';
 import '../services/digital_ink_engine.dart';
 import '../services/fsrs_engine.dart';
 import '../services/handwriting_recognizer.dart';
+import '../services/tts_service.dart';
 import '../widgets/handwriting_canvas.dart';
+import '../widgets/tts_speaker_button.dart';
 
 /// Japanese writing and English recall practice for workplace lessons.
 ///
@@ -19,12 +21,16 @@ class CanvasPracticeScreen extends StatefulWidget {
   final ApiService? apiService;
   final DigitalInkEngine? digitalInkEngine;
   final HandwritingRecognizer? recognizer;
+  final String? initialLessonId;
+  final TtsService? ttsService;
 
   const CanvasPracticeScreen({
     super.key,
     this.apiService,
     this.digitalInkEngine,
     this.recognizer,
+    this.initialLessonId,
+    this.ttsService,
   });
 
   @override
@@ -51,7 +57,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
   String? _statusNotification;
 
   // ML Kit model management state
-  bool _isCheckingModel = true;
+  bool _isCheckingModel = false;
   bool _isDownloadingModel = false;
   bool _isModelDownloaded = false;
   bool _isRecognizing = false;
@@ -68,7 +74,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
         widget.digitalInkEngine ??
         (!kIsWeb && Platform.isAndroid
             ? MlKitDigitalInkEngine()
-            : MockDigitalInkEngine());
+            : HeuristicDigitalInkEngine());
     _recognizer =
         widget.recognizer ?? HandwritingRecognizer(engine: _digitalInkEngine);
     _loadInitialData();
@@ -157,6 +163,42 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
     _syncInBackground();
   }
 
+  @override
+  void didUpdateWidget(covariant CanvasPracticeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialLessonId != null &&
+        widget.initialLessonId != oldWidget.initialLessonId) {
+      _focusLessonById(widget.initialLessonId!);
+    }
+  }
+
+  void _focusLessonById(String id) {
+    final idx = _filteredLessons.indexWhere(
+      (l) => l.id == id || l.targetText == id,
+    );
+    if (idx >= 0) {
+      setState(() {
+        _currentIndex = idx;
+        _clearCanvas();
+      });
+      if (_currentLesson?.language == 'ja') _checkModelStatus();
+    } else {
+      // If not in current filtered list, try searching across all lessons
+      final allIdx = _allLessons.indexWhere(
+        (l) => l.id == id || l.targetText == id,
+      );
+      if (allIdx >= 0) {
+        setState(() {
+          _selectedLanguage = 'all';
+          _filteredLessons = List.from(_allLessons);
+          _currentIndex = allIdx;
+          _clearCanvas();
+        });
+        if (_currentLesson?.language == 'ja') _checkModelStatus();
+      }
+    }
+  }
+
   void _filterLessons() {
     if (_selectedLanguage == 'all') {
       _filteredLessons = List.from(_allLessons);
@@ -165,28 +207,53 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
           .where((l) => l.language == _selectedLanguage)
           .toList();
     }
-    _currentIndex = 0;
+    if (widget.initialLessonId != null) {
+      final idx = _filteredLessons.indexWhere(
+        (l) =>
+            l.id == widget.initialLessonId ||
+            l.targetText == widget.initialLessonId,
+      );
+      _currentIndex = idx >= 0 ? idx : 0;
+    } else {
+      _currentIndex = 0;
+    }
     _clearCanvas();
   }
 
   Future<void> _checkModelStatus() async {
     final lang = _currentLesson?.language ?? 'ja';
-    if (!mounted || lang != 'ja') return;
+    if (!mounted || lang != 'ja') {
+      if (mounted) setState(() => _isCheckingModel = false);
+      return;
+    }
     final lessonId = _currentLesson?.id;
     setState(() => _isCheckingModel = true);
 
-    final downloaded = await _digitalInkEngine.isModelDownloaded(lang);
-    if (!mounted || _currentLesson?.id != lessonId) return;
-    setState(() {
-      _isModelDownloaded = downloaded;
-      _isCheckingModel = false;
-    });
+    try {
+      final downloaded = await _digitalInkEngine.isModelDownloaded(lang);
+      if (!mounted) return;
+      if (_currentLesson?.id == lessonId) {
+        setState(() {
+          _isModelDownloaded = downloaded;
+        });
+      }
+    } catch (_) {
+      // Graceful fallback
+    } finally {
+      if (mounted) {
+        setState(() => _isCheckingModel = false);
+      }
+    }
   }
 
   Future<void> _downloadModel() async {
     final lang = _currentLesson?.language ?? 'ja';
     if (!mounted || lang != 'ja') return;
-    setState(() => _isDownloadingModel = true);
+    setState(() {
+      _isDownloadingModel = true;
+      _statusNotification =
+          'Đang kết nối Google Play Services để tải model ML Kit ($lang)...';
+    });
 
     final success = await _digitalInkEngine.downloadModel(lang);
     if (!mounted) return;
@@ -194,8 +261,8 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
       _isDownloadingModel = false;
       _isModelDownloaded = success;
       _statusNotification = success
-          ? 'Đã tải thành công mô hình Digital Ink ($lang)!'
-          : 'Không thể tải mô hình. Sử dụng chế độ ngoại tuyến.';
+          ? 'Đã tải thành công mô hình Google ML Kit ($lang)!'
+          : 'Không tải được ML Kit. Bạn vẫn có thể luyện viết với gợi ý nhận diện gần đúng.';
     });
   }
 
@@ -548,6 +615,14 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
                   letterSpacing: 1.0,
                 ),
               ),
+              // TTS pronunciation playback button
+              TtsSpeakerButton(
+                text: lesson.targetText,
+                language: lesson.language,
+                iconSize: 22,
+                tooltip: 'Phát âm "${lesson.targetText}"',
+                ttsService: widget.ttsService,
+              ),
               // Phonetic / kana pill
               if (lesson.phoneticOrKana.isNotEmpty)
                 Container(
@@ -640,7 +715,8 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
             ),
 
           // Stroke Order Hints Accordion
-          if (lesson.strokeOrderHints.isNotEmpty) ...[
+          if (lesson.language == 'ja' &&
+              lesson.strokeOrderHints.isNotEmpty) ...[
             const SizedBox(height: 10),
             InkWell(
               onTap: () => setState(() => _showHints = !_showHints),
@@ -745,41 +821,70 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
       );
     }
 
-    if (_isModelDownloaded) {
+    if (_isModelDownloaded && !kIsWeb && Platform.isAndroid) {
       return const Wrap(
-        spacing: 4,
+        spacing: 6,
         runSpacing: 4,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          Icon(Icons.cloud_done_rounded, size: 14, color: Color(0xFF10B981)),
+          Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF10B981)),
           Text(
             'Mô hình AI: Sẵn sàng (On-device)',
             style: TextStyle(
               fontSize: 11,
               color: Color(0xFF10B981),
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
       );
     }
 
-    // Offline / Not yet downloaded
+    // The geometric fallback is useful for practice, but is not ML recognition.
     return Wrap(
-      spacing: 8,
+      spacing: 6,
       runSpacing: 4,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        const Icon(Icons.cloud_off_rounded, size: 14, color: Color(0xFFF59E0B)),
-        const Text(
-          'Mô hình AI: Ngoại tuyến',
-          style: TextStyle(fontSize: 11, color: Color(0xFFF59E0B)),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E293B),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: const Color(0xFF334155)),
+          ),
+          child: const Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Icon(
+                Icons.offline_bolt_rounded,
+                size: 13,
+                color: Color(0xFF38BDF8),
+              ),
+              Text(
+                'Nhận diện gần đúng (cơ bản)',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Color(0xFF38BDF8),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
-        TextButton(
-          onPressed: _downloadModel,
-          style: TextButton.styleFrom(minimumSize: const Size(88, 48)),
-          child: const Text('Tải mô hình'),
-        ),
+        if (!kIsWeb && Platform.isAndroid)
+          TextButton.icon(
+            onPressed: _downloadModel,
+            icon: const Icon(Icons.download_rounded, size: 14),
+            label: const Text('Tải mô hình', style: TextStyle(fontSize: 11)),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: const Size(96, 48),
+              foregroundColor: const Color(0xFF818CF8),
+            ),
+          ),
       ],
     );
   }

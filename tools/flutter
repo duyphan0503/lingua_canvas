@@ -5,6 +5,7 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 version="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["flutter"])' "$repo_root/.fvmrc")"
 sdk="$repo_root/.toolchains/flutter/$version/flutter"
 export FLUTTER_SUPPRESS_ANALYTICS=true
+export DASH__SUPPRESS_ANALYTICS=true
 export PATH="$sdk/bin:$PATH"
 android_sdk="$repo_root/.toolchains/android-sdk"
 if [[ -d "$android_sdk/platforms" ]]; then

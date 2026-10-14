@@ -5,7 +5,7 @@
 [![Security Scan](https://github.com/duyphan0503/lingua_canvas/actions/workflows/security-scan.yml/badge.svg)](https://github.com/duyphan0503/lingua_canvas/actions/workflows/security-scan.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-An enterprise-ready, cross-platform language learning application tailored for workplace communication in Japanese (Kanji/Kana, Keigo, tech jargon, hospitality) and English (Agile rituals, PR reviews, standups, customer service). Combines an interactive handwriting canvas with Google ML Kit Digital Ink recognition, local SQLite persistent caching, bidirectional sync with Last-Write-Wins (LWW) conflict resolution, Free Spaced Repetition Scheduler (FSRS v4.5), and local AI-assisted roleplay dialogues (Ollama / Llama.cpp connector).
+An Android and Linux language learning application for workplace communication in Japanese (Kanji/Kana, Keigo, tech jargon, hospitality) and English (Agile rituals, PR reviews, standups, customer service). It combines an interactive handwriting canvas with Google ML Kit Digital Ink recognition on Android, local SQLite persistent caching, bidirectional sync with Last-Write-Wins (LWW) conflict resolution, Free Spaced Repetition Scheduler (FSRS v4.5), and local AI-assisted roleplay dialogues (Ollama / Llama.cpp connector).
 
 ---
 
@@ -13,13 +13,13 @@ An enterprise-ready, cross-platform language learning application tailored for w
 
 ```
 lingua_canvas/
-├── app/                           # Flutter Frontend Mobile Application
+├── app/                           # Flutter application for Android and Linux
 │   ├── lib/                       # UI components, ML Kit canvas, FSRS engine, SQLite sync
 │   │   ├── screens/               # Canvas practice & study screens
 │   │   ├── services/              # DigitalInkEngine, ModelManager, LocalDatabase, SyncCoordinator
 │   │   └── widgets/               # HandwritingCanvas with velocity tapering & smoothing
 │   ├── test/                      # Unit and widget tests, SQLite and sync regressions
-│   └── pubspec.yaml               # Flutter SDK (>=3.10.3) & Dart dependencies
+│   └── pubspec.yaml               # Flutter and Dart dependencies
 ├── server/                        # Rust Axum Backend REST API
 │   ├── src/                       # Axum routes, FSRS-4.5 logic, Local AI client, Sync handlers
 │   ├── migrations/                # SQLx PostgreSQL schema migrations (lessons, fsrs_cards, review_logs)
@@ -51,7 +51,9 @@ lingua_canvas/
 ### Prerequisites
 - **Docker** (>= 24.0) & **Docker Compose** (v2 or v5)
 - (Optional for native dev) **Rust** 1.85+ / 1.92+ (`rustup`)
-- (Optional for native dev) **Flutter** 3.38+ / Dart 3.10+
+- **Flutter** 3.47.6 / **Dart** 3.13.5 (pinned in `.fvmrc`; use `tools/flutter`)
+- For Android builds: Android SDK and Java 21
+- For Linux desktop builds: Flutter's Linux desktop prerequisites
 - (Optional for native dev) **Python** 3.10+ (for E2E tests)
 
 ### 1. Environment Setup
@@ -114,10 +116,10 @@ Set the API URL for the device running the app:
 ```bash
 cd app
 # Android emulator: the host computer is reachable at 10.0.2.2.
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8080/api/v1
+../tools/flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8080/api/v1
 ```
 
-For a physical device, use the backend computer's LAN address. Release builds should use an HTTPS endpoint; the Android cleartext exception applies only to debug builds. The iOS target is 15.5 to match the installed ML Kit plugin.
+For an Android phone connected over USB, use `adb reverse tcp:8080 tcp:8080` and `http://127.0.0.1:8080/api/v1`. For Linux desktop, run `../tools/flutter run -d linux`. On physical Android devices, use the backend computer's LAN address when USB reverse forwarding is unavailable. Release builds should use HTTPS; Android local HTTP is enabled only in debug builds. Platform support is Android and Linux; ML Kit handwriting recognition requires Android.
 
 Reviews are saved to SQLite before network work. The app retries synchronization at startup, on resume, after a review, and periodically while foregrounded. A successful pull persists its cursor for the next launch.
 
@@ -161,13 +163,13 @@ cargo test --all-targets
 cd app
 
 # Verify code formatting
-dart format --output=none --set-exit-if-changed .
+../.toolchains/flutter/3.47.6/flutter/bin/dart format --output=none --set-exit-if-changed .
 
 # Static code analysis
-flutter analyze
+../tools/flutter analyze
 
 # Run widget and unit tests
-flutter test --coverage
+../tools/flutter test --coverage
 ```
 
 ### 4. Container Configuration Verification

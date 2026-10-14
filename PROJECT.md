@@ -1,11 +1,13 @@
 # Project: Lingua Canvas (Full Feature Expansion - Gen 2)
 
+Supported Flutter targets are Android and Linux. The repository pins Flutter 3.47.6 and Dart 3.13.5 in `.fvmrc`; use `tools/flutter` from the repository root (or `../tools/flutter` from `app/`) so commands use the repository-managed SDK.
+
 ## Architecture
-Lingua Canvas is an offline-first English and Japanese learning application pairing a minimalist Flutter mobile frontend with a high-performance Rust Axum backend, Local AI (Ollama / Llama.cpp), Google ML Kit Digital Ink handwriting recognition, and Free Spaced Repetition Scheduler (FSRS-4.5).
+Lingua Canvas is an offline-first English and Japanese learning application pairing a Flutter app for Android and Linux with a high-performance Rust Axum backend, Local AI (Ollama / Llama.cpp), Google ML Kit Digital Ink handwriting recognition on Android, and Free Spaced Repetition Scheduler (FSRS-4.5).
 
 ```mermaid
 flowchart TD
-    subgraph Client [Flutter App - Di động]
+    subgraph Client [Flutter App - Android and Linux]
         UI[UI/UX: Minimalist Dark-Mode]
         Canvas[Canvas Luyện Viết & Stroke Smoothing]
         MLKit[Google ML Kit Digital Ink & Model Manager]
@@ -36,6 +38,10 @@ flowchart TD
     SyncClient <-->|POST /sync, GET /sync/pull| Axum
     UI <-->|POST /ai/roleplay, /ai/dialogue| Axum
 ```
+
+## Flutter coding guidance
+
+Four official Flutter skills are installed for future coding tasks: `flutter-apply-architecture-best-practices` for layering and architecture, `flutter-build-responsive-layout` for adaptive layouts, `flutter-fix-layout-issues` for constraint and overflow errors, and `flutter-add-widget-test` for widget interaction tests. They are local Codex guidance under `~/.codex/skills`; they do not add project dependencies.
 
 ## Feature Inventory
 Every feature from the Survey phase and user requirements is cataloged and assigned to a milestone:
@@ -69,6 +75,8 @@ Every feature from the Survey phase and user requirements is cataloged and assig
 
 ## Continuation Verification — 2026-10-02
 
+The counts below are the historical verification record from before the Flutter 3.47.6 toolchain and Android/Linux-only cleanup. Re-run status for the updated toolchain and platform set is pending; do not interpret these counts as the latest verification.
+
 - Backend: 38 tests passed, including opt-in tests against temporary PostgreSQL 16; formatting, check and Clippy passed.
 - Flutter: 82 tests passed; analyze and app-wide formatting checks passed.
 - E2E: all 47 cases/scenarios passed against a clean PostgreSQL database, using a freshly built server.
@@ -80,9 +88,9 @@ Reviews now persist locally before network work. Sync retries on startup, resume
 
 Server reviews and logs commit together; failed DB writes return errors, and retries remain idempotent. PostgreSQL mutations and pulls share an advisory lock with receipt timestamps to keep the timestamp cursor consistent. This serializes operations; higher throughput would require a different cursor design. Memory fallback remains process-local.
 
-Remaining validation: install/run the Android build on a device, build/run on iOS, download and recognize with native ML Kit, exercise airplane-mode recovery on a device, and check a real Ollama/Llama.cpp deployment. iOS configuration requires 15.5; its native build needs macOS/Xcode. Dependency audit clearance and remote push/PR integration are remaining M4 steps. See `TEST_READY.md` for reproducible commands and verification scope.
+Remaining validation: build and run the updated Android app on the available phone, verify native ML Kit recognition and airplane-mode recovery, smoke-test the Linux desktop target, and check a real Ollama/Llama.cpp deployment. Dependency audit clearance and remote push/PR integration are also pending. See `TEST_READY.md` and `DEVICE_VALIDATION.md` for scope and procedures.
 
-Further continuation: Gitleaks scanned the five-commit history and current source without findings. The security workflow now fails on cargo-audit errors. `quinn-proto` was updated to 0.11.15; the unpatched `rsa` advisory remains in optional SQLx lock dependencies, although it is inactive with current features on all targets. The audit still fails and has not been suppressed. All 38 Rust tests passed again with PostgreSQL after the lockfile patch. Device and live-provider procedures are prepared in `DEVICE_VALIDATION.md`; no device or real AI provider is currently available on this host.
+Further continuation: Gitleaks scanned the five-commit history and current source without findings. The security workflow now fails on cargo-audit errors. `quinn-proto` was updated to 0.11.15; the unpatched `rsa` advisory remains in optional SQLx lock dependencies, although it is inactive with current features on all targets. The audit still fails and has not been suppressed. All 38 Rust tests passed again with PostgreSQL after the lockfile patch. At the time of that check no Android device or real AI provider was available; an Android phone is now available for the next validation pass. Device and live-provider procedures are in `DEVICE_VALIDATION.md`.
 
 Android debug compilation is now verified: `app/build/app/outputs/flutter-apk/app-debug.apk` was produced using an isolated Android SDK 36 and passed ZIP/checksum checks. Device installation and native recognition accuracy are still pending. Build-only SDK/cache copies were cleaned up and the original local configuration restored.
 
@@ -106,7 +114,7 @@ Android debug compilation is now verified: `app/build/app/outputs/flutter-apk/ap
   - `void dispose();`
 - `HandwritingRecognizer` evaluates candidates against the target and returns the recognition score. Language tags are normalized to ML Kit's `en` and `ja` identifiers.
 - Implementations:
-  - `MlKitDigitalInkEngine`: calls `google_mlkit_digital_ink_recognition` (active on mobile Android/iOS)
+  - `MlKitDigitalInkEngine`: calls `google_mlkit_digital_ink_recognition` (native recognition is supported on Android)
   - `HeuristicDigitalInkEngine`: geometric stroke & bounding box fallback when offline/model uninstalled
   - `MockDigitalInkEngine`: deterministic candidate simulator for automated tests in Linux CI
 

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/canvas_practice_screen.dart';
+import 'screens/main_shell_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,7 +16,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-/// Configures the minimalist dark-mode IT workplace theme and mounts CanvasPracticeScreen.
+/// Configures the minimalist dark-mode IT workplace theme and mounts MainShellScreen.
 class LinguaCanvasApp extends StatelessWidget {
   const LinguaCanvasApp({super.key});
 
@@ -36,7 +36,7 @@ class LinguaCanvasApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const CanvasPracticeScreen(),
+      home: const MainShellScreen(),
     );
   }
 }
