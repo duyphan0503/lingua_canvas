@@ -1,0 +1,6 @@
+[advisories]
+# rsa is present only in Cargo.lock through the inactive sqlx-mysql dependency.
+# sqlx disables default features and enables postgres + tls-rustls, not mysql.
+# Verified: cargo tree --locked --target all -i rsa reports no active dependencies.
+# Re-evaluate this exception whenever sqlx features or supported databases change.
+ignore = ["RUSTSEC-2023-0071"]

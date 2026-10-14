@@ -26,7 +26,8 @@ class _AIRoleplayScreenState extends State<AIRoleplayScreen>
 
   String _selectedLanguage = 'ja'; // 'ja' or 'en'
   String _selectedTopic = 'Daily Standup';
-  final String _selectedProfession = 'IT';
+  String _selectedProfession = 'it';
+  String _selectedLevel = 'beginner';
   bool _isLoading = false;
   bool _showTranslation = true;
 
@@ -146,6 +147,8 @@ class _AIRoleplayScreenState extends State<AIRoleplayScreen>
         targetLanguage: _selectedLanguage,
         topic: _selectedTopic,
         message: text,
+        profession: _selectedProfession,
+        userLevel: _selectedLevel,
       );
 
       if (mounted && epoch == _conversationEpoch) {
@@ -177,6 +180,7 @@ class _AIRoleplayScreenState extends State<AIRoleplayScreen>
         targetLanguage: _selectedLanguage,
         topic: _selectedTopic,
         profession: _selectedProfession,
+        level: _selectedLevel,
         turnCount: 4,
       );
       if (mounted && epoch == _conversationEpoch) {
@@ -322,28 +326,61 @@ class _AIRoleplayScreenState extends State<AIRoleplayScreen>
                   }),
                 ),
               ),
-              // Profession indicator
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0F172A),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: const Color(0xFF334155)),
+              PopupMenuButton<String>(
+                key: const Key('profession-selector'),
+                tooltip: 'Chọn ngành nghề',
+                initialValue: _selectedProfession,
+                onSelected: (value) => setState(() {
+                  _selectedProfession = value;
+                  _initInitialMessages();
+                  _generatedDialogue = null;
+                }),
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'it', child: Text('IT')),
+                  PopupMenuItem(
+                    value: 'hospitality',
+                    child: Text('Nhà hàng - Khách sạn'),
+                  ),
+                  PopupMenuItem(value: 'business', child: Text('Kinh doanh')),
+                  PopupMenuItem(
+                    value: 'general',
+                    child: Text('Giao tiếp chung'),
+                  ),
+                ],
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Text(switch (_selectedProfession) {
+                    'hospitality' => 'Nhà hàng - Khách sạn',
+                    'business' => 'Kinh doanh',
+                    'general' => 'Giao tiếp chung',
+                    _ => 'IT',
+                  }, style: const TextStyle(color: Color(0xFF38BDF8))),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.code, size: 14, color: Color(0xFF38BDF8)),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Ngành: $_selectedProfession',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF38BDF8),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+              ),
+              PopupMenuButton<String>(
+                key: const Key('level-selector'),
+                tooltip: 'Chọn cấp độ',
+                initialValue: _selectedLevel,
+                onSelected: (value) => setState(() {
+                  _selectedLevel = value;
+                  _initInitialMessages();
+                  _generatedDialogue = null;
+                }),
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'beginner', child: Text('Sơ cấp')),
+                  PopupMenuItem(
+                    value: 'intermediate',
+                    child: Text('Trung cấp'),
+                  ),
+                  PopupMenuItem(value: 'advanced', child: Text('Nâng cao')),
+                ],
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Text(switch (_selectedLevel) {
+                    'intermediate' => 'Trung cấp',
+                    'advanced' => 'Nâng cao',
+                    _ => 'Sơ cấp',
+                  }, style: const TextStyle(color: Color(0xFF38BDF8))),
                 ),
               ),
             ],
@@ -589,7 +626,10 @@ class _AIRoleplayScreenState extends State<AIRoleplayScreen>
                   language: _selectedLanguage,
                   iconSize: 18,
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  constraints: const BoxConstraints(
+                    minWidth: 28,
+                    minHeight: 28,
+                  ),
                   tooltip: 'Phát âm câu thoại',
                   ttsService: widget.ttsService,
                 ),
@@ -695,8 +735,7 @@ class _AIRoleplayScreenState extends State<AIRoleplayScreen>
                           size: 14,
                           ttsService: widget.ttsService,
                         ),
-                        if (_selectedLanguage == 'ja' &&
-                            widget.onPracticeWord != null) ...[
+                        if (widget.onPracticeWord != null) ...[
                           InkWell(
                             onTap: () =>
                                 widget.onPracticeWord!(word, _selectedLanguage),
@@ -718,9 +757,7 @@ class _AIRoleplayScreenState extends State<AIRoleplayScreen>
             ],
 
             // Writing challenge banner
-            if (_selectedLanguage == 'ja' &&
-                writingChallenge != null &&
-                widget.onPracticeWord != null) ...[
+            if (writingChallenge != null && widget.onPracticeWord != null) ...[
               const SizedBox(height: 8),
               InkWell(
                 onTap: () =>
@@ -939,7 +976,10 @@ class _AIRoleplayScreenState extends State<AIRoleplayScreen>
                       language: _selectedLanguage,
                       iconSize: 18,
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                      constraints: const BoxConstraints(
+                        minWidth: 28,
+                        minHeight: 28,
+                      ),
                       tooltip: 'Phát âm câu thoại',
                       ttsService: widget.ttsService,
                     ),
@@ -1023,12 +1063,14 @@ class _AIRoleplayScreenState extends State<AIRoleplayScreen>
                       language: _selectedLanguage,
                       iconSize: 18,
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                      constraints: const BoxConstraints(
+                        minWidth: 28,
+                        minHeight: 28,
+                      ),
                       tooltip: 'Phát âm "$word"',
                       ttsService: widget.ttsService,
                     ),
-                    if (_selectedLanguage == 'ja' &&
-                        widget.onPracticeWord != null)
+                    if (widget.onPracticeWord != null)
                       TextButton.icon(
                         icon: const Icon(Icons.draw_rounded, size: 14),
                         label: const Text(

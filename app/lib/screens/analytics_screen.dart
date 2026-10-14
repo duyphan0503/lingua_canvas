@@ -340,8 +340,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             ][date.weekday - 1],
                       style: TextStyle(
                         fontSize: 9,
-                        fontWeight:
-                            isToday ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: isToday
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                         color: isToday
                             ? const Color(0xFF34D399)
                             : const Color(0xFF64748B),

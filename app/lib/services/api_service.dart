@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:math' as math;
-import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
 import '../models/lesson_item.dart';
 import 'fsrs_engine.dart';
@@ -74,7 +73,8 @@ class ApiService {
       phoneticOrKana: "a",
       meaningVi: "Chữ cái Hiragana: A",
       workplaceContext: "ありがとうございます (Arigatou gozaimasu)",
-      workplaceContextVi: "Cảm ơn quý khách/anh chị rất nhiều (câu cửa miệng trong môi trường làm việc)",
+      workplaceContextVi:
+          "Cảm ơn quý khách/anh chị rất nhiều (câu cửa miệng trong môi trường làm việc)",
       strokeOrderHints: [
         "Nét 1: Gạch ngang ngắn từ trái sang phải",
         "Nét 2: Nét dọc hơi cong từ trên xuống cắt nét 1",
@@ -135,7 +135,8 @@ class ApiService {
       phoneticOrKana: "o",
       meaningVi: "Chữ cái Hiragana: O",
       workplaceContext: "お疲れ様です (Otsukaresama desu)",
-      workplaceContextVi: "Anh/chị đã vất vả rồi (lời chào quen thuộc trong công ty)",
+      workplaceContextVi:
+          "Anh/chị đã vất vả rồi (lời chào quen thuộc trong công ty)",
       strokeOrderHints: [
         "Nét 1: Nét ngang ngắn",
         "Nét 2: Nét sổ thẳng cắt ngang nét 1 rồi vòng bụng lớn sang phải",
@@ -335,9 +336,7 @@ class ApiService {
       meaningVi: "Chữ cái Hiragana: Tsu",
       workplaceContext: "ツールを導入します (Tsuuru wo dounyuu shimasu)",
       workplaceContextVi: "Áp dụng công cụ mới vào quy trình làm việc",
-      strokeOrderHints: [
-        "Nét 1: Nét cong lớn hình lưỡi liềm mở sang trái",
-      ],
+      strokeOrderHints: ["Nét 1: Nét cong lớn hình lưỡi liềm mở sang trái"],
       difficultyLevel: 1,
     ),
     LessonItem(
@@ -695,7 +694,8 @@ class ApiService {
       phoneticOrKana: "re",
       meaningVi: "Chữ cái Hiragana: Re",
       workplaceContext: "連絡をお待ちしております (Renraku wo omachi shite orimasu)",
-      workplaceContextVi: "Chúng tôi rất mong sớm nhận được phản hồi từ quý đối tác",
+      workplaceContextVi:
+          "Chúng tôi rất mong sớm nhận được phản hồi từ quý đối tác",
       strokeOrderHints: [
         "Nét 1: Nét sổ dọc bên trái",
         "Nét 2: Nét zic-zac kéo sang rồi hất móc nhọn ra ngoài",
@@ -768,8 +768,10 @@ class ApiService {
       targetText: "バグ",
       phoneticOrKana: "bagu",
       meaningVi: "Lỗi phần mềm (Bug)",
-      workplaceContext: "この機能に重大なバグが発生しました (Kono kinou ni juudai na bagu ga hassei shimashita)",
-      workplaceContextVi: "Chức năng này đã phát sinh một con bug nghiêm trọng.",
+      workplaceContext:
+          "この機能に重大なバグが発生しました (Kono kinou ni juudai na bagu ga hassei shimashita)",
+      workplaceContextVi:
+          "Chức năng này đã phát sinh một con bug nghiêm trọng.",
       strokeOrderHints: [
         "Chữ バ (Ba): Viết nét ハ (Ha) rồi thêm 2 dấu phẩy đục âm ゛",
         "Chữ グ (Gu): Viết nét ク (Ku) rồi thêm 2 dấu phẩy ゛",
@@ -783,7 +785,8 @@ class ApiService {
       targetText: "サーバー",
       phoneticOrKana: "saabaa",
       meaningVi: "Máy chủ hệ thống (Server)",
-      workplaceContext: "クラウドサーバーの負荷が増加しています (Kuraudo saabaa no fuka ga zouka shite imasu)",
+      workplaceContext:
+          "クラウドサーバーの負荷が増加しています (Kuraudo saabaa no fuka ga zouka shite imasu)",
       workplaceContextVi: "Tải của máy chủ đám mây đang tăng cao.",
       strokeOrderHints: [
         "Chữ サ (Sa): Nét ngang và hai nét sổ ngắn",
@@ -800,7 +803,8 @@ class ApiService {
       targetText: "デプロイ",
       phoneticOrKana: "depuroi",
       meaningVi: "Triển khai phần mềm (Deploy)",
-      workplaceContext: "ステージング環境へのデプロイが完了しました (Suteejingu kankyou e no depuroi ga kanryou shimashita)",
+      workplaceContext:
+          "ステージング環境へのデプロイが完了しました (Suteejingu kankyou e no depuroi ga kanryou shimashita)",
       workplaceContextVi: "Đã hoàn tất việc triển khai lên môi trường staging.",
       strokeOrderHints: [
         "Chữ デ (De): Chữ テ (Te) thêm 2 dấu âm đục ゛",
@@ -817,7 +821,8 @@ class ApiService {
       targetText: "リリース",
       phoneticOrKana: "ririisu",
       meaningVi: "Phát hành phiên bản (Release)",
-      workplaceContext: "新バージョンのリリース日は来週の月曜日です (Shin baajon no ririisubi wa raishuu no getsuyoubi desu)",
+      workplaceContext:
+          "新バージョンのリリース日は来週の月曜日です (Shin baajon no ririisubi wa raishuu no getsuyoubi desu)",
       workplaceContextVi: "Ngày phát hành phiên bản mới là thứ Hai tuần tới.",
       strokeOrderHints: [
         "Chữ リ (Ri): Nét sổ ngắn trái, nét sổ cong dài phải",
@@ -833,7 +838,8 @@ class ApiService {
       targetText: "テスト",
       phoneticOrKana: "tesuto",
       meaningVi: "Kiểm thử phần mềm (Test)",
-      workplaceContext: "単体テストと結合テストをすべてパスしました (Tantai tesuto to ketsugou tesuto wo subete pasu shimashita)",
+      workplaceContext:
+          "単体テストと結合テストをすべてパスしました (Tantai tesuto to ketsugou tesuto wo subete pasu shimashita)",
       workplaceContextVi: "Đã vượt qua toàn bộ unit test và integration test.",
       strokeOrderHints: [
         "Chữ テ (Te): Hai nét ngang trên dưới và một nét cong chéo",
@@ -849,8 +855,10 @@ class ApiService {
       targetText: "レビュー",
       phoneticOrKana: "rebyuu",
       meaningVi: "Đánh giá, duyệt mã nguồn (Review)",
-      workplaceContext: "コードレビューの指摘事項を反映しました (Koodo rebyuu no shitekijikou wo han'ei shimashita)",
-      workplaceContextVi: "Tôi đã cập nhật sửa đổi theo các góp ý trong code review.",
+      workplaceContext:
+          "コードレビューの指摘事項を反映しました (Koodo rebyuu no shitekijikou wo han'ei shimashita)",
+      workplaceContextVi:
+          "Tôi đã cập nhật sửa đổi theo các góp ý trong code review.",
       strokeOrderHints: [
         "Chữ レ (Re): Nét sổ thẳng gập hất chéo lên sang phải",
         "Chữ ビ (Bi): Chữ ヒ (Hi) thêm 2 dấu âm đục ゛",
@@ -883,7 +891,8 @@ class ApiService {
       targetText: "月",
       phoneticOrKana: "つき / げつ (tsuki / getsu)",
       meaningVi: "Tháng, Mặt trăng (Nguyệt)",
-      workplaceContext: "来月のスプリント計画を立てます (Raigetsu no supurinto keikaku wo tatemasu)",
+      workplaceContext:
+          "来月のスプリント計画を立てます (Raigetsu no supurinto keikaku wo tatemasu)",
       workplaceContextVi: "Lập kế hoạch sprint cho tháng tới.",
       strokeOrderHints: [
         "Nét 1: Nét phẩy cong dài bên trái",
@@ -916,7 +925,8 @@ class ApiService {
       targetText: "水",
       phoneticOrKana: "みず / すい (mizu / sui)",
       meaningVi: "Nước, Thứ tư (Thủy)",
-      workplaceContext: "水曜日にデプロイを実施します (Suiyoubi ni depuroi wo jisshi shimasu)",
+      workplaceContext:
+          "水曜日にデプロイを実施します (Suiyoubi ni depuroi wo jisshi shimasu)",
       workplaceContextVi: "Thực hiện triển khai hệ thống vào thứ Tư.",
       strokeOrderHints: [
         "Nét 1: Nét sổ móc ở giữa",
@@ -933,7 +943,8 @@ class ApiService {
       targetText: "金",
       phoneticOrKana: "かね / きん (kane / kin)",
       meaningVi: "Vàng, Tiền, Thứ sáu (Kim)",
-      workplaceContext: "金曜日の夕方にコードフリーズします (Kinyoubi no yuugata ni koodo furiizu shimasu)",
+      workplaceContext:
+          "金曜日の夕方にコードフリーズします (Kinyoubi no yuugata ni koodo furiizu shimasu)",
       workplaceContextVi: "Đóng băng mã nguồn (code freeze) vào chiều thứ Sáu.",
       strokeOrderHints: [
         "Nét 1: Nét phẩy trái trên cùng",
@@ -1000,8 +1011,10 @@ class ApiService {
       targetText: "人",
       phoneticOrKana: "ひと / じん (hito / jin)",
       meaningVi: "Người, Nhân lực (Nhân)",
-      workplaceContext: "開発リソースの人員を補強します (Kaihatsu risoosu no jin'in wo hokyou shimasu)",
-      workplaceContextVi: "Tăng cường thêm nhân sự cho tài nguyên phát triển dự án.",
+      workplaceContext:
+          "開発リソースの人員を補強します (Kaihatsu risoosu no jin'in wo hokyou shimasu)",
+      workplaceContextVi:
+          "Tăng cường thêm nhân sự cho tài nguyên phát triển dự án.",
       strokeOrderHints: [
         "Nét 1: Nét phẩy vuốt cong từ trên xuống trái",
         "Nét 2: Nét mác tiếp giáp vuốt sang phải",
@@ -1015,8 +1028,10 @@ class ApiService {
       targetText: "本",
       phoneticOrKana: "ほん (hon)",
       meaningVi: "Sách, Bản gốc, Gốc rễ (Bản)",
-      workplaceContext: "本番環境のデータベースをバックアップします (Honban kankyou no deetabeesu wo bakkuappu shimasu)",
-      workplaceContextVi: "Sao lưu cơ sở dữ liệu trên môi trường thật (production).",
+      workplaceContext:
+          "本番環境のデータベースをバックアップします (Honban kankyou no deetabeesu wo bakkuappu shimasu)",
+      workplaceContextVi:
+          "Sao lưu cơ sở dữ liệu trên môi trường thật (production).",
       strokeOrderHints: [
         "Nét 1: Nét ngang trên",
         "Nét 2: Nét sổ giữa cắt nét 1",
@@ -1033,8 +1048,10 @@ class ApiService {
       targetText: "開発",
       phoneticOrKana: "かいはつ (kaihatsu)",
       meaningVi: "Phát triển (Development)",
-      workplaceContext: "新しいシステムの開発チームに参加します (Atarashii shisutemu no kaihatsu chiimu ni sanka shimasu)",
-      workplaceContextVi: "Tôi sẽ tham gia vào đội ngũ phát triển hệ thống mới.",
+      workplaceContext:
+          "新しいシステムの開発チームに参加します (Atarashii shisutemu no kaihatsu chiimu ni sanka shimasu)",
+      workplaceContextVi:
+          "Tôi sẽ tham gia vào đội ngũ phát triển hệ thống mới.",
       strokeOrderHints: [
         "Chữ 開 (Khai): Bộ môn 門 bao ngoài, bên trong viết chữ khai",
         "Chữ 発 (Phát): Viết bộ bát bên trên, sau đó các nét cung và phẩy bên dưới",
@@ -1048,8 +1065,10 @@ class ApiService {
       targetText: "仕様書",
       phoneticOrKana: "しようしょ (shiyousho)",
       meaningVi: "Tài liệu đặc tả yêu cầu (Specification document)",
-      workplaceContext: "仕様書を確認してから実装してください (Shiyousho wo kakunin shite kara jissou shite kudasai)",
-      workplaceContextVi: "Hãy đọc xác nhận tài liệu đặc tả trước khi bắt tay vào code.",
+      workplaceContext:
+          "仕様書を確認してから実装してください (Shiyousho wo kakunin shite kara jissou shite kudasai)",
+      workplaceContextVi:
+          "Hãy đọc xác nhận tài liệu đặc tả trước khi bắt tay vào code.",
       strokeOrderHints: [
         "Chữ 仕 (Sĩ): Bộ nhân đứng bên trái, chữ sĩ bên phải",
         "Chữ 様 (Dạng): Bộ mộc bên trái, chữ dương bên phải",
@@ -1064,8 +1083,10 @@ class ApiService {
       targetText: "確認",
       phoneticOrKana: "かくにん (kakunin)",
       meaningVi: "Kiểm tra, xác nhận (Check / Confirm)",
-      workplaceContext: "プルリクエストのご確認をお願いします (Puru rikuesuto no gokakunin wo onegai shimasu)",
-      workplaceContextVi: "Nhờ anh/chị kiểm tra giúp em cái Pull Request này nhé ạ.",
+      workplaceContext:
+          "プルリクエストのご確認をお願いします (Puru rikuesuto no gokakunin wo onegai shimasu)",
+      workplaceContextVi:
+          "Nhờ anh/chị kiểm tra giúp em cái Pull Request này nhé ạ.",
       strokeOrderHints: [
         "Chữ 確 (Xác): Bộ thạch bên trái, chữ hạc bên phải",
         "Chữ 認 (Nhận): Bộ ngôn bên trái, chữ nhẫn bên phải",
@@ -1079,8 +1100,10 @@ class ApiService {
       targetText: "仕様書を確認してください",
       phoneticOrKana: "しようしょをかくにんしてください (Shiyousho wo kakunin shite kudasai)",
       meaningVi: "Xin vui lòng kiểm tra tài liệu đặc tả yêu cầu",
-      workplaceContext: "仕様書を確認してください。不明点があれば質問してください (Shiyousho wo kakunin shite kudasai. Fumeiten ga areba shitsumon shite kudasai)",
-      workplaceContextVi: "Xin vui lòng đọc kỹ tài liệu đặc tả, nếu có điểm nào chưa rõ hãy hỏi ngay.",
+      workplaceContext:
+          "仕様書を確認してください。不明点があれば質問してください (Shiyousho wo kakunin shite kudasai. Fumeiten ga areba shitsumon shite kudasai)",
+      workplaceContextVi:
+          "Xin vui lòng đọc kỹ tài liệu đặc tả, nếu có điểm nào chưa rõ hãy hỏi ngay.",
       strokeOrderHints: [
         "Gồm từ vựng 仕様書 (Shiyousho - Đặc tả)",
         "Trợ từ を (wo)",
@@ -1096,8 +1119,10 @@ class ApiService {
       targetText: "プルリクエストを作成しました",
       phoneticOrKana: "プルリクエストをさくせいしました (Puru rikuesuto wo sakusei shimashita)",
       meaningVi: "Tôi đã tạo Pull Request rồi",
-      workplaceContext: "修正が完了したので、プルリクエストを作成しました (Shuusei ga kanryou shita node, puru rikuesuto wo sakusei shimashita)",
-      workplaceContextVi: "Vì đã hoàn tất sửa lỗi nên tôi đã tạo Pull Request rồi.",
+      workplaceContext:
+          "修正が完了したので、プルリクエストを作成しました (Shuusei ga kanryou shita node, puru rikuesuto wo sakusei shimashita)",
+      workplaceContextVi:
+          "Vì đã hoàn tất sửa lỗi nên tôi đã tạo Pull Request rồi.",
       strokeOrderHints: [
         "Cụm Katakana プルリクエスト (Pull Request)",
         "Trợ từ を (wo)",
@@ -1113,8 +1138,10 @@ class ApiService {
       targetText: "本番環境にデプロイします",
       phoneticOrKana: "ほんばんかんきょうにデプロイします (Honban kankyou ni depuroi shimasu)",
       meaningVi: "Tôi sẽ triển khai lên môi trường Production",
-      workplaceContext: "承認が得られたので、本番環境にデプロイします (Shounin ga erareta node, honban kankyou ni depuroi shimasu)",
-      workplaceContextVi: "Sau khi được phê duyệt, tôi sẽ triển khai lên môi trường production.",
+      workplaceContext:
+          "承認が得られたので、本番環境にデプロイします (Shounin ga erareta node, honban kankyou ni depuroi shimasu)",
+      workplaceContextVi:
+          "Sau khi được phê duyệt, tôi sẽ triển khai lên môi trường production.",
       strokeOrderHints: [
         "Cụm từ 本番環境 (Honban kankyou - Môi trường production)",
         "Trợ từ đích đến に (ni)",
@@ -1130,8 +1157,10 @@ class ApiService {
       targetText: "deploy",
       phoneticOrKana: "/dɪˈplɔɪ/",
       meaningVi: "Triển khai hệ thống/phần mềm lên server",
-      workplaceContext: "We are ready to deploy the release to production tonight.",
-      workplaceContextVi: "Chúng tôi đã sẵn sàng triển khai phiên bản mới lên môi trường production tối nay.",
+      workplaceContext:
+          "We are ready to deploy the release to production tonight.",
+      workplaceContextVi:
+          "Chúng tôi đã sẵn sàng triển khai phiên bản mới lên môi trường production tối nay.",
       strokeOrderHints: [
         "Viết thường 'd-e-p-l-o-y'",
         "Chú ý nét đuôi chữ 'p' và 'y' kéo xuống dưới dòng kẻ",
@@ -1145,8 +1174,10 @@ class ApiService {
       targetText: "deadline",
       phoneticOrKana: "/ˈded.laɪn/",
       meaningVi: "Hạn chót, thời hạn hoàn thành công việc",
-      workplaceContext: "Can we extend the deadline for this sprint task by two days?",
-      workplaceContextVi: "Chúng ta có thể gia hạn thời hạn nhiệm vụ sprint này thêm hai ngày được không?",
+      workplaceContext:
+          "Can we extend the deadline for this sprint task by two days?",
+      workplaceContextVi:
+          "Chúng ta có thể gia hạn thời hạn nhiệm vụ sprint này thêm hai ngày được không?",
       strokeOrderHints: [
         "Viết thường 'd-e-a-d-l-i-n-e'",
         "Nối các ký tự liền mạch để ghi nhớ từ vựng theo cụm chữ cái",
@@ -1160,11 +1191,11 @@ class ApiService {
       targetText: "resolve",
       phoneticOrKana: "/rɪˈzɑːlv/",
       meaningVi: "Giải quyết triệt để (vấn đề, bug, ticket)",
-      workplaceContext: "I will investigate and resolve the API timeout issue before lunch.",
-      workplaceContextVi: "Tôi sẽ điều tra và xử lý dứt điểm sự cố timeout của API trước giờ ăn trưa.",
-      strokeOrderHints: [
-        "Viết thường 'r-e-s-o-l-v-e'",
-      ],
+      workplaceContext:
+          "I will investigate and resolve the API timeout issue before lunch.",
+      workplaceContextVi:
+          "Tôi sẽ điều tra và xử lý dứt điểm sự cố timeout của API trước giờ ăn trưa.",
+      strokeOrderHints: ["Viết thường 'r-e-s-o-l-v-e'"],
       difficultyLevel: 1,
     ),
     LessonItem(
@@ -1174,8 +1205,10 @@ class ApiService {
       targetText: "requirement",
       phoneticOrKana: "/rɪˈkwaɪər.mənt/",
       meaningVi: "Yêu cầu kỹ thuật, yêu cầu nghiệp vụ của dự án",
-      workplaceContext: "The client changed the authentication requirement in the latest meeting.",
-      workplaceContextVi: "Khách hàng đã thay đổi yêu cầu phần xác thực trong cuộc họp gần nhất.",
+      workplaceContext:
+          "The client changed the authentication requirement in the latest meeting.",
+      workplaceContextVi:
+          "Khách hàng đã thay đổi yêu cầu phần xác thực trong cuộc họp gần nhất.",
       strokeOrderHints: [
         "Viết 'r-e-q-u-i-r-e-m-e-n-t'",
         "Phân tách: require + ment",
@@ -1189,11 +1222,11 @@ class ApiService {
       targetText: "incident",
       phoneticOrKana: "/ˈɪn.sɪ.dənt/",
       meaningVi: "Sự cố kỹ thuật đột xuất, gián đoạn dịch vụ",
-      workplaceContext: "The on-call team responded to the database incident within 5 minutes.",
-      workplaceContextVi: "Đội ngũ trực on-call đã phản hồi sự cố cơ sở dữ liệu trong vòng 5 phút.",
-      strokeOrderHints: [
-        "Viết thường 'i-n-c-i-d-e-n-t'",
-      ],
+      workplaceContext:
+          "The on-call team responded to the database incident within 5 minutes.",
+      workplaceContextVi:
+          "Đội ngũ trực on-call đã phản hồi sự cố cơ sở dữ liệu trong vòng 5 phút.",
+      strokeOrderHints: ["Viết thường 'i-n-c-i-d-e-n-t'"],
       difficultyLevel: 2,
     ),
     LessonItem(
@@ -1203,12 +1236,11 @@ class ApiService {
       targetText: "endpoint",
       phoneticOrKana: "/ˈend.pɔɪnt/",
       meaningVi: "Điểm cuối API kết nối giao tiếp dịch vụ",
-      workplaceContext: "The client application makes authenticated requests to the REST endpoint.",
-      workplaceContextVi: "Ứng dụng client gửi các yêu cầu đã xác thực tới endpoint REST.",
-      strokeOrderHints: [
-        "Viết 'e-n-d-p-o-i-n-t'",
-        "Từ ghép: end + point",
-      ],
+      workplaceContext:
+          "The client application makes authenticated requests to the REST endpoint.",
+      workplaceContextVi:
+          "Ứng dụng client gửi các yêu cầu đã xác thực tới endpoint REST.",
+      strokeOrderHints: ["Viết 'e-n-d-p-o-i-n-t'", "Từ ghép: end + point"],
       difficultyLevel: 1,
     ),
     LessonItem(
@@ -1218,12 +1250,11 @@ class ApiService {
       targetText: "database",
       phoneticOrKana: "/ˈdeɪ.tə.beɪs/",
       meaningVi: "Cơ sở dữ liệu lưu trữ có cấu trúc",
-      workplaceContext: "We run database migrations before starting the application service.",
-      workplaceContextVi: "Chúng tôi chạy migration cơ sở dữ liệu trước khi khởi động dịch vụ ứng dụng.",
-      strokeOrderHints: [
-        "Viết 'd-a-t-a-b-a-s-e'",
-        "Từ ghép: data + base",
-      ],
+      workplaceContext:
+          "We run database migrations before starting the application service.",
+      workplaceContextVi:
+          "Chúng tôi chạy migration cơ sở dữ liệu trước khi khởi động dịch vụ ứng dụng.",
+      strokeOrderHints: ["Viết 'd-a-t-a-b-a-s-e'", "Từ ghép: data + base"],
       difficultyLevel: 1,
     ),
     LessonItem(
@@ -1233,12 +1264,11 @@ class ApiService {
       targetText: "latency",
       phoneticOrKana: "/ˈleɪ.tən.si/",
       meaningVi: "Độ trễ truyền tải dữ liệu mạng",
-      workplaceContext: "Caching frequently requested items significantly reduces network latency.",
-      workplaceContextVi: "Lưu bộ nhớ đệm các mục hay truy vấn giúp giảm đáng kể độ trễ mạng.",
-      strokeOrderHints: [
-        "Viết 'l-a-t-e-n-c-y'",
-        "Gốc từ: late -> latency",
-      ],
+      workplaceContext:
+          "Caching frequently requested items significantly reduces network latency.",
+      workplaceContextVi:
+          "Lưu bộ nhớ đệm các mục hay truy vấn giúp giảm đáng kể độ trễ mạng.",
+      strokeOrderHints: ["Viết 'l-a-t-e-n-c-y'", "Gốc từ: late -> latency"],
       difficultyLevel: 2,
     ),
     LessonItem(
@@ -1248,12 +1278,11 @@ class ApiService {
       targetText: "pipeline",
       phoneticOrKana: "/ˈpaɪp.laɪn/",
       meaningVi: "Đường ống tự động hóa CI/CD hoặc luồng xử lý dữ liệu",
-      workplaceContext: "The CI/CD pipeline runs unit tests, lints the code, and builds artifacts automatically.",
-      workplaceContextVi: "Đường ống CI/CD tự động chạy kiểm thử đơn vị, kiểm tra chuẩn mã và build sản phẩm đóng gói.",
-      strokeOrderHints: [
-        "Viết 'p-i-p-e-l-i-n-e'",
-        "Từ ghép: pipe + line",
-      ],
+      workplaceContext:
+          "The CI/CD pipeline runs unit tests, lints the code, and builds artifacts automatically.",
+      workplaceContextVi:
+          "Đường ống CI/CD tự động chạy kiểm thử đơn vị, kiểm tra chuẩn mã và build sản phẩm đóng gói.",
+      strokeOrderHints: ["Viết 'p-i-p-e-l-i-n-e'", "Từ ghép: pipe + line"],
       difficultyLevel: 2,
     ),
     LessonItem(
@@ -1263,12 +1292,11 @@ class ApiService {
       targetText: "container",
       phoneticOrKana: "/kənˈteɪ.nər/",
       meaningVi: "Thùng chứa ảo hóa ứng dụng (như Docker container)",
-      workplaceContext: "Each microservice is packaged into an isolated lightweight container.",
-      workplaceContextVi: "Mỗi microservice được đóng gói vào một container nhẹ độc lập.",
-      strokeOrderHints: [
-        "Viết 'c-o-n-t-a-i-n-e-r'",
-        "Gốc từ: contain + er",
-      ],
+      workplaceContext:
+          "Each microservice is packaged into an isolated lightweight container.",
+      workplaceContextVi:
+          "Mỗi microservice được đóng gói vào một container nhẹ độc lập.",
+      strokeOrderHints: ["Viết 'c-o-n-t-a-i-n-e-r'", "Gốc từ: contain + er"],
       difficultyLevel: 2,
     ),
     LessonItem(
@@ -1278,8 +1306,10 @@ class ApiService {
       targetText: "refactor",
       phoneticOrKana: "/ˌriːˈfæk.tər/",
       meaningVi: "Tái cấu trúc mã nguồn mà không thay đổi hành vi bên ngoài",
-      workplaceContext: "We need to refactor the legacy payment module to improve maintainability.",
-      workplaceContextVi: "Chúng ta cần tái cấu trúc module thanh toán cũ để cải thiện khả năng bảo trì.",
+      workplaceContext:
+          "We need to refactor the legacy payment module to improve maintainability.",
+      workplaceContextVi:
+          "Chúng ta cần tái cấu trúc module thanh toán cũ để cải thiện khả năng bảo trì.",
       strokeOrderHints: [
         "Viết 'r-e-f-a-c-t-o-r'",
         "Tiền tố 're-' nghĩa là làm lại",
@@ -1293,8 +1323,10 @@ class ApiService {
       targetText: "repository",
       phoneticOrKana: "/rɪˈpɑː.zə.tɔːr.i/",
       meaningVi: "Kho lưu trữ mã nguồn phiên bản (Git repo)",
-      workplaceContext: "Clone the Git repository to your local development machine.",
-      workplaceContextVi: "Hãy clone kho lưu trữ Git về máy tính phát triển cá nhân của bạn.",
+      workplaceContext:
+          "Clone the Git repository to your local development machine.",
+      workplaceContextVi:
+          "Hãy clone kho lưu trữ Git về máy tính phát triển cá nhân của bạn.",
       strokeOrderHints: [
         "Viết 'r-e-p-o-s-i-t-o-r-y'",
         "Thường được gọi tắt là 'repo'",
@@ -1308,8 +1340,10 @@ class ApiService {
       targetText: "middleware",
       phoneticOrKana: "/ˈmɪd.əl.weər/",
       meaningVi: "Phần mềm trung gian xử lý request và response",
-      workplaceContext: "The logging middleware records response times for every incoming HTTP request.",
-      workplaceContextVi: "Middleware ghi log lưu lại thời gian phản hồi cho từng HTTP request đến.",
+      workplaceContext:
+          "The logging middleware records response times for every incoming HTTP request.",
+      workplaceContextVi:
+          "Middleware ghi log lưu lại thời gian phản hồi cho từng HTTP request đến.",
       strokeOrderHints: [
         "Viết 'm-i-d-d-l-e-w-a-r-e'",
         "Từ ghép: middle + ware",
@@ -1323,8 +1357,10 @@ class ApiService {
       targetText: "authentication",
       phoneticOrKana: "/ɔːˌθen.tɪˈkeɪ.ʃən/",
       meaningVi: "Xác thực danh tính người dùng hoặc máy khách",
-      workplaceContext: "Multi-factor authentication is required to access sensitive production environments.",
-      workplaceContextVi: "Xác thực đa yếu tố được yêu cầu bắt buộc để truy cập môi trường production nhạy cảm.",
+      workplaceContext:
+          "Multi-factor authentication is required to access sensitive production environments.",
+      workplaceContextVi:
+          "Xác thực đa yếu tố được yêu cầu bắt buộc để truy cập môi trường production nhạy cảm.",
       strokeOrderHints: [
         "Viết 'a-u-t-h-e-n-t-i-c-a-t-i-o-n'",
         "Phân tách: authenticate + ion, viết tắt là 'Auth'",
@@ -1338,13 +1374,796 @@ class ApiService {
       targetText: "asynchronous",
       phoneticOrKana: "/eɪˈsɪŋ.krə.nəs/",
       meaningVi: "Bất đồng bộ (xử lý không chặn luồng chính)",
-      workplaceContext: "Use asynchronous message queues to handle heavy background processing tasks.",
-      workplaceContextVi: "Sử dụng hàng đợi thông điệp bất đồng bộ để xử lý các tác vụ nền nặng.",
+      workplaceContext:
+          "Use asynchronous message queues to handle heavy background processing tasks.",
+      workplaceContextVi:
+          "Sử dụng hàng đợi thông điệp bất đồng bộ để xử lý các tác vụ nền nặng.",
       strokeOrderHints: [
         "Viết 'a-s-y-n-c-h-r-o-n-o-u-s'",
         "Thường gọi tắt là 'async'",
       ],
       difficultyLevel: 3,
+    ),
+    LessonItem(
+      id: "ja_extra_kata_0",
+      language: "ja",
+      category: "alphabet",
+      targetText: "ア",
+      phoneticOrKana: "a",
+      meaningVi: "Katakana A",
+      workplaceContext: "「ア」を練習します。",
+      workplaceContextVi: "Tôi luyện viết chữ ア.",
+      strokeOrderHints: [
+        "Quan sát mẫu ア, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 1,
+    ),
+    LessonItem(
+      id: "ja_extra_kata_1",
+      language: "ja",
+      category: "alphabet",
+      targetText: "イ",
+      phoneticOrKana: "i",
+      meaningVi: "Katakana I",
+      workplaceContext: "「イ」を練習します。",
+      workplaceContextVi: "Tôi luyện viết chữ イ.",
+      strokeOrderHints: [
+        "Quan sát mẫu イ, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 1,
+    ),
+    LessonItem(
+      id: "ja_extra_kata_2",
+      language: "ja",
+      category: "alphabet",
+      targetText: "ウ",
+      phoneticOrKana: "u",
+      meaningVi: "Katakana U",
+      workplaceContext: "「ウ」を練習します。",
+      workplaceContextVi: "Tôi luyện viết chữ ウ.",
+      strokeOrderHints: [
+        "Quan sát mẫu ウ, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 1,
+    ),
+    LessonItem(
+      id: "ja_extra_kata_3",
+      language: "ja",
+      category: "alphabet",
+      targetText: "エ",
+      phoneticOrKana: "e",
+      meaningVi: "Katakana E",
+      workplaceContext: "「エ」を練習します。",
+      workplaceContextVi: "Tôi luyện viết chữ エ.",
+      strokeOrderHints: [
+        "Quan sát mẫu エ, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 1,
+    ),
+    LessonItem(
+      id: "ja_extra_kata_4",
+      language: "ja",
+      category: "alphabet",
+      targetText: "オ",
+      phoneticOrKana: "o",
+      meaningVi: "Katakana O",
+      workplaceContext: "「オ」を練習します。",
+      workplaceContextVi: "Tôi luyện viết chữ オ.",
+      strokeOrderHints: [
+        "Quan sát mẫu オ, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 1,
+    ),
+    LessonItem(
+      id: "ja_extra_kata_5",
+      language: "ja",
+      category: "alphabet",
+      targetText: "カ",
+      phoneticOrKana: "ka",
+      meaningVi: "Katakana KA",
+      workplaceContext: "「カ」を練習します。",
+      workplaceContextVi: "Tôi luyện viết chữ カ.",
+      strokeOrderHints: [
+        "Quan sát mẫu カ, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 1,
+    ),
+    LessonItem(
+      id: "ja_extra_kata_6",
+      language: "ja",
+      category: "alphabet",
+      targetText: "キ",
+      phoneticOrKana: "ki",
+      meaningVi: "Katakana KI",
+      workplaceContext: "「キ」を練習します。",
+      workplaceContextVi: "Tôi luyện viết chữ キ.",
+      strokeOrderHints: [
+        "Quan sát mẫu キ, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 1,
+    ),
+    LessonItem(
+      id: "ja_extra_kata_7",
+      language: "ja",
+      category: "alphabet",
+      targetText: "ク",
+      phoneticOrKana: "ku",
+      meaningVi: "Katakana KU",
+      workplaceContext: "「ク」を練習します。",
+      workplaceContextVi: "Tôi luyện viết chữ ク.",
+      strokeOrderHints: [
+        "Quan sát mẫu ク, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 1,
+    ),
+    LessonItem(
+      id: "ja_extra_kata_8",
+      language: "ja",
+      category: "alphabet",
+      targetText: "ケ",
+      phoneticOrKana: "ke",
+      meaningVi: "Katakana KE",
+      workplaceContext: "「ケ」を練習します。",
+      workplaceContextVi: "Tôi luyện viết chữ ケ.",
+      strokeOrderHints: [
+        "Quan sát mẫu ケ, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 1,
+    ),
+    LessonItem(
+      id: "ja_extra_kata_9",
+      language: "ja",
+      category: "alphabet",
+      targetText: "コ",
+      phoneticOrKana: "ko",
+      meaningVi: "Katakana KO",
+      workplaceContext: "「コ」を練習します。",
+      workplaceContextVi: "Tôi luyện viết chữ コ.",
+      strokeOrderHints: [
+        "Quan sát mẫu コ, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 1,
+    ),
+    LessonItem(
+      id: "ja_extra_loan_0",
+      language: "ja",
+      category: "it_workplace",
+      targetText: "コード",
+      phoneticOrKana: "kōdo",
+      meaningVi: "Mã nguồn",
+      workplaceContext: "コードを確認してください。",
+      workplaceContextVi: "Vui lòng kiểm tra mã nguồn.",
+      strokeOrderHints: [
+        "Quan sát mẫu コード, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "ja_extra_loan_1",
+      language: "ja",
+      category: "it_workplace",
+      targetText: "タスク",
+      phoneticOrKana: "tasuku",
+      meaningVi: "Tác vụ",
+      workplaceContext: "タスクを分けましょう。",
+      workplaceContextVi: "Hãy chia nhỏ tác vụ.",
+      strokeOrderHints: [
+        "Quan sát mẫu タスク, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "ja_extra_loan_2",
+      language: "ja",
+      category: "it_workplace",
+      targetText: "エラー",
+      phoneticOrKana: "erā",
+      meaningVi: "Lỗi",
+      workplaceContext: "エラーを直しました。",
+      workplaceContextVi: "Tôi đã sửa lỗi.",
+      strokeOrderHints: [
+        "Quan sát mẫu エラー, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "ja_extra_loan_3",
+      language: "ja",
+      category: "it_workplace",
+      targetText: "データ",
+      phoneticOrKana: "dēta",
+      meaningVi: "Dữ liệu",
+      workplaceContext: "データを保存します。",
+      workplaceContextVi: "Tôi sẽ lưu dữ liệu.",
+      strokeOrderHints: [
+        "Quan sát mẫu データ, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "ja_extra_loan_4",
+      language: "ja",
+      category: "it_workplace",
+      targetText: "メール",
+      phoneticOrKana: "mēru",
+      meaningVi: "Thư điện tử",
+      workplaceContext: "メールを送りました。",
+      workplaceContextVi: "Tôi đã gửi email.",
+      strokeOrderHints: [
+        "Quan sát mẫu メール, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "ja_extra_loan_5",
+      language: "ja",
+      category: "it_workplace",
+      targetText: "スケジュール",
+      phoneticOrKana: "sukejūru",
+      meaningVi: "Lịch trình",
+      workplaceContext: "スケジュールを変更します。",
+      workplaceContextVi: "Tôi sẽ thay đổi lịch trình.",
+      strokeOrderHints: [
+        "Quan sát mẫu スケジュール, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "ja_extra_loan_6",
+      language: "ja",
+      category: "it_workplace",
+      targetText: "ミーティング",
+      phoneticOrKana: "mītingu",
+      meaningVi: "Cuộc họp",
+      workplaceContext: "ミーティングは十時です。",
+      workplaceContextVi: "Cuộc họp lúc mười giờ.",
+      strokeOrderHints: [
+        "Quan sát mẫu ミーティング, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "ja_extra_loan_7",
+      language: "ja",
+      category: "it_workplace",
+      targetText: "クライアント",
+      phoneticOrKana: "kuraianto",
+      meaningVi: "Khách hàng",
+      workplaceContext: "クライアントに連絡します。",
+      workplaceContextVi: "Tôi sẽ liên hệ khách hàng.",
+      strokeOrderHints: [
+        "Quan sát mẫu クライアント, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "ja_extra_kanji_0",
+      language: "ja",
+      category: "jlpt_n4",
+      targetText: "社",
+      phoneticOrKana: "しゃ",
+      meaningVi: "Công ty",
+      workplaceContext: "会社で働いています。",
+      workplaceContextVi: "Tôi làm việc tại công ty.",
+      strokeOrderHints: [
+        "Quan sát mẫu 社, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "ja_extra_kanji_1",
+      language: "ja",
+      category: "jlpt_n5",
+      targetText: "会",
+      phoneticOrKana: "かい",
+      meaningVi: "Gặp gỡ, hội họp",
+      workplaceContext: "会議は午後です。",
+      workplaceContextVi: "Cuộc họp vào buổi chiều.",
+      strokeOrderHints: [
+        "Quan sát mẫu 会, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "ja_extra_kanji_2",
+      language: "ja",
+      category: "jlpt_n4",
+      targetText: "事",
+      phoneticOrKana: "じ",
+      meaningVi: "Sự việc, công việc",
+      workplaceContext: "仕事を始めます。",
+      workplaceContextVi: "Tôi bắt đầu làm việc.",
+      strokeOrderHints: [
+        "Quan sát mẫu 事, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "ja_extra_kanji_3",
+      language: "ja",
+      category: "jlpt_n4",
+      targetText: "仕",
+      phoneticOrKana: "し",
+      meaningVi: "Làm, phục vụ",
+      workplaceContext: "仕事が終わりました。",
+      workplaceContextVi: "Công việc đã xong.",
+      strokeOrderHints: [
+        "Quan sát mẫu 仕, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "ja_extra_kanji_4",
+      language: "ja",
+      category: "jlpt_n4",
+      targetText: "業",
+      phoneticOrKana: "ぎょう",
+      meaningVi: "Nghề nghiệp, nghiệp vụ",
+      workplaceContext: "作業を確認します。",
+      workplaceContextVi: "Tôi sẽ kiểm tra tác vụ.",
+      strokeOrderHints: [
+        "Quan sát mẫu 業, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "ja_extra_kanji_5",
+      language: "ja",
+      category: "jlpt_n4",
+      targetText: "働",
+      phoneticOrKana: "はたらく",
+      meaningVi: "Làm việc",
+      workplaceContext: "ここで働きます。",
+      workplaceContextVi: "Tôi làm việc ở đây.",
+      strokeOrderHints: [
+        "Quan sát mẫu 働, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "ja_extra_kanji_6",
+      language: "ja",
+      category: "jlpt_n4",
+      targetText: "場",
+      phoneticOrKana: "ば",
+      meaningVi: "Địa điểm",
+      workplaceContext: "職場は駅の近くです。",
+      workplaceContextVi: "Nơi làm việc gần nhà ga.",
+      strokeOrderHints: [
+        "Quan sát mẫu 場, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "ja_extra_kanji_7",
+      language: "ja",
+      category: "jlpt_n4",
+      targetText: "員",
+      phoneticOrKana: "いん",
+      meaningVi: "Nhân viên",
+      workplaceContext: "新しい社員です。",
+      workplaceContextVi: "Tôi là nhân viên mới.",
+      strokeOrderHints: [
+        "Quan sát mẫu 員, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "ja_extra_kanji_8",
+      language: "ja",
+      category: "jlpt_n4",
+      targetText: "所",
+      phoneticOrKana: "ところ",
+      meaningVi: "Nơi chốn",
+      workplaceContext: "事務所にいます。",
+      workplaceContextVi: "Tôi đang ở văn phòng.",
+      strokeOrderHints: [
+        "Quan sát mẫu 所, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "ja_extra_kanji_9",
+      language: "ja",
+      category: "jlpt_n4",
+      targetText: "使",
+      phoneticOrKana: "つかう",
+      meaningVi: "Sử dụng",
+      workplaceContext: "この道具を使います。",
+      workplaceContextVi: "Tôi sử dụng công cụ này.",
+      strokeOrderHints: [
+        "Quan sát mẫu 使, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "ja_extra_kanji_10",
+      language: "ja",
+      category: "jlpt_n4",
+      targetText: "作",
+      phoneticOrKana: "つくる",
+      meaningVi: "Tạo, làm",
+      workplaceContext: "資料を作ります。",
+      workplaceContextVi: "Tôi tạo tài liệu.",
+      strokeOrderHints: [
+        "Quan sát mẫu 作, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "ja_extra_kanji_11",
+      language: "ja",
+      category: "jlpt_n4",
+      targetText: "急",
+      phoneticOrKana: "いそぐ",
+      meaningVi: "Vội, gấp",
+      workplaceContext: "急いで確認します。",
+      workplaceContextVi: "Tôi sẽ kiểm tra ngay.",
+      strokeOrderHints: [
+        "Quan sát mẫu 急, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "ja_extra_kanji_12",
+      language: "ja",
+      category: "jlpt_n4",
+      targetText: "待",
+      phoneticOrKana: "まつ",
+      meaningVi: "Chờ đợi",
+      workplaceContext: "返事を待っています。",
+      workplaceContextVi: "Tôi đang chờ phản hồi.",
+      strokeOrderHints: [
+        "Quan sát mẫu 待, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "ja_extra_kanji_13",
+      language: "ja",
+      category: "jlpt_n4",
+      targetText: "持",
+      phoneticOrKana: "もつ",
+      meaningVi: "Cầm, mang",
+      workplaceContext: "資料を持ってきます。",
+      workplaceContextVi: "Tôi sẽ mang tài liệu tới.",
+      strokeOrderHints: [
+        "Quan sát mẫu 持, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "ja_extra_kanji_14",
+      language: "ja",
+      category: "jlpt_n4",
+      targetText: "知",
+      phoneticOrKana: "しる",
+      meaningVi: "Biết",
+      workplaceContext: "予定を知っています。",
+      workplaceContextVi: "Tôi biết lịch trình.",
+      strokeOrderHints: [
+        "Quan sát mẫu 知, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "ja_extra_hourensou_0",
+      language: "ja",
+      category: "it_workplace",
+      targetText: "進捗",
+      phoneticOrKana: "しんちょく",
+      meaningVi: "Tiến độ",
+      workplaceContext: "進捗を報告してください。",
+      workplaceContextVi: "Vui lòng báo cáo tiến độ.",
+      strokeOrderHints: [
+        "Quan sát mẫu 進捗, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 3,
+    ),
+    LessonItem(
+      id: "ja_extra_hourensou_1",
+      language: "ja",
+      category: "it_workplace",
+      targetText: "報告",
+      phoneticOrKana: "ほうこく",
+      meaningVi: "Báo cáo",
+      workplaceContext: "結果を報告します。",
+      workplaceContextVi: "Tôi sẽ báo cáo kết quả.",
+      strokeOrderHints: [
+        "Quan sát mẫu 報告, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 3,
+    ),
+    LessonItem(
+      id: "ja_extra_hourensou_2",
+      language: "ja",
+      category: "it_workplace",
+      targetText: "連絡",
+      phoneticOrKana: "れんらく",
+      meaningVi: "Liên lạc",
+      workplaceContext: "問題があれば連絡してください。",
+      workplaceContextVi: "Nếu có vấn đề hãy liên lạc.",
+      strokeOrderHints: [
+        "Quan sát mẫu 連絡, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 3,
+    ),
+    LessonItem(
+      id: "ja_extra_hourensou_3",
+      language: "ja",
+      category: "it_workplace",
+      targetText: "相談",
+      phoneticOrKana: "そうだん",
+      meaningVi: "Trao đổi, tham vấn",
+      workplaceContext: "上司に相談します。",
+      workplaceContextVi: "Tôi sẽ trao đổi với cấp trên.",
+      strokeOrderHints: [
+        "Quan sát mẫu 相談, viết từng ký tự từ trái sang phải.",
+        "Giữ kích thước đều trong ô vuông; đi nét từ trên xuống dưới.",
+      ],
+      difficultyLevel: 3,
+    ),
+    LessonItem(
+      id: "en_extra_work_0",
+      language: "en",
+      category: "it_workplace",
+      targetText: "standup",
+      phoneticOrKana: "/ˈstænd.ʌp/",
+      meaningVi: "Họp nhanh đầu ngày",
+      workplaceContext: "Share your progress at standup.",
+      workplaceContextVi: "Hãy chia sẻ tiến độ trong họp đầu ngày.",
+      strokeOrderHints: [
+        "Viết standup từ trái sang phải, giữ khoảng cách đều.",
+        "Căn chữ thường theo baseline, phân biệt nét cao và nét đuôi.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "en_extra_work_1",
+      language: "en",
+      category: "it_workplace",
+      targetText: "blocker",
+      phoneticOrKana: "/ˈblɒk.ər/",
+      meaningVi: "Vấn đề cản trở",
+      workplaceContext: "This bug is a blocker for release.",
+      workplaceContextVi: "Lỗi này cản trở việc phát hành.",
+      strokeOrderHints: [
+        "Viết blocker từ trái sang phải, giữ khoảng cách đều.",
+        "Căn chữ thường theo baseline, phân biệt nét cao và nét đuôi.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "en_extra_work_2",
+      language: "en",
+      category: "it_workplace",
+      targetText: "milestone",
+      phoneticOrKana: "/ˈmaɪl.stəʊn/",
+      meaningVi: "Cột mốc",
+      workplaceContext: "We reached the first milestone.",
+      workplaceContextVi: "Chúng ta đã đạt cột mốc đầu tiên.",
+      strokeOrderHints: [
+        "Viết milestone từ trái sang phải, giữ khoảng cách đều.",
+        "Căn chữ thường theo baseline, phân biệt nét cao và nét đuôi.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "en_extra_work_3",
+      language: "en",
+      category: "it_workplace",
+      targetText: "rollback",
+      phoneticOrKana: "/ˈrəʊl.bæk/",
+      meaningVi: "Hoàn tác bản triển khai",
+      workplaceContext: "Prepare a rollback before deploying.",
+      workplaceContextVi: "Hãy chuẩn bị hoàn tác trước khi triển khai.",
+      strokeOrderHints: [
+        "Viết rollback từ trái sang phải, giữ khoảng cách đều.",
+        "Căn chữ thường theo baseline, phân biệt nét cao và nét đuôi.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "en_extra_work_4",
+      language: "en",
+      category: "it_workplace",
+      targetText: "scalability",
+      phoneticOrKana: "/ˌskeɪ.ləˈbɪl.ə.ti/",
+      meaningVi: "Khả năng mở rộng",
+      workplaceContext: "Test the scalability of this service.",
+      workplaceContextVi: "Hãy kiểm tra khả năng mở rộng dịch vụ này.",
+      strokeOrderHints: [
+        "Viết scalability từ trái sang phải, giữ khoảng cách đều.",
+        "Căn chữ thường theo baseline, phân biệt nét cao và nét đuôi.",
+      ],
+      difficultyLevel: 3,
+    ),
+    LessonItem(
+      id: "en_extra_work_5",
+      language: "en",
+      category: "it_workplace",
+      targetText: "throughput",
+      phoneticOrKana: "/ˈθruː.pʊt/",
+      meaningVi: "Thông lượng",
+      workplaceContext: "The new worker improves throughput.",
+      workplaceContextVi: "Worker mới cải thiện thông lượng.",
+      strokeOrderHints: [
+        "Viết throughput từ trái sang phải, giữ khoảng cách đều.",
+        "Căn chữ thường theo baseline, phân biệt nét cao và nét đuôi.",
+      ],
+      difficultyLevel: 3,
+    ),
+    LessonItem(
+      id: "en_extra_work_6",
+      language: "en",
+      category: "it_workplace",
+      targetText: "idempotent",
+      phoneticOrKana: "/ˌaɪ.demˈpəʊ.tənt/",
+      meaningVi: "Lặp lại vẫn cho cùng kết quả",
+      workplaceContext: "Make the payment handler idempotent.",
+      workplaceContextVi:
+          "Hãy đảm bảo xử lý thanh toán lặp lại vẫn cùng kết quả.",
+      strokeOrderHints: [
+        "Viết idempotent từ trái sang phải, giữ khoảng cách đều.",
+        "Căn chữ thường theo baseline, phân biệt nét cao và nét đuôi.",
+      ],
+      difficultyLevel: 3,
+    ),
+    LessonItem(
+      id: "en_extra_work_7",
+      language: "en",
+      category: "it_workplace",
+      targetText: "regression",
+      phoneticOrKana: "/rɪˈɡreʃ.ən/",
+      meaningVi: "Lỗi tái phát",
+      workplaceContext: "Add a regression test for this bug.",
+      workplaceContextVi: "Hãy thêm kiểm thử chống tái phát lỗi này.",
+      strokeOrderHints: [
+        "Viết regression từ trái sang phải, giữ khoảng cách đều.",
+        "Căn chữ thường theo baseline, phân biệt nét cao và nét đuôi.",
+      ],
+      difficultyLevel: 3,
+    ),
+    LessonItem(
+      id: "en_extra_work_8",
+      language: "en",
+      category: "it_workplace",
+      targetText: "payload",
+      phoneticOrKana: "/ˈpeɪ.ləʊd/",
+      meaningVi: "Dữ liệu gửi kèm",
+      workplaceContext: "Validate the request payload.",
+      workplaceContextVi: "Hãy kiểm tra dữ liệu yêu cầu.",
+      strokeOrderHints: [
+        "Viết payload từ trái sang phải, giữ khoảng cách đều.",
+        "Căn chữ thường theo baseline, phân biệt nét cao và nét đuôi.",
+      ],
+      difficultyLevel: 3,
+    ),
+    LessonItem(
+      id: "en_extra_work_9",
+      language: "en",
+      category: "it_workplace",
+      targetText: "deprecated",
+      phoneticOrKana: "/ˈdep.rə.keɪ.tɪd/",
+      meaningVi: "Không còn được khuyến nghị",
+      workplaceContext: "This API is deprecated.",
+      workplaceContextVi: "API này không còn được khuyến nghị.",
+      strokeOrderHints: [
+        "Viết deprecated từ trái sang phải, giữ khoảng cách đều.",
+        "Căn chữ thường theo baseline, phân biệt nét cao và nét đuôi.",
+      ],
+      difficultyLevel: 3,
+    ),
+    LessonItem(
+      id: "en_extra_work_10",
+      language: "en",
+      category: "business_toeic",
+      targetText: "onboarding",
+      phoneticOrKana: "/ˈɒn.bɔː.dɪŋ/",
+      meaningVi: "Hướng dẫn người mới",
+      workplaceContext: "Update the onboarding guide.",
+      workplaceContextVi: "Hãy cập nhật hướng dẫn cho người mới.",
+      strokeOrderHints: [
+        "Viết onboarding từ trái sang phải, giữ khoảng cách đều.",
+        "Căn chữ thường theo baseline, phân biệt nét cao và nét đuôi.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "en_extra_work_11",
+      language: "en",
+      category: "business_toeic",
+      targetText: "stakeholder",
+      phoneticOrKana: "/ˈsteɪkˌhəʊl.dər/",
+      meaningVi: "Bên liên quan",
+      workplaceContext: "Confirm the scope with the stakeholder.",
+      workplaceContextVi: "Hãy xác nhận phạm vi với bên liên quan.",
+      strokeOrderHints: [
+        "Viết stakeholder từ trái sang phải, giữ khoảng cách đều.",
+        "Căn chữ thường theo baseline, phân biệt nét cao và nét đuôi.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "en_extra_work_12",
+      language: "en",
+      category: "business_toeic",
+      targetText: "estimate",
+      phoneticOrKana: "/ˈes.tɪ.meɪt/",
+      meaningVi: "Ước lượng",
+      workplaceContext: "Estimate the work before planning.",
+      workplaceContextVi: "Hãy ước lượng công việc trước khi lập kế hoạch.",
+      strokeOrderHints: [
+        "Viết estimate từ trái sang phải, giữ khoảng cách đều.",
+        "Căn chữ thường theo baseline, phân biệt nét cao và nét đuôi.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "en_extra_work_13",
+      language: "en",
+      category: "business_toeic",
+      targetText: "prioritize",
+      phoneticOrKana: "/praɪˈɒr.ə.taɪz/",
+      meaningVi: "Ưu tiên",
+      workplaceContext: "Prioritize the customer issue.",
+      workplaceContextVi: "Hãy ưu tiên vấn đề của khách hàng.",
+      strokeOrderHints: [
+        "Viết prioritize từ trái sang phải, giữ khoảng cách đều.",
+        "Căn chữ thường theo baseline, phân biệt nét cao và nét đuôi.",
+      ],
+      difficultyLevel: 2,
+    ),
+    LessonItem(
+      id: "en_extra_work_14",
+      language: "en",
+      category: "business_toeic",
+      targetText: "followup",
+      phoneticOrKana: "/ˈfɒl.əʊ.ʌp/",
+      meaningVi: "Trao đổi tiếp theo",
+      workplaceContext: "Schedule a followup with the client.",
+      workplaceContextVi: "Hãy lên lịch trao đổi tiếp với khách hàng.",
+      strokeOrderHints: [
+        "Viết followup từ trái sang phải, giữ khoảng cách đều.",
+        "Căn chữ thường theo baseline, phân biệt nét cao và nét đuôi.",
+      ],
+      difficultyLevel: 2,
     ),
   ];
 
@@ -1359,19 +2178,77 @@ class ApiService {
         final List<dynamic> data = jsonDecode(response.body);
         final fetched = data.map((json) => LessonItem.fromJson(json)).toList();
         await _localDb.saveLessons(fetched);
-        return fetched;
+        final custom = await _localDb.getLessons(
+          language: language,
+          category: 'custom',
+        );
+        return {
+          for (final lesson in [...fetched, ...custom]) lesson.id: lesson,
+        }.values.toList();
       }
     } catch (_) {
       // Backend is offline or not reachable, use offline data
     }
 
     final cached = await _localDb.getLessons(language: language);
-    if (cached.isNotEmpty) return cached;
-    final fallback = language == null
-        ? _fallbackLessons
-        : _fallbackLessons.where((l) => l.language == language).toList();
-    await _localDb.saveLessons(fallback);
-    return fallback;
+    final cachedIds = cached.map((lesson) => lesson.id).toSet();
+    final missing = _fallbackLessons
+        .where(
+          (lesson) =>
+              (language == null || lesson.language == language) &&
+              !cachedIds.contains(lesson.id),
+        )
+        .toList();
+    await _localDb.saveLessons(missing);
+    return [...cached, ...missing];
+  }
+
+  /// Reuses curriculum words or durably creates a local practice lesson.
+  Future<LessonItem> ensureLessonForWord({
+    required String word,
+    required String language,
+    String? phoneticOrKana,
+    String? meaningVi,
+    String? workplaceContext,
+    String? workplaceContextVi,
+  }) async {
+    final target = word.trim();
+    if (target.isEmpty || !const ['ja', 'en'].contains(language)) {
+      throw ArgumentError('Cần từ vựng và ngôn ngữ ja hoặc en.');
+    }
+    final normalized = target.toLowerCase();
+    final lessons = await getLessons();
+    for (final lesson in lessons) {
+      if (lesson.language == language &&
+          lesson.targetText.trim().toLowerCase() == normalized) {
+        return lesson;
+      }
+    }
+    // Encoding is stable and keeps spaces distinct from literal underscores.
+    final lesson = LessonItem(
+      id: 'custom_${language}_${Uri.encodeComponent(normalized)}',
+      language: language,
+      category: 'custom',
+      targetText: target,
+      phoneticOrKana: phoneticOrKana?.trim() ?? '',
+      meaningVi: meaningVi?.trim().isNotEmpty == true
+          ? meaningVi!.trim()
+          : 'Từ vựng thực chiến từ AI Roleplay',
+      workplaceContext: workplaceContext?.trim() ?? '',
+      workplaceContextVi: workplaceContextVi?.trim() ?? '',
+      strokeOrderHints: language == 'ja'
+          ? [
+              'Viết từng ký tự của "$target" từ trái sang phải.',
+              'Căn chỉnh ký tự theo ô vuông, viết từ trên xuống dưới.',
+            ]
+          : [
+              'Viết "$target" liền mạch trong khung vẽ.',
+              'Căn chữ theo dòng kẻ và giữ khoảng cách đều.',
+            ],
+      difficultyLevel: 2,
+    );
+    await _localDb.saveLessons([lesson]);
+    return lesson;
   }
 
   Future<void> submitReview({
@@ -1393,6 +2270,8 @@ class ApiService {
     required String targetLanguage,
     required String topic,
     required String message,
+    String profession = 'it',
+    String userLevel = 'beginner',
   }) async {
     try {
       final uri = Uri.parse('$baseUrl/ai/roleplay');
@@ -1403,7 +2282,8 @@ class ApiService {
             body: jsonEncode({
               'target_language': targetLanguage,
               'topic': topic,
-              'user_level': 'beginner',
+              'profession': profession.toLowerCase(),
+              'user_level': userLevel.toLowerCase(),
               'user_message': message,
             }),
           )
@@ -1487,8 +2367,8 @@ class ApiService {
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
               'target_language': targetLanguage,
-              'profession': profession,
-              'difficulty_level': level,
+              'profession': profession.toLowerCase(),
+              'difficulty_level': level.toLowerCase(),
               'topic': topic,
               'turn_count': turnCount,
             }),
@@ -1717,4 +2597,3 @@ class ApiService {
     return _localDb.logDailyActivity(date, itemsCount);
   }
 }
-

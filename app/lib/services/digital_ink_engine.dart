@@ -245,10 +245,10 @@ class MlKitDigitalInkEngine implements DigitalInkEngine {
   MlKitDigitalInkEngine({
     bool? supportedPlatformForTesting,
     MethodChannel? channelOverride,
-  })  : _supportedPlatformOverride = supportedPlatformForTesting,
-        _channel =
-            channelOverride ??
-            const MethodChannel('com.linguacanvas.app/digital_ink_native');
+  }) : _supportedPlatformOverride = supportedPlatformForTesting,
+       _channel =
+           channelOverride ??
+           const MethodChannel('com.linguacanvas.app/digital_ink_native');
 
   final bool? _supportedPlatformOverride;
   final MethodChannel _channel;
@@ -267,9 +267,10 @@ class MlKitDigitalInkEngine implements DigitalInkEngine {
     }
     final tag = normalizeLanguageTag(languageTag);
     try {
-      final downloaded = await _channel.invokeMethod<bool>('isModelDownloaded', {
-        'model': tag,
-      });
+      final downloaded = await _channel.invokeMethod<bool>(
+        'isModelDownloaded',
+        {'model': tag},
+      );
       if (downloaded == true) return true;
       if (tag == 'ja') {
         final jaJpDownloaded = await _channel.invokeMethod<bool>(
@@ -383,17 +384,15 @@ class MlKitDigitalInkEngine implements DigitalInkEngine {
 
       // 1. Try direct native Android recognizer first
       try {
-        final strokesData =
-            strokes
-                .map(
-                  (s) => {
-                    'points':
-                        s.points
-                            .map((p) => {'x': p.x, 'y': p.y, 't': p.timestamp})
-                            .toList(),
-                  },
-                )
-                .toList();
+        final strokesData = strokes
+            .map(
+              (s) => {
+                'points': s.points
+                    .map((p) => {'x': p.x, 'y': p.y, 't': p.timestamp})
+                    .toList(),
+              },
+            )
+            .toList();
 
         final rawList = await _channel.invokeListMethod<dynamic>(
           'recognizeInk',

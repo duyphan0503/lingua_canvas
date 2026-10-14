@@ -82,13 +82,29 @@ services:
 
         class AIHandler(BaseHTTPRequestHandler):
             def do_POST(self):
-                if self.path == "/api/generate":
+                if self.path in ("/api/generate", "/v1/chat/completions"):
                     content_len = int(self.headers.get("Content-Length", 0))
                     _ = self.rfile.read(content_len) if content_len > 0 else b""
                     self.send_response(200)
                     self.send_header("Content-Type", "application/json")
                     self.end_headers()
-                    response = {"response": "Mock Local AI response: Konnichiwa! Code review and IT standup ready."}
+                    content = json.dumps({
+                        "topic": "code_review", "profession": "it", "difficulty_level": "beginner",
+                        "reply": "Please review this commit.",
+                        "opening_line": "Please review this commit.",
+                        "reply_translation_vi": "Vui lòng xem xét thay đổi này.",
+                        "breakdown": [{"word": "commit", "meaning_vi": "Lưu thay đổi", "kana_or_phonetic": "/kəˈmɪt/"}],
+                        "writing_challenge": "commit",
+                        "title": "Code review", "title_vi": "Đánh giá mã nguồn",
+                        "lines": [
+                            {"speaker": "A", "text": "Please review this commit.", "translation_vi": "Vui lòng xem thay đổi này.", "phonetic_or_romaji": "Please review this commit."},
+                            {"speaker": "B", "text": "I will review it today.", "translation_vi": "Tôi sẽ xem hôm nay.", "phonetic_or_romaji": "I will review it today."}
+                        ],
+                        "vocabulary": [{"word": "commit", "meaning_vi": "Lưu thay đổi", "kana_or_phonetic": "/kəˈmɪt/"}],
+                        "grammar_hints": [], "suggested_writing_targets": ["commit"]
+                    }, ensure_ascii=False)
+                    response = ({"choices": [{"message": {"role": "assistant", "content": content}}]}
+                                if self.path == "/v1/chat/completions" else {"response": content})
                     self.wfile.write(json.dumps(response).encode("utf-8"))
                 else:
                     self.send_response(404)

@@ -42,6 +42,28 @@ void main() {
     expect(result['key_vocabulary'].single['word'], 'Hello');
   });
 
+  test('roleplay sends selected profession and user level', () async {
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    addTearDown(() => server.close(force: true));
+    final requestDone = server.first.then((request) async {
+      final body = jsonDecode(await utf8.decoder.bind(request).join());
+      expect(body['profession'], 'hospitality');
+      expect(body['user_level'], 'advanced');
+      request.response.write(jsonEncode({'reply': 'Welcome'}));
+      await request.response.close();
+    });
+    final api = ApiService(baseUrl: 'http://127.0.0.1:${server.port}/api/v1');
+    final response = await api.sendRoleplayMessage(
+      targetLanguage: 'en',
+      topic: 'Greeting',
+      message: 'Hi',
+      profession: 'HOSPITALITY',
+      userLevel: 'ADVANCED',
+    );
+    await requestDone;
+    expect(response['reply'], 'Welcome');
+  });
+
   test('invalid server address preserves existing API and sync endpoint', () {
     final api = ApiService(baseUrl: 'http://127.0.0.1:8080/api/v1');
     final original = api.syncCoordinator;
