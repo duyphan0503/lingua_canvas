@@ -1,2 +1,3 @@
 export 'storage/local_models.dart';
-export 'storage/local_database_native.dart';
+export 'storage/local_database_native.dart'
+    if (dart.library.js_interop) 'storage/local_database_web.dart';
