@@ -9,7 +9,14 @@ Future<String?> captureSpeechTranscript(
 }) async {
   final available = await service.isAvailable();
   if (!context.mounted || !isCurrent()) return null;
-  if (available) return service.listen(language: language);
+  if (available) {
+    try {
+      return await service.listen(language: language);
+    } on SpeechPracticeException catch (error) {
+      if (!['permission_denied', 'unavailable'].contains(error.code)) rethrow;
+    }
+  }
+  if (!context.mounted || !isCurrent()) return null;
   return showDialog<String>(
     context: context,
     builder: (_) => const _TranscriptDialog(),
@@ -37,7 +44,7 @@ class _TranscriptDialogState extends State<_TranscriptDialog> {
       mainAxisSize: MainAxisSize.min,
       children: [
         const Text(
-          'Thiết bị này chưa hỗ trợ nhận diện giọng nói. Nhập nội dung để thử đối chiếu văn bản; ứng dụng không thu âm.',
+          'Không thể dùng nhận diện giọng nói hoặc chưa có quyền microphone. Nhập nội dung để đối chiếu văn bản; ứng dụng không thu âm.',
         ),
         TextField(
           controller: _controller,
