@@ -6,6 +6,7 @@ import 'phase3_lessons.dart';
 import 'account_service.dart';
 import 'fsrs_engine.dart';
 import 'local_database.dart';
+import 'storage/local_store.dart';
 import 'sync_coordinator.dart';
 
 export 'local_database.dart' show StudyStreak;
@@ -20,13 +21,13 @@ class ApiService {
 
   String _baseUrl;
   final FSRSEngine _fsrsEngine;
-  final LocalDatabase _localDb;
+  final LocalStore _localDb;
   late SyncCoordinator _syncCoordinator;
 
   ApiService({
     String? baseUrl,
     FSRSEngine? fsrsEngine,
-    LocalDatabase? localDb,
+    LocalStore? localDb,
     SyncCoordinator? syncCoordinator,
   }) : _baseUrl = baseUrl ?? defaultBaseUrl,
        _fsrsEngine = fsrsEngine ?? FSRSEngine(),
@@ -63,7 +64,7 @@ class ApiService {
   }
 
   SyncCoordinator get syncCoordinator => _syncCoordinator;
-  LocalDatabase get localDatabase => _localDb;
+  LocalStore get localDatabase => _localDb;
 
   /// Default fallback lessons in case backend is offline
   final List<LessonItem> _fallbackLessons = [
