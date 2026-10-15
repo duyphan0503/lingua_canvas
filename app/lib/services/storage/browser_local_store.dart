@@ -130,6 +130,12 @@ class BrowserLocalStore implements LocalStore {
     return next;
   }
 
+  Future<String> getActiveBackend() async {
+    await initialize();
+    await _mutations;
+    return _state!['active_backend'] as String;
+  }
+
   @override
   Future<void> selectBackend(String baseUrl) => _edit((root) {
     root['active_backend'] = baseUrl;

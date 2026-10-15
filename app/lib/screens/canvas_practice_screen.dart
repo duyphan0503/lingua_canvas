@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../models/lesson_item.dart';
@@ -86,11 +85,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
     _startSyncTimer();
     _apiService = widget.apiService ?? ApiService();
     _speech = widget.speechService ?? SpeechPracticeService();
-    _digitalInkEngine =
-        widget.digitalInkEngine ??
-        (!kIsWeb && Platform.isAndroid
-            ? MlKitDigitalInkEngine()
-            : HeuristicDigitalInkEngine());
+    _digitalInkEngine = widget.digitalInkEngine ?? createDigitalInkEngine();
     _recognizer =
         widget.recognizer ?? HandwritingRecognizer(engine: _digitalInkEngine);
     _loadInitialData();

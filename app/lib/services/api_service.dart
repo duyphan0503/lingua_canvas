@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'platform_capabilities.dart';
 import 'dart:math' as math;
 import 'package:http/http.dart' as http;
 import '../models/lesson_item.dart';
@@ -15,9 +17,11 @@ class ApiService {
   static const String _configuredBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
   );
-  static String defaultBaseUrl = _configuredBaseUrl.isNotEmpty
-      ? _configuredBaseUrl
-      : 'http://127.0.0.1:8080/api/v1';
+  static String defaultBaseUrl = resolveApiBaseUrl(
+    isWeb: kIsWeb,
+    pageUri: Uri.base,
+    configured: _configuredBaseUrl,
+  );
 
   String _baseUrl;
   final FSRSEngine _fsrsEngine;
@@ -42,6 +46,18 @@ class ApiService {
   }
 
   String get baseUrl => _baseUrl;
+
+  Future<void> configureServer(String value) async {
+    final normalized = normalizeApiBaseUrl(
+      value,
+      isWeb: kIsWeb,
+      pageUri: Uri.base,
+    );
+    await _localDb.withProfileLock(() async {
+      await _localDb.selectBackend(normalized);
+      setBaseUrl(normalized);
+    });
+  }
 
   void setBaseUrl(String newUrl) {
     final uri = Uri.tryParse(newUrl.trim());

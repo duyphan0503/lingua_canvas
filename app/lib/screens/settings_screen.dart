@@ -63,22 +63,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  void _saveUrl(String newUrl) {
+  Future<void> _saveUrl(String newUrl) async {
     try {
-      _apiService.setBaseUrl(newUrl.trim());
-    } on FormatException {
+      await _apiService.configureServer(newUrl.trim());
+    } catch (error) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Địa chỉ máy chủ không hợp lệ. Nhập URL http hoặc https đầy đủ.',
+            error is FormatException
+                ? 'Địa chỉ máy chủ không hợp lệ. Nhập URL http hoặc https đầy đủ.'
+                : 'Không thể áp dụng máy chủ. Kiểm tra bộ nhớ rồi thử lại.',
           ),
-          backgroundColor: Color(0xFF991B1B),
+          backgroundColor: const Color(0xFF991B1B),
         ),
       );
       return;
     }
+    if (!mounted) return;
     setState(() {});
     _checkServer();
+    widget.onAccountChanged?.call();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Đã cập nhật API Base URL: $newUrl'),
