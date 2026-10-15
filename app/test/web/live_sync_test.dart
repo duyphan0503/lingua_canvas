@@ -67,10 +67,12 @@ void main() {
       expect(await second.getCompletedCount(), 2);
       expect((await api2.syncCoordinator.synchronize()).pulledCards, 0);
       await api2.syncCoordinator.reviewCardOffline(
-      itemId: 'ja_hira_a', rating: FSRSRating.easy,
-      reviewTime: now.add(const Duration(seconds: 2)), completionScore: 0.95,
-    );
-    expect((await api2.syncCoordinator.synchronize()).success, isTrue);
+        itemId: 'ja_hira_a',
+        rating: FSRSRating.easy,
+        reviewTime: now.add(const Duration(seconds: 2)),
+        completionScore: 0.95,
+      );
+      expect((await api2.syncCoordinator.synchronize()).success, isTrue);
       expect((await api.syncCoordinator.synchronize()).success, isTrue);
       expect(
         (await first.getCompletedLessons())

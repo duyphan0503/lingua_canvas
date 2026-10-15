@@ -2,9 +2,14 @@
 
 Historical record date: 2026-10-02. The results below predate the Flutter 3.47.6 toolchain and Android/Linux-only platform cleanup. Current automated verification is recorded below. Native device checks, live-provider inference and remote integration remain pending.
 
+## Web verification — 2026-10-15
+
+Browser storage and speech checks run with `CHROME_EXECUTABLE=/snap/bin/chromium ../tools/flutter test --no-pub --platform chrome` from `app/`, listing the IndexedDB, writer lease, speech bridge and TTS test files. Native VM tests exclude browser-only annotations while covering the pure browser store/engine and responsive UI. The live runner `tests/web/run_browser_tests.sh` requires an explicit disposable `TEST_DATABASE_URL` whose database starts `lingua_web_test_`; it confirms PostgreSQL initialization, starts owned API/proxy processes, then tests real IndexedDB → HTTP → PostgreSQL → second browser device. See `WEB_PLATFORM_EXECUTION_REPORT.md` for exact results and manual QA boundaries.
+
+
 ## Current platform and toolchain
 
-The Flutter app supports Android and Linux. Flutter 3.47.6 and Dart 3.13.5 are pinned in `.fvmrc`; use `tools/flutter` from the repository root or `../tools/flutter` from `app/`. Check the active versions with `./tools/flutter --version`. The latest automated results below use this pinned toolchain; the later historical section records earlier verification.
+The Flutter app supports Android, Linux and Web. Flutter 3.47.6 and Dart 3.13.5 are pinned in `.fvmrc`; use `tools/flutter` from the repository root or `../tools/flutter` from `app/`. Check the active versions with `./tools/flutter --version`. The latest automated results below use this pinned toolchain; the later historical section records earlier verification.
 
 ## Phase 3–4 verification — 2026-10-14
 

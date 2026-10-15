@@ -1,18 +1,18 @@
 # Project: Lingua Canvas (Learning Experience & Multi-device Sync - Gen 3)
 
-Supported Flutter targets are Android and Linux. The repository pins Flutter 3.47.6 and Dart 3.13.5 in `.fvmrc`; use `tools/flutter` from the repository root (or `../tools/flutter` from `app/`) so commands use the repository-managed SDK.
+Supported Flutter targets are Android, Linux and Web. The repository pins Flutter 3.47.6 and Dart 3.13.5 in `.fvmrc`; use `tools/flutter` from the repository root (or `../tools/flutter` from `app/`) so commands use the repository-managed SDK.
 
 ## Architecture
-Lingua Canvas is an offline-first English and Japanese learning application pairing a Flutter app for Android and Linux with a high-performance Rust Axum backend, Local AI (Ollama / Llama.cpp), Google ML Kit Digital Ink handwriting recognition on Android, and Free Spaced Repetition Scheduler (FSRS-4.5).
+Lingua Canvas is an offline-first English and Japanese learning application pairing a Flutter app for Android, Linux and Web with a high-performance Rust Axum backend, Local AI (Ollama / Llama.cpp), Google ML Kit Digital Ink handwriting recognition on Android, and Free Spaced Repetition Scheduler (FSRS-4.5).
 
 ```mermaid
 flowchart TD
-    subgraph Client [Flutter App - Android and Linux]
+    subgraph Client [Flutter App - Android, Linux and Web]
         UI[UI/UX: Minimalist Dark-Mode]
         Canvas[Canvas Luyện Viết & Stroke Smoothing]
         MLKit[Google ML Kit Digital Ink & Model Manager]
         FSRSClient[FSRS Engine v4.5]
-        LocalDB[(SQLite Local Storage & Sync Queue)]
+        LocalDB[(SQLite native / IndexedDB web & Sync Queue)]
         SyncClient[Sync Coordinator & Network Listener]
 
         UI <--> Canvas
@@ -61,8 +61,6 @@ Every feature from the Survey phase and user requirements is cataloged and assig
 | 11 | Backend Sync Migration & Routes | PostgreSQL migration `20261001000002_sync_and_review_logs.sql` and endpoints `POST /api/v1/sync` & `GET /api/v1/sync/pull` | M3 | survey_sync |
 | 12 | Bidirectional Sync & LWW Conflict | Opportunistic syncing of queued reviews upon reconnection with Last-Write-Wins and idempotency | M3 | survey_sync |
 | 13 | E2E Test Suite Expansion | 4-tier E2E tests verifying dialogue AI, ML Kit canvas scoring, offline sync queuing and reconciliation | M4 | survey_sync |
-| M5 | Learning Experience | N4/TOEIC lessons, animated guides, speech practice/dictation | M2, M3 | IMPLEMENTED; automated tests pass; physical speech QA pending |
-| M6 | Accounts & Scalable Sync | Scoped accounts/devices, safe sequence cursors, Redis cache/rate limits | M3, M5 | IMPLEMENTED; PostgreSQL/Redis automated tests pass |
 | 14 | Security & Quality Verification | `cargo check/clippy/test`, `flutter analyze/test`, secrets scan, zero regressions | M4 | survey_sync |
 | 15 | GitNexus Graph Sync & Remote Push | Full re-index with GitNexus and secure push to `https://github.com/duyphan0503/lingua_canvas` | M4 | survey_sync |
 
@@ -74,6 +72,9 @@ Every feature from the Survey phase and user requirements is cataloged and assig
 | M2 | Mobile ML Kit & Smooth Canvas | Digital Ink model manager, smoothing, scoring, headless mock engine, widget tests | M0 | DONE (implementation and automated tests; device checks pending) |
 | M3 | Offline Storage & Bidirectional Sync | SQLite local tables, FSRS offline review, PostgreSQL sync routes, LWW conflict resolution | M1, M2 | DONE (SQLite and PostgreSQL verified) |
 | M4 | Comprehensive E2E Tests & Remote Sync | 100% test pass across server/app/e2e, GitNexus update, secure commit & push | M3 | LOCAL_TESTS_VERIFIED; remote integration pending |
+| M5 | Learning Experience | N4/TOEIC lessons, animated guides, speech practice/dictation | M2, M3 | IMPLEMENTED; automated tests pass; physical speech QA pending |
+| M6 | Accounts & Scalable Sync | Scoped accounts/devices, safe sequence cursors, Redis cache/rate limits | M3, M5 | IMPLEMENTED; PostgreSQL/Redis automated tests pass |
+| M7 | Browser Platform | Five screens, IndexedDB, Web Locks, speech fallbacks, hosting and sync | M5, M6 | IMPLEMENTED; see WEB_PLATFORM_EXECUTION_REPORT.md |
 
 ## Phase 3–4 verification — 2026-10-14
 
