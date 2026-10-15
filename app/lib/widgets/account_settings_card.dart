@@ -112,7 +112,7 @@ class _AccountSettingsCardState extends State<AccountSettingsCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Tài Khoản & Đồng Bộ Đa Thiết Bị (Android ↔ Linux)',
+              'Tài Khoản & Đồng Bộ Đa Thiết Bị (Android ↔ Linux ↔ Web)',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -160,7 +160,12 @@ class _AccountSettingsCardState extends State<AccountSettingsCard> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Text(
-                    '${device['device_name']} (${device['platform'] == 'android' ? 'Android' : 'Linux Desktop'})\nLần cuối: ${device['last_seen_at'] ?? 'Chưa đồng bộ'} • Seq: ${device['last_sync_seq']}',
+                    '${device['device_name']} (${switch (device['platform']) {
+                      'android' => 'Android',
+                      'linux' => 'Linux Desktop',
+                      'web' => 'Web Browser',
+                      _ => 'Thiết bị khác',
+                    }})\nLần cuối: ${device['last_seen_at'] ?? 'Chưa đồng bộ'} • Seq: ${device['last_sync_seq']}',
                   ),
                 ),
               Wrap(
