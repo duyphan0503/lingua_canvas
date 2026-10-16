@@ -52,6 +52,7 @@ class PlatformTTSEngine implements TTSEngine {
   final FlutterTts _flutterTts;
   final MethodChannel _nativeChannel;
   TTSState _state = TTSState.stopped;
+  int _playbackEpoch = 0;
   double _speechRate = 0.9;
   double _volume = 1.0;
   double _pitch = 1.0;
@@ -154,6 +155,7 @@ class PlatformTTSEngine implements TTSEngine {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return false;
 
+    final epoch = ++_playbackEpoch;
     final lang = normalizeTtsLanguage(languageTag);
 
     // 1. Try Direct Android OS Native TextToSpeech
@@ -167,6 +169,7 @@ class PlatformTTSEngine implements TTSEngine {
               'pitch': _pitch,
               'volume': _volume,
             });
+        if (epoch != _playbackEpoch) return false;
         if (nativeRes == true) {
           _updateState(TTSState.speaking);
           return true;
@@ -176,24 +179,32 @@ class PlatformTTSEngine implements TTSEngine {
       }
     }
 
+    if (epoch != _playbackEpoch) return false;
+
     // 2. Fallback to FlutterTts plugin
     try {
       final dynamic languageResult = await _flutterTts.setLanguage(lang);
+      if (epoch != _playbackEpoch) return false;
       if (languageResult != 1 && languageResult != true) {
         _updateState(TTSState.error);
         return false;
       }
       await _flutterTts.setSpeechRate((_speechRate / 2).clamp(0.0, 1.0));
+      if (epoch != _playbackEpoch) return false;
       await _flutterTts.setVolume(_volume);
+      if (epoch != _playbackEpoch) return false;
       await _flutterTts.setPitch(_pitch);
+      if (epoch != _playbackEpoch) return false;
       _updateState(TTSState.speaking);
       final dynamic res = await _flutterTts.speak(trimmed);
+      if (epoch != _playbackEpoch) return false;
       final success = res == 1 || res == true;
       if (!success) {
         _updateState(TTSState.error);
       }
       return success;
     } catch (e) {
+      if (epoch != _playbackEpoch) return false;
       debugPrint('TTS speak error: $e');
       _updateState(TTSState.error);
       return false;
@@ -211,6 +222,7 @@ class PlatformTTSEngine implements TTSEngine {
 
   @override
   Future<void> stop() async {
+    _playbackEpoch++;
     if (!kIsWeb) {
       try {
         await _nativeChannel.invokeMethod('stop');

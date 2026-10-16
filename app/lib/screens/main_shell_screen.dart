@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/account_service.dart';
@@ -43,10 +44,26 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   void _navigateToCanvasWithLesson(String lessonId) {
+    _stopPlayback();
     setState(() {
       _targetLessonId = lessonId;
       _currentIndex = 0;
     });
+  }
+
+  void _stopPlayback() {
+    unawaited((widget.ttsService ?? TtsService.defaultInstance).stop());
+  }
+
+  void _selectDestination(int index) {
+    if (index != _currentIndex) _stopPlayback();
+    setState(() => _currentIndex = index);
+  }
+
+  @override
+  void dispose() {
+    _stopPlayback();
+    super.dispose();
   }
 
   Future<void> _navigateToCanvasWithWord(String word, String language) async {
@@ -118,8 +135,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                         minExtendedWidth: 200,
                         backgroundColor: const Color(0xFF1E293B),
                         selectedIndex: _currentIndex,
-                        onDestinationSelected: (index) =>
-                            setState(() => _currentIndex = index),
+                        onDestinationSelected: _selectDestination,
                         destinations: [
                           for (final destination in _destinations)
                             NavigationRailDestination(
@@ -178,12 +194,14 @@ class _MainShellScreenState extends State<MainShellScreen> {
                           apiService: _apiService,
                           accountService: widget.accountService,
                           onAccountChanged: () {
+                            _stopPlayback();
                             setState(() {
                               _profileGeneration++;
                               _targetLessonId = null;
                             });
                           },
                           onResetData: () {
+                            _stopPlayback();
                             setState(() {
                               _profileGeneration++;
                               _apiService.syncCoordinator.lastSyncTime = null;
@@ -207,9 +225,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                   ),
                   child: NavigationBar(
                     selectedIndex: _currentIndex,
-                    onDestinationSelected: (index) {
-                      setState(() => _currentIndex = index);
-                    },
+                    onDestinationSelected: _selectDestination,
                     backgroundColor: const Color(0xFF1E293B),
                     indicatorColor: const Color(0xFF4F46E5),
                     destinations: _destinations,

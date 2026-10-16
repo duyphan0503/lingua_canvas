@@ -75,7 +75,7 @@ jobs:
       - name: Run browser storage and speech tests
         env:
           CHROME_EXECUTABLE: /usr/bin/google-chrome
-        run: flutter test --no-pub --platform chrome test/web/indexed_db_test.dart test/web/browser_writer_lease_test.dart test/web/browser_speech_bridge_test.dart test/web/browser_tts_test.dart
+        run: flutter test --no-pub --platform chrome test/web/indexed_db_test.dart test/web/browser_writer_lease_test.dart test/web/browser_speech_bridge_test.dart test/web/browser_tts_test.dart test/web/browser_tts_cancellation_test.dart
 
       - name: Build web release
         run: flutter build web --no-pub --release --no-web-resources-cdn --pwa-strategy=none

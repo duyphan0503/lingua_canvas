@@ -18,12 +18,12 @@ Pinned Flutter 3.47.6 / Dart 3.13.5; Chromium Snap 155.0.8059.39.
 
 | Check | Actual result |
 | --- | --- |
-| Flutter VM unit/widget suite | 226 passed |
-| Chromium IndexedDB / Web Locks / JS speech / web TTS | 9 passed |
+| Flutter VM unit/widget suite | 231 passed after final review fixes |
+| Chromium IndexedDB / Web Locks / JS speech / web TTS | 10 passed, including late playback cancellation |
 | Live Chromium IndexedDB → proxy → Rust → PostgreSQL → second device | 1 passed |
 | Rust all targets with disposable PostgreSQL 16 + Redis | 58 passed |
 | Rust formatting / check / Clippy warnings denied | Passed |
-| Dart formatting / analyzer | 92 files unchanged / no issues |
+| Dart formatting / analyzer | 95 files unchanged / no issues |
 | Web release, bundled runtime resources, no service worker | Passed |
 | Linux release build | Passed |
 | Android debug build | Passed (`app-debug.apk`); existing AGP/Kotlin/SDK XML upgrade warnings retained |
@@ -55,3 +55,27 @@ Physical touch, microphone/voice quality, vendor speech networking, real Android
 GitNexus impact preceded implementation edits; UNKNOWN results were checked against source. ApiService was HIGH risk (13 direct dependents / four flows) and that warning was reported before the storage refactor. Task 7's aggregate change analysis was HIGH because the shared API constructor and harness changed; full server regression passed. Complete detect_changes checks had no partial/truncated flags. The index itself reports dropped/unexplored execution flows; absent graph edges are not an all-clear.
 
 GitHub delivery uses a scoped PR against `codex/phase3-4-learning-and-sync` while PR #2 remains open. CI retains native checks and adds Chromium tests, release web build and the static artifact. This branch is not merged or publicly deployed. Final review and remote verification are recorded below.
+
+
+## Final review — 2026-10-16
+
+One independent whole-branch review completed on `0c72beb..edb4493`. The original reviewer was interrupted by its usage limit after reporting the backend/coordinator race; a replacement resumed that interrupted review. No second opinion or post-fix re-review was dispatched.
+
+Three important findings were reproduced with failing tests and fixed in one pass:
+
+1. A sync requested during a durable backend switch could retain the old coordinator and send the new anonymous profile queue to the old server. `ApiService.sync` now waits for queued backend configurations before selecting its coordinator. Regression asserts that B's private queue never sends a request to A.
+2. A delayed catalogue response could write A's lessons into B's profile. Catalogue HTTP + persistence now share the profile lock. Nested catalogue calls from custom-word creation share the API operation's zone context so the non-reentrant store lock is acquired once, while preserving public method overrides. Existing custom-builder and Roleplay→Canvas regressions passed after this compatibility check.
+3. TTS survived navigation/profile changes, including voice configuration completing after stop. The shell stops playback on narrow/desktop navigation, practice navigation, profile/reset callbacks and disposal. Platform TTS invalidates pending startup using an epoch checked across awaited configuration steps. Three widget regressions and an actual Chromium delayed-voice regression cover the behavior.
+
+Focused regression: 12 tests passed; full Flutter suite: 231 passed; Chromium: 10 passed; analyzer and formatting clean. Important findings have RED→GREEN evidence; no important finding was deferred.
+
+Deferred minor: speaker failure recovery still offers Android voice settings on web. The capability card correctly identifies missing browser voices, but the speaker recovery copy should become browser-specific in a follow-up.
+
+Additional ruling: the live runner uses an optimized release backend after debug PBKDF2 exceeded the client's twelve-second deadline during concurrent builds. Password hashing rounds and API deadlines remain unchanged. Cost: first test-run release compilation takes longer; production-equivalent hashing avoids a debug-performance false failure.
+
+Additional ruling: catalogue requests hold the profile lock through the bounded HTTP request and persistence; a zone-scoped API helper permits safe nested reads and preserves overrides. Cost: a profile/backend switch may wait up to the catalogue request timeout plus its durable save.
+
+
+Final source verification on 2026-10-16: web release, Linux release and Android debug builds passed after the request-lock compatibility change; live release-backend Chromium/PostgreSQL sync passed. Final focused change analysis: 33 symbols / nine files / 30 affected, CRITICAL; complete branch comparison: 554 symbols / 82 files / 126 affected, CRITICAL. Neither result was partial/truncated. The CRITICAL rating reflects the shared catalogue/sync paths and is retained, not waived by shared axes.
+
+Tooling limitation: the final graph rebuild completed, but GitNexus's full-text/BM25 search index failed. A bounded `analyze --repair-fts` attempt also failed (`Function.function_fts` missing). Structural graph impact and both complete change analyses succeeded. Full-text search needs a separate force rebuild/tool diagnosis; absent search results must not be read as unused code.

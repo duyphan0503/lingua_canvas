@@ -22,7 +22,7 @@ try:
 finally:
     for s in sockets: s.close()
 PY
-cargo build --manifest-path server/Cargo.toml --offline
+cargo build --manifest-path server/Cargo.toml --offline --release
 LOG_DIR=$(mktemp -d /tmp/lingua-web-test.XXXXXX)
 API_PID=''
 PROXY_PID=''
@@ -33,7 +33,7 @@ cleanup() {
   echo "Browser integration logs: $LOG_DIR"
 }
 trap cleanup EXIT INT TERM
-DATABASE_URL="$TEST_DATABASE_URL" PORT="$API_PORT" AI_ENDPOINT='http://127.0.0.1:9' AI_FALLBACK_ENABLED=true REDIS_URL='' RUST_LOG=info server/target/debug/server >"$LOG_DIR/api.log" 2>&1 &
+DATABASE_URL="$TEST_DATABASE_URL" PORT="$API_PORT" AI_ENDPOINT='http://127.0.0.1:9' AI_FALLBACK_ENABLED=true REDIS_URL='' RUST_LOG=info server/target/release/server >"$LOG_DIR/api.log" 2>&1 &
 API_PID=$!
 python3 -B tools/serve_web.py --directory app/build/web --port "$PROXY_PORT" --api-origin "http://127.0.0.1:$API_PORT" >"$LOG_DIR/proxy.log" 2>&1 &
 PROXY_PID=$!

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'platform_capabilities.dart';
@@ -27,6 +28,8 @@ class ApiService {
   final FSRSEngine _fsrsEngine;
   final LocalStore _localDb;
   late SyncCoordinator _syncCoordinator;
+  Future<void>? _serverConfiguration;
+  final Object _profileRequestZone = Object();
 
   ApiService({
     String? baseUrl,
@@ -53,10 +56,18 @@ class ApiService {
       isWeb: kIsWeb,
       pageUri: Uri.base,
     );
-    await _localDb.withProfileLock(() async {
+    final change = _localDb.withProfileLock(() async {
       await _localDb.selectBackend(normalized);
       setBaseUrl(normalized);
     });
+    _serverConfiguration = change;
+    try {
+      await change;
+    } finally {
+      if (identical(_serverConfiguration, change)) {
+        _serverConfiguration = null;
+      }
+    }
   }
 
   void setBaseUrl(String newUrl) {
@@ -2187,7 +2198,18 @@ class ApiService {
     ...phase3Lessons,
   ];
 
-  Future<List<LessonItem>> getLessons({String? language}) async {
+  Future<T> _withProfileRequestLock<T>(Future<T> Function() operation) {
+    if (Zone.current[_profileRequestZone] == true) return operation();
+    return _localDb.withProfileLock(
+      () => runZoned(operation, zoneValues: {_profileRequestZone: true}),
+    );
+  }
+
+  Future<List<LessonItem>> getLessons({String? language}) =>
+      _withProfileRequestLock(() => _getLessonsForProfile(language: language));
+
+  // The caller owns the profile lock, including ensureLessonForWord below.
+  Future<List<LessonItem>> _getLessonsForProfile({String? language}) async {
     try {
       final uri = Uri.parse(
         '$baseUrl/lessons${language != null ? '?language=$language' : ''}',
@@ -2231,7 +2253,7 @@ class ApiService {
     String? meaningVi,
     String? workplaceContext,
     String? workplaceContextVi,
-  }) => _localDb.withProfileLock(() async {
+  }) => _withProfileRequestLock(() async {
     final target = word.trim();
     if (target.isEmpty || !const ['ja', 'en'].contains(language)) {
       throw ArgumentError('Cần từ vựng và ngôn ngữ ja hoặc en.');
@@ -2283,6 +2305,10 @@ class ApiService {
   }
 
   Future<SyncResult> sync() async {
+    // Select the coordinator only after all queued durable server changes settle.
+    while (_serverConfiguration != null) {
+      await _serverConfiguration;
+    }
     return await _syncCoordinator.synchronize();
   }
 
