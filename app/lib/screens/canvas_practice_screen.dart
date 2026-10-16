@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../models/lesson_item.dart';
@@ -77,6 +76,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
   int _recognitionEpoch = 0;
   int _modelEpoch = 0;
   bool _syncInProgress = false;
+  bool _savingReview = false;
   Timer? _syncTimer;
 
   @override
@@ -86,11 +86,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
     _startSyncTimer();
     _apiService = widget.apiService ?? ApiService();
     _speech = widget.speechService ?? SpeechPracticeService();
-    _digitalInkEngine =
-        widget.digitalInkEngine ??
-        (!kIsWeb && Platform.isAndroid
-            ? MlKitDigitalInkEngine()
-            : HeuristicDigitalInkEngine());
+    _digitalInkEngine = widget.digitalInkEngine ?? createDigitalInkEngine();
     _recognizer =
         widget.recognizer ?? HandwritingRecognizer(engine: _digitalInkEngine);
     _loadInitialData();
@@ -461,9 +457,22 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
 
   Future<void> _submitFSRSRating(FSRSRating rating) async {
     final lesson = _currentLesson;
-    if (lesson == null) return;
+    if (lesson == null || _savingReview) return;
+    _savingReview = true;
+    try {
+      await _apiService.submitReview(itemId: lesson.id, rating: rating);
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _statusNotification =
+              'Chưa lưu đánh giá. Kiểm tra bộ nhớ rồi thử lại.',
+        );
+      }
+      return;
+    } finally {
+      _savingReview = false;
+    }
 
-    await _apiService.submitReview(itemId: lesson.id, rating: rating);
     final updatedCount = await _apiService.getCompletedCount();
 
     if (!mounted) return;
@@ -1027,7 +1036,9 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
                 color: Color(0xFF38BDF8),
               ),
               Text(
-                'Nhận diện gần đúng (cơ bản)',
+                kIsWeb
+                    ? 'Đánh giá hình học (gần đúng)'
+                    : 'Nhận diện gần đúng (cơ bản)',
                 style: TextStyle(
                   fontSize: 11,
                   color: Color(0xFF38BDF8),

@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'platform_capabilities.dart';
 import 'dart:math' as math;
 import 'package:http/http.dart' as http;
 import '../models/lesson_item.dart';
@@ -6,6 +9,7 @@ import 'phase3_lessons.dart';
 import 'account_service.dart';
 import 'fsrs_engine.dart';
 import 'local_database.dart';
+import 'storage/local_store.dart';
 import 'sync_coordinator.dart';
 
 export 'local_database.dart' show StudyStreak;
@@ -14,19 +18,23 @@ class ApiService {
   static const String _configuredBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
   );
-  static String defaultBaseUrl = _configuredBaseUrl.isNotEmpty
-      ? _configuredBaseUrl
-      : 'http://127.0.0.1:8080/api/v1';
+  static String defaultBaseUrl = resolveApiBaseUrl(
+    isWeb: kIsWeb,
+    pageUri: Uri.base,
+    configured: _configuredBaseUrl,
+  );
 
   String _baseUrl;
   final FSRSEngine _fsrsEngine;
-  final LocalDatabase _localDb;
+  final LocalStore _localDb;
   late SyncCoordinator _syncCoordinator;
+  Future<void>? _serverConfiguration;
+  final Object _profileRequestZone = Object();
 
   ApiService({
     String? baseUrl,
     FSRSEngine? fsrsEngine,
-    LocalDatabase? localDb,
+    LocalStore? localDb,
     SyncCoordinator? syncCoordinator,
   }) : _baseUrl = baseUrl ?? defaultBaseUrl,
        _fsrsEngine = fsrsEngine ?? FSRSEngine(),
@@ -41,6 +49,26 @@ class ApiService {
   }
 
   String get baseUrl => _baseUrl;
+
+  Future<void> configureServer(String value) async {
+    final normalized = normalizeApiBaseUrl(
+      value,
+      isWeb: kIsWeb,
+      pageUri: Uri.base,
+    );
+    final change = _localDb.withProfileLock(() async {
+      await _localDb.selectBackend(normalized);
+      setBaseUrl(normalized);
+    });
+    _serverConfiguration = change;
+    try {
+      await change;
+    } finally {
+      if (identical(_serverConfiguration, change)) {
+        _serverConfiguration = null;
+      }
+    }
+  }
 
   void setBaseUrl(String newUrl) {
     final uri = Uri.tryParse(newUrl.trim());
@@ -63,7 +91,7 @@ class ApiService {
   }
 
   SyncCoordinator get syncCoordinator => _syncCoordinator;
-  LocalDatabase get localDatabase => _localDb;
+  LocalStore get localDatabase => _localDb;
 
   /// Default fallback lessons in case backend is offline
   final List<LessonItem> _fallbackLessons = [
@@ -2170,7 +2198,18 @@ class ApiService {
     ...phase3Lessons,
   ];
 
-  Future<List<LessonItem>> getLessons({String? language}) async {
+  Future<T> _withProfileRequestLock<T>(Future<T> Function() operation) {
+    if (Zone.current[_profileRequestZone] == true) return operation();
+    return _localDb.withProfileLock(
+      () => runZoned(operation, zoneValues: {_profileRequestZone: true}),
+    );
+  }
+
+  Future<List<LessonItem>> getLessons({String? language}) =>
+      _withProfileRequestLock(() => _getLessonsForProfile(language: language));
+
+  // The caller owns the profile lock, including ensureLessonForWord below.
+  Future<List<LessonItem>> _getLessonsForProfile({String? language}) async {
     try {
       final uri = Uri.parse(
         '$baseUrl/lessons${language != null ? '?language=$language' : ''}',
@@ -2214,7 +2253,7 @@ class ApiService {
     String? meaningVi,
     String? workplaceContext,
     String? workplaceContextVi,
-  }) => _localDb.withProfileLock(() async {
+  }) => _withProfileRequestLock(() async {
     final target = word.trim();
     if (target.isEmpty || !const ['ja', 'en'].contains(language)) {
       throw ArgumentError('Cần từ vựng và ngôn ngữ ja hoặc en.');
@@ -2266,6 +2305,10 @@ class ApiService {
   }
 
   Future<SyncResult> sync() async {
+    // Select the coordinator only after all queued durable server changes settle.
+    while (_serverConfiguration != null) {
+      await _serverConfiguration;
+    }
     return await _syncCoordinator.synchronize();
   }
 

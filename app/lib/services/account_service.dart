@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io' show Platform;
+import 'platform_capabilities.dart';
 import 'package:http/http.dart' as http;
 import 'api_service.dart';
 
@@ -81,12 +81,12 @@ class AccountService {
   ) async {
     final baseUrl = apiService.baseUrl;
     final deviceId = await apiService.localDatabase.getOrCreateClientId();
-    final platform = Platform.isAndroid ? 'android' : 'linux';
+    final platform = devicePlatform();
     final body = jsonEncode({
       ...credentials,
       'device_id': deviceId,
       'platform': platform,
-      'device_name': platform == 'android' ? 'Android' : 'Linux Desktop',
+      'device_name': deviceName(),
     });
     final uri = Uri.parse('$baseUrl/auth/$endpoint');
     final response = await sendRequest(

@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/lesson_item.dart';
 import 'fsrs_engine.dart';
 import 'local_database.dart';
+import 'storage/local_store.dart';
 
 class SyncResult {
   final bool success;
@@ -30,7 +31,7 @@ class SyncResult {
 }
 
 class SyncCoordinator {
-  final LocalDatabase localDb;
+  final LocalStore localDb;
   final FSRSEngine fsrsEngine;
   final http.Client httpClient;
   final String baseUrl;
@@ -40,7 +41,7 @@ class SyncCoordinator {
   Future<SyncResult>? _syncInFlight;
 
   SyncCoordinator({
-    LocalDatabase? localDb,
+    LocalStore? localDb,
     FSRSEngine? fsrsEngine,
     http.Client? httpClient,
     this.baseUrl = 'http://127.0.0.1:8080/api/v1',

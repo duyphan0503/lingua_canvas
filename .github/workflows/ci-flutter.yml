@@ -9,6 +9,9 @@ on:
       - develop
     paths:
       - 'app/**'
+      - 'tools/serve_web.py'
+      - 'tests/web/**'
+      - 'deploy/web/**'
       - '.github/workflows/ci-flutter.yml'
       - '.fvmrc'
   pull_request:
@@ -20,6 +23,9 @@ on:
       - 'codex/**'
     paths:
       - 'app/**'
+      - 'tools/serve_web.py'
+      - 'tests/web/**'
+      - 'deploy/web/**'
       - '.github/workflows/ci-flutter.yml'
       - '.fvmrc'
 
@@ -65,6 +71,21 @@ jobs:
 
       - name: Run unit and widget tests (flutter test)
         run: flutter test --coverage
+
+      - name: Run browser storage and speech tests
+        env:
+          CHROME_EXECUTABLE: /usr/bin/google-chrome
+        run: flutter test --no-pub --platform chrome test/web/indexed_db_test.dart test/web/browser_writer_lease_test.dart test/web/browser_speech_bridge_test.dart test/web/browser_tts_test.dart test/web/browser_tts_cancellation_test.dart test/web/browser_tts_recovery_test.dart
+
+      - name: Build web release
+        run: flutter build web --no-pub --release --no-web-resources-cdn --pwa-strategy=none
+
+      - name: Upload web release
+        uses: actions/upload-artifact@v4
+        with:
+          name: lingua-canvas-web
+          path: app/build/web/
+          if-no-files-found: error
 
       - name: Build Linux desktop
         run: flutter build linux --release
