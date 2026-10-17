@@ -90,3 +90,46 @@ The dependency lock updates only rustls 0.23.45 → 0.23.46 and its checksum, ad
 Verification used the pinned Flutter 3.47.6 / Dart 3.13.5 through `tools/flutter`: 231 Flutter VM tests passed, four focused Chromium TTS tests passed, analyzer reported no issues and both edited Dart files passed formatting. Rust formatting, locked compilation and all-target Clippy with warnings denied passed. All 58 Rust tests passed with disposable PostgreSQL 16 and the opt-in live Redis tests enabled. An initial harness run incorrectly used `REDIS_URL`, causing independent test apps to share anonymous rate-limit counters and fail `ai_limiter_counts_hits_and_separates_accounts` (429 instead of 200). The corrected complete run unset `REDIS_URL` and used `TEST_REDIS_URL`; no product change was needed for that harness error.
 
 Pre-edit GitNexus retained the standard speaker HIGH warning (seven direct dependents / three affected flows); chip speaker analysis was LOW (four direct / one flow). Workflow impact was UNKNOWN because YAML is not indexed; source inspection confirmed the sole change appends this browser test to the existing Chrome command. Complete full-scope change analysis found four changed code symbols and two affected settings-recovery flows, MEDIUM, with no partial/truncated result. The graph rebuild retained its existing dropped-flow and failed full-text/BM25 limitations; missing graph results remain inconclusive. Browser voice availability and vendor playback quality still require device QA.
+
+
+## Private vocabulary sync and backup — 2026-10-17
+
+Implemented on `codex/private-vocabulary-sync`, based on the patched web foundation at `62a2c8b` (PR #3). Private lesson metadata stays in per-profile storage and is excluded from the public curriculum API. Create/edit, soft-delete/trash/restore, conflict comparison and explicit local/server resolution are available in the curriculum UI. Settings now supports validated JSON backup preview and confirmed merge, plus an opt-in guest-profile transfer after account linking.
+
+SQLite migration 4→5 and browser snapshot migration 1→2 preserve inactive profiles. Legacy long IDs are mapped deterministically with SHA-256 aliases and references are migrated; metadata mutations are queued once. Private mutations and their queue writes are transactional. Sync uses version checks, idempotent receipts and mutation ACKs; only acknowledged entries leave the queue. Conflicted words retain both versions and pause independently. Progress imports are idempotent snapshots, do not replay review history through FSRS, and preserve cards with pending reviews. Reimporting the same backup does not increment review counts. Backup import is bounded to 10 MiB and validates the entire document before preview; guest/profile merges are explicit and never copy credentials or server ownership.
+
+File transport uses Blob download on Web, SAF document selection/streaming on Android and `file_selector` on Linux. Android's bounded ContentResolver stream reads at most the configured limit plus one byte before rejection. The server migration and additive sync protocol deploy before client rollout; older servers leave pending mutations intact and show an upgrade message.
+
+## Verification
+
+Pinned Flutter 3.47.6 / Dart 3.13.5. Fresh `cargo audit` fetched 1,338 advisories and scanned 260 locked dependencies; exit 0, no vulnerability and no new advisory exception. Rust format and all-target Clippy with warnings denied passed. Standard Rust all-target tests passed (67 passed, one opt-in live test ignored unless the disposable runner is used).
+
+| Check | Actual result |
+| --- | --- |
+| Full Flutter VM suite | 298 passed, one intentionally skipped |
+| Focused Chromium UI + IndexedDB | 21 passed |
+| Actual SQLite → HTTP → PostgreSQL → second SQLite | 1 passed |
+| Actual IndexedDB → HTTP → PostgreSQL → second browser device | 1 passed |
+| Live Rust HTTP/PostgreSQL contract | 1 passed |
+| Flutter analyzer | No issues |
+| Dart format | 118 files checked, no changes |
+| Web release (`--no-web-resources-cdn`, PWA strategy none) | Passed |
+| Linux release | Passed |
+| Android debug APK | Passed |
+
+The live tests also cover account isolation, public-catalogue privacy, tombstones and restore, conflict selection, repeated backup import, a late source-device review and prevention of duplicate FSRS repetition counts. CI adds PostgreSQL 16 for the backend workflow and runs the isolated live Rust contract; ordinary Cargo runs keep the destructive/live database test ignored unless the guarded runner explicitly opts in.
+
+## Limits and delivery
+
+The Web build emits the existing `flutter_tts` Wasm dry-run interop warnings and optional Cupertino-font notice; the JavaScript Web release compiles successfully. Android tooling reports existing Gradle/AGP/Kotlin and SDK XML version warnings; the APK still builds. Manual checks of a physical Android SAF picker, Linux native picker, browser download prompt and device rotation were not performed. The guest source profile remains intact after transfer.
+
+GitNexus pre-edit impacts were reviewed at the relevant storage, sync and UI symbols. Full change detection reports HIGH risk across 20 files, 130 symbols and nine affected flows; the aggregate rating is retained and was reviewed alongside focused tests and independent task reviews. A final `analyze --index-only --force` attempt exited 1 after leaving the index marked `incremental-in-progress`; repeated attempts did not produce a complete refreshed index. The last complete graph predates only two test-fixture mock additions, whose class lookups were UNKNOWN and verified by text search. `detect-changes --scope all` completed for the branch diff and reported the nine flows above. This graph-refresh limitation is recorded rather than treated as an all-clear.
+
+Feature changes are delivered in a separate PR from PR #3. No merge, public deployment, PWA or new practice mode is included.
+
+
+## Final review follow-up — 2026-10-17
+
+An independent whole-diff review found that progress import could create shared custom placeholder rows for arbitrary IDs, potentially reserving a future public lesson ID. A regression first reproduced the issue against PostgreSQL (the server returned 200 where 400 was expected). The server now validates every distinct referenced card/completion ID against an existing public catalogue row or private metadata owned by the authenticated account before creating placeholders or writing progress. Memory mode enforces the same rule. A PostgreSQL assertion confirms unknown card and completion IDs are rejected and create no shared rows; rollback coverage now creates owned private metadata before importing its cards. The reviewer approved the fix with no remaining findings.
+
+After the fix, Rust all-target tests passed (67 passed, one opt-in live test ignored), the complete private protocol suite passed against PostgreSQL (9/9), the live SQLite and IndexedDB cross-device suites each passed (1/1), Clippy with warnings denied and Rust formatting passed. Final GitNexus `detect-changes --scope all` reports 23 files, 136 symbols, nine affected flows and HIGH risk, without a partial/truncated marker; the shared sync/UI paths and rating remain visible for review.
