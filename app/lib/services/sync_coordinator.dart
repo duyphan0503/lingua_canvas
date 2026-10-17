@@ -479,7 +479,7 @@ class SyncCoordinator {
           ).toUtc();
           final local = localCompletions[lessonId];
           if (local != null &&
-              (local.synced == 0 || !completedAt.isAfter(local.completedAt))) {
+              (local.synced == 0 || completedAt.isBefore(local.completedAt))) {
             continue;
           }
           await localDb.saveCompletedLesson(
@@ -551,7 +551,7 @@ class SyncCoordinator {
   }
 
   /// Reconciles a card from the server with local card using Last-Write-Wins (LWW).
-  /// If server card is newer or local card doesn't exist, overwrites local card.
+  /// If server card is newer (or tied) or local card doesn't exist, overwrites local card.
   /// If local card has a newer review timestamp, retains local card.
   Future<bool> _reconcileCardWithLww(
     Map<String, dynamic> json, {
@@ -578,7 +578,7 @@ class SyncCoordinator {
     }
 
     final localCard = await localDb.getCard(itemId);
-    if (localCard == null || serverLastReview.isAfter(localCard.lastReview)) {
+    if (localCard == null || !serverLastReview.isBefore(localCard.lastReview)) {
       final stateVal = json['state'];
       FSRSState state;
       if (stateVal is int) {

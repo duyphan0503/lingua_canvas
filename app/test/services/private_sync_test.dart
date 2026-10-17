@@ -154,6 +154,69 @@ void main() {
     expect(await store.getCard('custom_ja_a'), isNull);
   });
   test(
+    'equal timestamp server progress is reconciled deterministically',
+    () async {
+      final timestamp = DateTime.utc(2026, 10, 1);
+      await store.saveCard(
+        FSRSCard(
+          itemId: 'ja_hira_a',
+          state: FSRSState.review,
+          stability: 8,
+          difficulty: 5,
+          reps: 10,
+          lapses: 0,
+          lastReview: timestamp,
+          nextReview: timestamp.add(const Duration(days: 8)),
+        ),
+      );
+      await store.saveCompletedLesson(
+        'ja_hira_a',
+        completedAt: timestamp,
+        score: 1,
+        synced: 1,
+      );
+      final sync = SyncCoordinator(
+        localDb: store,
+        baseUrl: 'http://test/api/v1',
+        httpClient: MockClient((r) async {
+          if (r.method == 'POST') return http.Response('{}', 200);
+          return http.Response(
+            jsonEncode({
+              'cards': [
+                {
+                  'item_id': 'ja_hira_a',
+                  'state': 'Review',
+                  'stability': 3,
+                  'difficulty': 6,
+                  'reps': 7,
+                  'lapses': 0,
+                  'last_review': timestamp.toIso8601String(),
+                  'next_review': timestamp
+                      .add(const Duration(days: 3))
+                      .toIso8601String(),
+                },
+              ],
+              'completed_lessons': [
+                {
+                  'lesson_id': 'ja_hira_a',
+                  'completed_at': timestamp.toIso8601String(),
+                  'score': 0.5,
+                },
+              ],
+            }),
+            200,
+          );
+        }),
+      );
+      await sync.synchronize();
+      expect((await store.getCard('ja_hira_a'))!.reps, 7);
+      expect((await store.getCompletedLessons()).single.score, 0.5);
+      await sync.synchronize();
+      expect((await store.getCard('ja_hira_a'))!.reps, 7);
+      expect((await store.getCompletedLessons()).single.score, 0.5);
+    },
+  );
+  test(
     'unacknowledged in-progress review protects card from unrelated push response',
     () async {
       final sync = SyncCoordinator(

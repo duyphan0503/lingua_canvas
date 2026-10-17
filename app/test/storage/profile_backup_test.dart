@@ -4,6 +4,7 @@ import 'package:app/models/profile_backup.dart';
 import 'package:app/services/storage/browser_local_store.dart';
 import 'package:app/services/storage/snapshot_persistence.dart';
 import 'package:app/services/fsrs_engine.dart';
+import 'package:app/models/private_lesson_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 import '../helpers/memory_snapshot_persistence.dart';
 import 'private_vocabulary_test.dart' show word;
@@ -165,6 +166,58 @@ void main() {
       final queue = await store.getPendingMutations();
       expect(queue.single.payload['lesson']['target_text'], 'imported');
       expect(queue.single.payload['base_revision'], 0);
+    },
+  );
+  test('server delta refreshes remote candidate in backup conflict', () async {
+    await store.savePrivateLesson(word('custom_ja_a', 'guest copy'));
+    final backup = await store.exportProfileBackup();
+    await store.switchAccount({
+      'user_id': 'alice',
+      'server_url': 'http://test/api/v1',
+      'sync_token': 'secret',
+    });
+    await store.savePrivateLesson(word('custom_ja_a', 'account copy'));
+    await store.mergeProfileBackup(await store.previewProfileBackup(backup));
+    await store.applyPrivateLessonSync(
+      deltas: [
+        PrivateLessonWireState(
+          lesson: word('custom_ja_a', 'latest server copy'),
+          revision: 5,
+          deleted: false,
+          updatedAt: DateTime.utc(2026, 10, 1),
+        ),
+      ],
+    );
+    final conflict = (await store.getPrivateLesson('custom_ja_a'))!.conflict!;
+    expect(conflict.fromBackup, isTrue);
+    expect(conflict.remote!.revision, 5);
+    await store.resolvePrivateLessonConflict('custom_ja_a', keepLocal: false);
+    expect(
+      (await store.getPrivateLesson('custom_ja_a'))!.lesson.targetText,
+      'latest server copy',
+    );
+    expect((await store.getPrivateLesson('custom_ja_a'))!.revision, 5);
+  });
+
+  test(
+    'local-calendar daily activity date is not treated as a future instant',
+    () async {
+      final backup = ProfileBackup(
+        backupId: 'calendar-boundary',
+        createdAt: DateTime.utc(2026, 10, 16, 21),
+        privateLessons: const [],
+        cards: const [],
+        reviewLogs: const [],
+        completedLessons: const [],
+        dailyActivity: const {'2026-10-17': 1},
+      );
+      expect(
+        ProfileBackup.fromJson(
+          backup.toJson(),
+          now: DateTime.utc(2026, 10, 16, 22),
+        ).dailyActivity,
+        {'2026-10-17': 1},
+      );
     },
   );
   test(

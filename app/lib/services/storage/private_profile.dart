@@ -369,6 +369,11 @@ class PrivateProfile {
         next['revision'] = wire.revision > old.revision
             ? wire.revision
             : old.revision;
+        next['conflict'] = PrivateLessonConflict(
+          local: old.conflict!.local,
+          remote: wire,
+          fromBackup: true,
+        ).toJson();
         states[wire.lesson.id] = next;
       } else if (old.conflict != null) {
         if (wire.revision >= (old.conflict!.remote?.revision ?? 0)) {

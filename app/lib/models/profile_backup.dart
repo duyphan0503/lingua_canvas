@@ -78,7 +78,7 @@ class ProfileBackup {
       throw const FormatException('Tệp sao lưu không hợp lệ.');
     }
   }
-  factory ProfileBackup.fromJson(Map<String, dynamic> j) {
+  factory ProfileBackup.fromJson(Map<String, dynamic> j, {DateTime? now}) {
     try {
       if (j['format'] != 'lingua_canvas_backup' || j['version'] != 1) {
         throw const FormatException('Phiên bản sao lưu chưa được hỗ trợ.');
@@ -97,7 +97,9 @@ class ProfileBackup {
       if (j.keys.any((k) => !allowed.contains(k))) {
         throw const FormatException('Sao lưu có trường không được hỗ trợ.');
       }
-      final now = DateTime.now().toUtc().add(const Duration(minutes: 5));
+      final latestAllowed = (now ?? DateTime.now()).toUtc().add(
+        const Duration(minutes: 5),
+      );
       DateTime date(dynamic value, {bool future = false}) {
         if (value is! String ||
             !RegExp(
@@ -110,7 +112,7 @@ class ProfileBackup {
           throw const FormatException('Ngày giờ sao lưu không hợp lệ.');
         }
         if (t.isBefore(DateTime.fromMillisecondsSinceEpoch(0, isUtc: true)) ||
-            (!future && t.isAfter(now))) {
+            (!future && t.isAfter(latestAllowed))) {
           throw const FormatException(
             'Thời gian sao lưu vượt quá đồng hồ hiện tại.',
           );
@@ -183,7 +185,7 @@ class ProfileBackup {
         final last = date(r['last_review']);
         final next = date(r['next_review'], future: true);
         if (next.isBefore(last) ||
-            next.isAfter(now.add(const Duration(days: 36500)))) {
+            next.isAfter(latestAllowed.add(const Duration(days: 36500)))) {
           throw const FormatException('Ngày ôn tiếp theo không hợp lệ.');
         }
         return FSRSCard(
@@ -240,7 +242,6 @@ class ProfileBackup {
           throw const FormatException('Ngày học không hợp lệ.');
         }
         integer(e.value, 0, 2147483647);
-        date('${e.key}T00:00:00Z');
       }
       return ProfileBackup(
         backupId: id,
