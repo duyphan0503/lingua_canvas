@@ -32,6 +32,15 @@ PY
 
 LOG_DIR="$(mktemp -d /tmp/lingua-private-vocabulary.XXXXXX)"
 API_PID=''
+if [[ -n "${FLUTTER_ROOT:-}" && -x "$FLUTTER_ROOT/bin/flutter" ]]; then
+  flutter_bin="$FLUTTER_ROOT/bin/flutter"
+else
+  flutter_version="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["flutter"])' "$repo_root/.fvmrc")"
+  flutter_bin="$repo_root/.toolchains/flutter/$flutter_version/flutter/bin/flutter"
+  if [[ ! -x "$flutter_bin" ]]; then
+    flutter_bin="$repo_root/tools/flutter"
+  fi
+fi
 cleanup() {
   if [[ -n "$API_PID" ]]; then
     kill "$API_PID" 2>/dev/null || true
@@ -83,12 +92,12 @@ export PRIVATE_VOCABULARY_TEST_API_BASE="http://127.0.0.1:$API_PORT/api/v1"
 cd app
 
 echo "Running actual SQLite → HTTP → PostgreSQL → second SQLite device integration."
-../tools/flutter --no-version-check test --no-pub \
+"$flutter_bin" --no-version-check test --no-pub \
   --dart-define="PRIVATE_VOCABULARY_TEST_API_BASE=$PRIVATE_VOCABULARY_TEST_API_BASE" \
   test/integration/private_vocabulary_live_test.dart
 
 echo "Running actual IndexedDB → HTTP → PostgreSQL → second browser device integration."
 CHROME_EXECUTABLE="$CHROME_EXECUTABLE" \
-  ../tools/flutter --no-version-check test --no-pub --platform chrome \
+  "$flutter_bin" --no-version-check test --no-pub --platform chrome \
   --dart-define="PRIVATE_VOCABULARY_TEST_API_BASE=$PRIVATE_VOCABULARY_TEST_API_BASE" \
   test/integration/private_vocabulary_indexeddb_live_test.dart
