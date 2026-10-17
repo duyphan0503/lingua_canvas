@@ -229,6 +229,20 @@ fn snapshot(id: &str, time: chrono::DateTime<Utc>, reps: u32) -> Value {
 async fn progress_cases(a: &Router, suffix: &str) {
     let t = account(a, &format!("import{suffix}")).await;
     let at = Utc::now() - Duration::days(1);
+    let unknown_id = format!("future_public_{suffix}");
+    let unknown = request(
+        a,
+        "/api/v1/sync",
+        Some(json!({"progress_imports":[{
+            "mutation_id":"unknown-lesson-import",
+            "cards":[snapshot(&unknown_id, at, 2)],
+            "completed_lessons":[]
+        }]})),
+        Some(&t),
+    )
+    .await;
+    assert_eq!(unknown.0, 400);
+
     let import = json!({"mutation_id":"backup","cards":[snapshot("ja_hira_a",at,7)],"completed_lessons":[{"lesson_id":"ja_hira_a","completed_at":at,"score":0.8}]});
     let payload = json!({"progress_imports":[import.clone()]});
     assert_eq!(
@@ -291,11 +305,39 @@ async fn postgres_private_protocol_and_progress() {
     server::db::seed_lessons_if_empty(&p, &server::data::get_seed_lessons())
         .await
         .unwrap();
-    let a = app(Some(p));
+    let a = app(Some(p.clone()));
     let suffix = Utc::now().timestamp_micros().to_string();
     protocol_cases(&a, &suffix).await;
     progress_cases(&a, &suffix).await;
     baseline_cases(&a, &format!("baseline{suffix}")).await;
+
+    let token = account(&a, &format!("unknown_import_{suffix}")).await;
+    let future_public_id = format!("future_public_{suffix}");
+    let future_completion_id = format!("future_completion_{suffix}");
+    let at = Utc::now() - Duration::days(1);
+    let response = request(
+        &a,
+        "/api/v1/sync",
+        Some(json!({"progress_imports":[{
+            "mutation_id":"unknown-lesson-import",
+            "cards":[snapshot(&future_public_id, at, 2)],
+            "completed_lessons":[{
+                "lesson_id":future_completion_id,
+                "completed_at":at,
+                "score":0.8
+            }]
+        }]})),
+        Some(&token),
+    )
+    .await;
+    assert_eq!(response.0, 400);
+
+    let placeholders: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM lessons WHERE id = ANY($1)")
+        .bind(vec![future_public_id, future_completion_id])
+        .fetch_one(&p)
+        .await
+        .unwrap();
+    assert_eq!(placeholders, 0);
 }
 
 #[tokio::test]
@@ -521,6 +563,21 @@ async fn postgres_private_pull_waits_for_writers_and_import_receipts_are_atomic(
     .unwrap();
     assert_eq!(before, after);
     // A failing second entity rolls back the first card and the receipt together.
+    for (id, mutation_id) in [
+        ("custom_first_import", "own_first_import"),
+        ("custom_fail_import", "own_fail_import"),
+    ] {
+        assert_eq!(
+            push(
+                &a,
+                &t,
+                mutation(mutation_id, 0, lesson(id, "imported"), false),
+            )
+            .await
+            .0,
+            200
+        );
+    }
     sqlx::query("CREATE OR REPLACE FUNCTION reject_private_test_card() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.item_id='custom_fail_import' THEN RAISE EXCEPTION 'test rollback'; END IF; RETURN NEW; END $$").execute(&p).await.unwrap();
     sqlx::query("CREATE TRIGGER private_test_reject BEFORE INSERT ON fsrs_cards FOR EACH ROW EXECUTE FUNCTION reject_private_test_card()").execute(&p).await.unwrap();
     let fail = json!({"progress_imports":[{"mutation_id":"rollback","cards":[snapshot("custom_first_import",at,3),snapshot("custom_fail_import",at,3)],"completed_lessons":[]}]});

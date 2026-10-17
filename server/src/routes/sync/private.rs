@@ -300,6 +300,23 @@ pub(super) async fn import(
             .collect();
         ids.sort_unstable();
         ids.dedup();
+        // A backup may contain progress only for lessons this account owns or
+        // public lessons already present in the shared catalogue. Never let an
+        // arbitrary client ID reserve a future public lesson ID via a custom
+        // placeholder row.
+        for id in &ids {
+            let known = sqlx::query_scalar::<_, bool>(
+                "SELECT EXISTS(SELECT 1 FROM lessons WHERE id=$1 AND category<>'custom') OR EXISTS(SELECT 1 FROM private_lessons WHERE user_id=$2 AND lesson_id=$1)",
+            )
+            .bind(id)
+            .bind(user)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(error)?;
+            if !known {
+                return Err(StatusCode::BAD_REQUEST);
+            }
+        }
         for id in ids {
             card_lock(&mut tx, user, id).await?;
             ensure_parent(&mut tx, id).await?;
@@ -336,6 +353,27 @@ pub(super) async fn import(
             } else {
                 Err(StatusCode::BAD_REQUEST)
             };
+        }
+        let ids: HashSet<&str> = i
+            .cards
+            .iter()
+            .map(|c| c.item_id.as_str())
+            .chain(i.completed_lessons.iter().map(|c| c.lesson_id.as_str()))
+            .collect();
+        for id in ids {
+            let public = state
+                .lessons
+                .iter()
+                .any(|lesson| lesson.id == id && lesson.category != "custom");
+            let own_private = state
+                .memory
+                .private_lessons
+                .read()
+                .await
+                .contains_key(&key(user, id));
+            if !public && !own_private {
+                return Err(StatusCode::BAD_REQUEST);
+            }
         }
         for c in &i.cards {
             let newer = state
