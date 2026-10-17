@@ -551,3 +551,96 @@ async fn postgres_private_pull_waits_for_writers_and_import_receipts_are_atomic(
     .unwrap();
     assert_eq!(count, 0);
 }
+
+async fn raw_request_size_cases(a: &Router, name: &str) {
+    let token = account(a, name).await;
+    let padding = "x".repeat(600 * 1024);
+    let oversized = json!({"custom_lesson_mutations":[mutation("size_check",0,lesson("custom_size","word"),false)],"ignored_extension":padding});
+    assert_eq!(
+        request(a, "/api/v1/sync", Some(oversized), Some(&token))
+            .await
+            .0,
+        413
+    );
+    assert_eq!(
+        request(a, "/api/v1/sync/pull", None, Some(&token)).await.1["private_lessons"],
+        json!([])
+    );
+    let oversized_import = json!({"progress_imports":[{"mutation_id":"size_import","cards":[],"completed_lessons":[]}],"ignored_extension":padding});
+    assert_eq!(
+        request(a, "/api/v1/sync", Some(oversized_import), Some(&token))
+            .await
+            .0,
+        413
+    );
+    // Existing review-only clients retain the framework's larger body limit.
+    let legacy = json!({"reviews":[{"review_id":"legacy_size","item_id":"ja_hira_a","rating":3,"review_time":Utc::now()}],"ignored_extension":padding});
+    let too_large = json!({"reviews":[],"ignored_extension":"x".repeat(2 * 1024 * 1024)});
+    assert_eq!(
+        request(a, "/api/v1/sync", Some(too_large), Some(&token))
+            .await
+            .0,
+        413
+    );
+    assert_eq!(
+        request(
+            a,
+            "/api/v1/sync",
+            Some(json!({"reviews":"invalid_type"})),
+            Some(&token)
+        )
+        .await
+        .0,
+        422
+    );
+    let wrong_type = a
+        .clone()
+        .oneshot(
+            Request::builder()
+                .uri("/api/v1/sync")
+                .method("POST")
+                .header("content-type", "text/plain")
+                .body(Body::from("{}"))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(wrong_type.status().as_u16(), 415);
+
+    let result = request(a, "/api/v1/sync", Some(legacy), Some(&token)).await;
+    assert_eq!(result.0, 200);
+    assert_eq!(result.1["synced_review_ids"], json!(["legacy_size"]));
+    assert_eq!(
+        push(
+            a,
+            &token,
+            mutation("size_check", 0, lesson("custom_size", "word"), false)
+        )
+        .await
+        .1["custom_lesson_acks"][0]["state"]["revision"],
+        1
+    );
+}
+#[tokio::test]
+async fn memory_private_batches_enforce_raw_request_bytes_and_preserve_legacy_limit() {
+    raw_request_size_cases(&app(None), "raw_size_memory").await;
+}
+#[tokio::test]
+async fn postgres_private_batches_enforce_raw_request_bytes_and_preserve_legacy_limit() {
+    let Ok(url) = std::env::var("TEST_DATABASE_URL") else {
+        return;
+    };
+    let p = sqlx::postgres::PgPoolOptions::new()
+        .connect(&url)
+        .await
+        .unwrap();
+    sqlx::migrate!("./migrations").run(&p).await.unwrap();
+    server::db::seed_lessons_if_empty(&p, &server::data::get_seed_lessons())
+        .await
+        .unwrap();
+    raw_request_size_cases(
+        &app(Some(p)),
+        &format!("rawsize{}", Utc::now().timestamp_micros()),
+    )
+    .await;
+}

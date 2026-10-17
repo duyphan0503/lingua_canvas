@@ -12,7 +12,8 @@ use crate::{
     },
 };
 use axum::{
-    extract::{Query, State},
+    body::{Body, Bytes},
+    extract::{FromRequest, Query, Request, State},
     http::{HeaderMap, StatusCode},
     Json,
 };
@@ -99,11 +100,49 @@ pub async fn record_memory_card(state: &AppState, user: &str, card: FSRSCard) {
         .insert(k.clone(), Utc::now());
     state.memory.changed(k).await;
 }
+/// Apply the private-protocol byte budget to the received HTTP body, including
+/// fields a typed DTO would discard. Legacy review-only requests retain Axum's
+/// existing body cap. The oversized probe skips entity values without allocating
+/// metadata, and runs before the actual SyncPushRequest JSON decoding.
+pub struct SyncPushJson(SyncPushRequest);
+#[axum::async_trait]
+impl<S: Send + Sync> FromRequest<S> for SyncPushJson {
+    type Rejection = StatusCode;
+
+    async fn from_request(request: Request, state: &S) -> Result<Self, Self::Rejection> {
+        let (parts, body) = request.into_parts();
+        let bytes = Bytes::from_request(Request::from_parts(parts.clone(), body), state)
+            .await
+            .map_err(|rejection| rejection.status())?;
+        if bytes.len() > 512 * 1024 {
+            #[derive(serde::Deserialize)]
+            struct PrivateFeatureProbe {
+                #[serde(default)]
+                custom_lesson_mutations: Vec<serde::de::IgnoredAny>,
+                #[serde(default)]
+                progress_imports: Vec<serde::de::IgnoredAny>,
+            }
+            let probe: PrivateFeatureProbe =
+                serde_json::from_slice(&bytes).map_err(|_| StatusCode::BAD_REQUEST)?;
+            if !probe.custom_lesson_mutations.is_empty() || !probe.progress_imports.is_empty() {
+                return Err(StatusCode::PAYLOAD_TOO_LARGE);
+            }
+        }
+        let Json(request) = Json::<SyncPushRequest>::from_request(
+            Request::from_parts(parts, Body::from(bytes)),
+            state,
+        )
+        .await
+        .map_err(|rejection| rejection.status())?;
+        Ok(Self(request))
+    }
+}
+
 pub async fn push_sync(
     State(state): State<AppState>,
     headers: HeaderMap,
     Query(identity): Query<Identity>,
-    Json(req): Json<SyncPushRequest>,
+    SyncPushJson(req): SyncPushJson,
 ) -> Result<Json<SyncPushResponse>, StatusCode> {
     let user = auth::resolve(
         &state,
