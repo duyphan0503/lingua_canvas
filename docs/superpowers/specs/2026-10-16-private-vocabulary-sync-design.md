@@ -43,7 +43,7 @@ Export holds profilelock only to obtainsnapshot, neveracrossfiledialog. Openingi
 
 ## File transport and UI
 
-BackupFileTransport: pickBackup()->Future<Uint8List?>; saveBackup(Uint8List bytes,{required String suggestedName})->Future<bool> (false=usercancel). Boundedreads before decode. file_selector open allplatforms; Linux getSaveLocation/XFile.saveTo; WebBlobdownload/revokeURL; Android ACTION_CREATE_DOCUMENT MethodChannel com.linguacanvas.app/backup with one pendingoperation, cancellation/lifecyclecleanup, no broadstoragepermission. All native imports behindconditionalexports; inject transport in tests.
+BackupFileTransport: pickBackup()->Future<Uint8List?>; saveBackup(Uint8List bytes,{required String suggestedName})->Future<bool> (false=usercancel). Boundedreads before decode. Linux uses file_selector open/save (`getSaveLocation`/`XFile.saveTo`); Web uses a bounded file picker and Blob download/revokeURL; Android uses SAF `ACTION_OPEN_DOCUMENT` and `ACTION_CREATE_DOCUMENT` on MethodChannel `com.linguacanvas.app/backup`. Android import streams through `ContentResolver` and enforces 10MiB before allocating/decoding the full file. Use one pending operation, cancellation/lifecycle cleanup, no broad storage permission. Native imports behind conditional exports; inject transport in tests.
 
 Curriculum ownwordedit, trashfilter/restore, conflictcomparison actions; built-in155lessonsreadonly. Settings BackupPanel export/import/preview/merge with explicit confirmation for crossprofilecopies, accountcard guesttransferoffer. Analytics queue counts include new mutationtypes and differentiateunsupported/conflict/retry. Retainlayout/nav/profilegeneration/TTS-speechcancellation fromwebplatform.
 
