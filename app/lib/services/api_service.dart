@@ -5,6 +5,8 @@ import 'platform_capabilities.dart';
 import 'dart:math' as math;
 import 'package:http/http.dart' as http;
 import '../models/lesson_item.dart';
+import '../models/private_lesson_state.dart';
+import '../models/profile_backup.dart';
 import 'phase3_lessons.dart';
 import 'account_service.dart';
 import 'fsrs_engine.dart';
@@ -13,6 +15,8 @@ import 'storage/local_store.dart';
 import 'sync_coordinator.dart';
 
 export 'local_database.dart' show StudyStreak;
+export '../models/private_lesson_state.dart';
+export '../models/profile_backup.dart';
 
 class ApiService {
   static const String _configuredBaseUrl = String.fromEnvironment(
@@ -92,6 +96,61 @@ class ApiService {
 
   SyncCoordinator get syncCoordinator => _syncCoordinator;
   LocalStore get localDatabase => _localDb;
+
+  Future<List<PrivateLessonState>> getPrivateLessons({
+    bool includeDeleted = false,
+  }) => _withProfileRequestLock(
+    () => _localDb.getPrivateLessons(includeDeleted: includeDeleted),
+  );
+  Future<PrivateLessonState?> getPrivateLesson(String id) =>
+      _withProfileRequestLock(() => _localDb.getPrivateLesson(id));
+  Future<PrivateLessonState> savePrivateLesson(LessonItem lesson) =>
+      _withProfileRequestLock(() => _localDb.savePrivateLesson(lesson));
+  Future<void> deletePrivateLesson(String id) =>
+      _withProfileRequestLock(() => _localDb.deletePrivateLesson(id));
+  Future<void> restorePrivateLesson(String id) =>
+      _withProfileRequestLock(() => _localDb.restorePrivateLesson(id));
+  Future<void> resolvePrivateLessonConflict(
+    String id, {
+    required bool keepLocal,
+  }) => _withProfileRequestLock(
+    () => _localDb.resolvePrivateLessonConflict(id, keepLocal: keepLocal),
+  );
+  Future<ProfileBackup> exportProfileBackup() =>
+      _withProfileRequestLock(_localDb.exportProfileBackup);
+  Future<ProfileBackup> exportGuestBackup({Set<String>? lessonIds}) =>
+      _withProfileRequestLock(
+        () => _localDb.exportGuestBackup(lessonIds: lessonIds),
+      );
+  Future<ProfileMergePreview> previewProfileBackup(ProfileBackup backup) =>
+      _withProfileRequestLock(() => _localDb.previewProfileBackup(backup));
+  Future<void> mergeProfileBackup(ProfileMergePreview preview) =>
+      _withProfileRequestLock(() => _localDb.mergeProfileBackup(preview));
+  Future<LessonItem> createPrivateLesson({
+    required String word,
+    required String language,
+    required String meaningVi,
+    String phoneticOrKana = '',
+    String workplaceContext = '',
+    String workplaceContextVi = '',
+    List<String> strokeOrderHints = const [],
+    int difficultyLevel = 2,
+  }) async {
+    final lesson = LessonItem(
+      id: newPrivateLessonId(language),
+      language: language,
+      category: 'custom',
+      targetText: word.trim(),
+      phoneticOrKana: phoneticOrKana.trim(),
+      meaningVi: meaningVi.trim(),
+      workplaceContext: workplaceContext.trim(),
+      workplaceContextVi: workplaceContextVi.trim(),
+      strokeOrderHints: List.of(strokeOrderHints),
+      difficultyLevel: difficultyLevel,
+    );
+    await savePrivateLesson(lesson);
+    return lesson;
+  }
 
   /// Default fallback lessons in case backend is offline
   final List<LessonItem> _fallbackLessons = [
@@ -2268,7 +2327,7 @@ class ApiService {
     }
     // Encoding is stable and keeps spaces distinct from literal underscores.
     final lesson = LessonItem(
-      id: 'custom_${language}_${Uri.encodeComponent(normalized)}',
+      id: newPrivateLessonId(language),
       language: language,
       category: 'custom',
       targetText: target,
@@ -2289,7 +2348,7 @@ class ApiService {
             ],
       difficultyLevel: 2,
     );
-    await _localDb.saveLessons([lesson]);
+    await _localDb.savePrivateLesson(lesson);
     return lesson;
   });
 
@@ -2634,6 +2693,24 @@ class ApiService {
       'total_completed': totalCompleted,
       'due_today': dueIds.length,
       'pending_sync_mutations': pendingQueue.length,
+      'pending_review_mutations': pendingQueue
+          .where((q) => q.mutationType == 'review')
+          .length,
+      'pending_private_lesson_mutations': pendingQueue
+          .where((q) => q.mutationType == 'custom_lesson')
+          .length,
+      'pending_progress_imports': pendingQueue
+          .where((q) => q.mutationType == 'progress_import')
+          .length,
+      'private_lesson_conflicts': (await _localDb.getPrivateLessons(
+        includeDeleted: true,
+      )).where((s) => s.conflict != null).length,
+      'retry_sync_mutations': pendingQueue
+          .where((q) => q.retryCount > 0)
+          .length,
+      'sync_queue_error': await _localDb.getMetadata('private_sync_error'),
+      'private_sync_upgrade_required':
+          await _localDb.getMetadata('private_sync_upgrade_required') == '1',
       'avg_stability': avgStability,
       'estimated_retention': (estimatedRetention * 100).round(),
       'state_breakdown': {

@@ -9,6 +9,9 @@ import '../fsrs_engine.dart';
 
 import 'local_models.dart';
 import 'local_store.dart';
+import 'private_store.dart';
+import 'private_profile.dart';
+import 'sql_private_profile.dart';
 
 String _randomId(String prefix) {
   final random = Random.secure();
@@ -22,7 +25,7 @@ String _formatDateString(DateTime date) {
   return '$y-$m-$d';
 }
 
-class LocalDatabase implements LocalStore {
+class LocalDatabase with PrivateStore implements LocalStore {
   static LocalDatabase? _instance;
   static Database? _database;
 
@@ -67,11 +70,19 @@ class LocalDatabase implements LocalStore {
 
     return await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: (db, version) async {
         await _createTables(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 5) {
+          await db.execute(
+            'CREATE TABLE IF NOT EXISTS local_private_profile (id INTEGER PRIMARY KEY, payload TEXT NOT NULL)',
+          );
+          await db.execute(
+            'ALTER TABLE local_sync_queue ADD COLUMN sent INTEGER NOT NULL DEFAULT 0',
+          );
+        }
         if (oldVersion < 2) {
           await db.execute(
             'CREATE TABLE IF NOT EXISTS local_sync_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)',
@@ -87,6 +98,7 @@ class LocalDatabase implements LocalStore {
             'CREATE TABLE IF NOT EXISTS local_daily_activity (activity_date TEXT PRIMARY KEY, items_count INTEGER NOT NULL DEFAULT 0)',
           );
         }
+        if (oldVersion < 5) await _migratePrivateProfiles(db);
       },
     );
   }
@@ -104,6 +116,9 @@ class LocalDatabase implements LocalStore {
 
   Future<void> _createTables(Database db) async {
     final batch = db.batch();
+    batch.execute(
+      'CREATE TABLE IF NOT EXISTS local_private_profile (id INTEGER PRIMARY KEY, payload TEXT NOT NULL)',
+    );
 
     batch.execute(
       'CREATE TABLE IF NOT EXISTS local_sync_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)',
@@ -179,7 +194,8 @@ class LocalDatabase implements LocalStore {
         payload TEXT NOT NULL,
         created_at TEXT NOT NULL,
         retry_count INTEGER NOT NULL DEFAULT 0,
-        status TEXT NOT NULL DEFAULT 'pending'
+        status TEXT NOT NULL DEFAULT 'pending',
+        sent INTEGER NOT NULL DEFAULT 0
       );
     ''');
     batch.execute(
@@ -213,6 +229,110 @@ class LocalDatabase implements LocalStore {
     await batch.commit(noResult: true);
   }
 
+  Future<void> _migratePrivateProfiles(DatabaseExecutor db) async {
+    final current = await SqlPrivateProfile.read(db);
+    final metadata = PrivateProfile.table(current, 'metadata');
+    final account = metadata['account'] == null
+        ? null
+        : jsonDecode(metadata['account'] as String) as Map;
+    final backend =
+        account?['server_url'] as String? ??
+        metadata['__backend'] as String? ??
+        'http://127.0.0.1:8080/api/v1';
+    PrivateProfile.migrate(current, account: account != null);
+    await SqlPrivateProfile.write(db, current);
+    for (final row in await db.query('local_profile_snapshots')) {
+      final payload = SqlPrivateProfile.decode(
+        jsonDecode(row['payload'] as String) as Map,
+      );
+      final key = row['profile_key'] as String;
+      final isGuest = key == 'default_user' || key.endsWith('"default_user"]');
+      PrivateProfile.migrate(payload, account: !isGuest);
+      var nextKey = key;
+      if (key == 'default_user') {
+        nextKey = jsonEncode([backend, 'default_user']);
+      } else if (!key.startsWith('[')) {
+        final split = key.lastIndexOf('|');
+        if (split >= 0) {
+          nextKey = jsonEncode([
+            key.substring(0, split),
+            key.substring(split + 1),
+          ]);
+        }
+      }
+      await db.delete(
+        'local_profile_snapshots',
+        where: 'profile_key = ?',
+        whereArgs: [key],
+      );
+      await db.insert('local_profile_snapshots', {
+        'profile_key': nextKey,
+        'payload': jsonEncode(SqlPrivateProfile.encode(payload)),
+      });
+    }
+  }
+
+  @override
+  Future<T> editPrivateProfile<T>(
+    T Function(Map<String, dynamic>) change,
+  ) async {
+    final db = await database;
+    return db.transaction((txn) async {
+      final p = await SqlPrivateProfile.read(txn);
+      final m = PrivateProfile.table(p, 'metadata');
+      final a = m['account'] == null
+          ? null
+          : jsonDecode(m['account'] as String) as Map;
+      p['_binding'] = jsonEncode([
+        m['__backend'] ?? a?['server_url'] ?? 'http://127.0.0.1:8080/api/v1',
+        a?['user_id'] ?? 'default_user',
+        m['__generation'] ?? '0',
+      ]);
+      final result = change(p);
+      await SqlPrivateProfile.write(txn, p);
+      return result;
+    });
+  }
+
+  @override
+  Future<Map<String, dynamic>> readPrivateProfile() async {
+    final db = await database;
+    return db.transaction((txn) async {
+      final p = await SqlPrivateProfile.read(txn);
+      final m = PrivateProfile.table(p, 'metadata');
+      final a = m['account'] == null
+          ? null
+          : jsonDecode(m['account'] as String) as Map;
+      p['_binding'] = jsonEncode([
+        m['__backend'] ?? a?['server_url'] ?? 'http://127.0.0.1:8080/api/v1',
+        a?['user_id'] ?? 'default_user',
+        m['__generation'] ?? '0',
+      ]);
+      return p;
+    });
+  }
+
+  @override
+  Future<Map<String, dynamic>> readGuestProfile() async {
+    final db = await database;
+    return db.transaction((txn) async {
+      final p = await SqlPrivateProfile.read(txn);
+      final m = PrivateProfile.table(p, 'metadata');
+      if (m['account'] == null) return p;
+      final a = jsonDecode(m['account'] as String) as Map;
+      final rows = await txn.query(
+        'local_profile_snapshots',
+        where: 'profile_key = ?',
+        whereArgs: [
+          jsonEncode([m['__backend'] ?? a['server_url'], 'default_user']),
+        ],
+      );
+      return SqlPrivateProfile.decode(
+        rows.isEmpty ? {} : jsonDecode(rows.single['payload'] as String) as Map,
+      );
+    });
+  }
+
   // ==========================================
   // Lessons Management
   // ==========================================
@@ -220,36 +340,46 @@ class LocalDatabase implements LocalStore {
   @override
   Future<void> saveLessons(List<LessonItem> lessons) async {
     final db = await database;
-    final batch = db.batch();
-    for (final lesson in lessons) {
-      final values = <String, Object?>{
-        'id': lesson.id,
-        'language': lesson.language,
-        'category': lesson.category,
-        'target_text': lesson.targetText,
-        'phonetic_or_kana': lesson.phoneticOrKana,
-        'meaning_vi': lesson.meaningVi,
-        'workplace_context': lesson.workplaceContext,
-        'workplace_context_vi': lesson.workplaceContextVi,
-        'stroke_order_hints': jsonEncode(lesson.strokeOrderHints),
-        'difficulty_level': lesson.difficultyLevel,
-        'cached_at': DateTime.now().toUtc().toIso8601String(),
-      };
-      final columns = values.keys.join(', ');
-      final placeholders = List.filled(values.length, '?').join(', ');
-      final updates = values.keys
-          .where((key) => key != 'id')
-          .map((key) => '$key = excluded.$key')
-          .join(', ');
-      // Sync may send ID-only placeholders; never replace a real local lesson.
-      batch.rawInsert(
-        'INSERT INTO local_lessons ($columns) VALUES ($placeholders) '
-        'ON CONFLICT(id) DO UPDATE SET $updates '
-        "WHERE NOT (excluded.language = 'custom' AND local_lessons.language IN ('ja', 'en'))",
-        values.values.toList(),
-      );
-    }
-    await batch.commit(noResult: true);
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      final privateRows = await txn.query('local_private_profile');
+      final own = privateRows.isEmpty
+          ? <String, dynamic>{}
+          : (jsonDecode(privateRows.first['payload'] as String)
+                        as Map)['private_lessons']
+                    as Map? ??
+                {};
+      for (final lesson in lessons) {
+        if (own.containsKey(lesson.id)) continue;
+        final values = <String, Object?>{
+          'id': lesson.id,
+          'language': lesson.language,
+          'category': lesson.category,
+          'target_text': lesson.targetText,
+          'phonetic_or_kana': lesson.phoneticOrKana,
+          'meaning_vi': lesson.meaningVi,
+          'workplace_context': lesson.workplaceContext,
+          'workplace_context_vi': lesson.workplaceContextVi,
+          'stroke_order_hints': jsonEncode(lesson.strokeOrderHints),
+          'difficulty_level': lesson.difficultyLevel,
+          'cached_at': DateTime.now().toUtc().toIso8601String(),
+        };
+        final columns = values.keys.join(', ');
+        final placeholders = List.filled(values.length, '?').join(', ');
+        final updates = values.keys
+            .where((key) => key != 'id')
+            .map((key) => '$key = excluded.$key')
+            .join(', ');
+        // Sync may send ID-only placeholders; never replace a real local lesson.
+        batch.rawInsert(
+          'INSERT INTO local_lessons ($columns) VALUES ($placeholders) '
+          'ON CONFLICT(id) DO UPDATE SET $updates '
+          "WHERE NOT (excluded.language = 'custom' AND local_lessons.language IN ('ja', 'en'))",
+          values.values.toList(),
+        );
+      }
+      await batch.commit(noResult: true);
+    });
   }
 
   @override
@@ -284,7 +414,9 @@ class LocalDatabase implements LocalStore {
       orderBy: 'id ASC',
     );
 
-    return rows.map((r) {
+    final own = await getPrivateLessons(includeDeleted: true);
+    final deleted = own.where((s) => s.deleted).map((s) => s.lesson.id).toSet();
+    return rows.where((r) => !deleted.contains(r['id'])).map((r) {
       List<String> hints = [];
       try {
         final decoded = jsonDecode(r['stroke_order_hints'] as String);
@@ -310,6 +442,7 @@ class LocalDatabase implements LocalStore {
 
   @override
   Future<LessonItem?> getLesson(String id) async {
+    if ((await getPrivateLesson(id))?.deleted == true) return null;
     final db = await database;
     final rows = await db.query(
       'local_lessons',
@@ -414,7 +547,12 @@ class LocalDatabase implements LocalStore {
       whereArgs: [asOf.toIso8601String()],
       orderBy: 'next_review ASC',
     );
-    return rows.map((r) => r['item_id'] as String).toList();
+    final own = await getPrivateLessons(includeDeleted: true);
+    final deleted = own.where((s) => s.deleted).map((s) => s.lesson.id).toSet();
+    return rows
+        .map((r) => r['item_id'] as String)
+        .where((id) => !deleted.contains(id))
+        .toList();
   }
 
   // ==========================================
@@ -552,83 +690,103 @@ class LocalDatabase implements LocalStore {
   @override
   Future<void> switchAccount(Map<String, dynamic>? account) async {
     final db = await database;
-    const tables = [
-      'local_sync_queue',
-      'local_review_logs',
-      'local_completed_lessons',
-      'local_fsrs_cards',
-      'local_lessons',
-      'local_daily_activity',
-    ];
-    String key(Map<String, dynamic>? a) =>
-        a == null ? 'default_user' : '${a['server_url']}|${a['user_id']}';
-    await db.transaction((txn) async {
-      final oldRows = await txn.query(
+    await db.transaction((txn) => _switchPrivateProfile(txn, account: account));
+  }
+
+  Future<void> _switchPrivateProfile(
+    DatabaseExecutor txn, {
+    Map<String, dynamic>? account,
+    String? backend,
+  }) async {
+    final current = await SqlPrivateProfile.read(txn);
+    final metadata = PrivateProfile.table(current, 'metadata');
+    final oldAccount = metadata['account'] == null
+        ? null
+        : jsonDecode(metadata['account'] as String) as Map;
+    final oldBackend =
+        metadata['__backend'] as String? ??
+        oldAccount?['server_url'] as String? ??
+        account?['server_url'] as String? ??
+        backend ??
+        'http://127.0.0.1:8080/api/v1';
+    final targetBackend =
+        backend ?? account?['server_url'] as String? ?? oldBackend;
+    final active =
+        jsonDecode(metadata['__active_accounts'] as String? ?? '{}')
+            as Map<String, dynamic>;
+    if (oldAccount != null) active[oldBackend] = oldAccount;
+    final targetAccount = backend == null
+        ? account
+        : active[targetBackend] as Map<String, dynamic>?;
+    final oldKey = jsonEncode([
+      oldBackend,
+      oldAccount?['user_id'] ?? 'default_user',
+    ]);
+    final targetKey = jsonEncode([
+      targetBackend,
+      targetAccount?['user_id'] ?? 'default_user',
+    ]);
+    if (backend == null) {
+      if (account == null) {
+        active.remove(targetBackend);
+      } else {
+        active[targetBackend] = account;
+      }
+    }
+    if (oldKey != targetKey) {
+      final saved = SqlPrivateProfile.encode(current);
+      saved['metadata'] = (saved['metadata'] ?? [])
+          .where(
+            (r) => ![
+              '__backend',
+              '__generation',
+              '__active_accounts',
+              'client_id',
+              'account',
+            ].contains(r['key']),
+          )
+          .toList();
+      await txn.insert('local_profile_snapshots', {
+        'profile_key': oldKey,
+        'payload': jsonEncode(saved),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      final rows = await txn.query(
+        'local_profile_snapshots',
+        where: 'profile_key = ?',
+        whereArgs: [targetKey],
+      );
+      final next = SqlPrivateProfile.decode(
+        rows.isEmpty ? {} : jsonDecode(rows.single['payload'] as String) as Map,
+      );
+      for (final key in metadata.keys.where(
+        (k) => k.startsWith('__') || k == 'client_id',
+      )) {
+        PrivateProfile.table(next, 'metadata')[key] = metadata[key];
+      }
+      await txn.delete('local_sync_metadata');
+      await SqlPrivateProfile.write(txn, next);
+    }
+    final updates = <String, String>{
+      '__backend': targetBackend,
+      '__generation':
+          '${int.parse(metadata['__generation'] as String? ?? '0') + 1}',
+      '__active_accounts': jsonEncode(active),
+    };
+    if (targetAccount == null) {
+      await txn.delete(
         'local_sync_metadata',
         where: 'key = ?',
         whereArgs: ['account'],
       );
-      final old = oldRows.isEmpty
-          ? null
-          : Map<String, dynamic>.from(
-              jsonDecode(oldRows.first['value'] as String) as Map,
-            );
-      if (key(old) != key(account)) {
-        final saved = <String, dynamic>{};
-        for (final table in tables) {
-          saved[table] = await txn.query(table);
-        }
-        saved['metadata'] = await txn.query(
-          'local_sync_metadata',
-          where: 'key IN (?,?)',
-          whereArgs: ['last_pull_time', 'latest_sync_seq'],
-        );
-        await txn.insert('local_profile_snapshots', {
-          'profile_key': key(old),
-          'payload': jsonEncode(saved),
-        }, conflictAlgorithm: ConflictAlgorithm.replace);
-        for (final table in tables) {
-          await txn.delete(table);
-        }
-        await txn.delete(
-          'local_sync_metadata',
-          where: 'key IN (?,?)',
-          whereArgs: ['last_pull_time', 'latest_sync_seq'],
-        );
-        final restored = await txn.query(
-          'local_profile_snapshots',
-          where: 'profile_key = ?',
-          whereArgs: [key(account)],
-        );
-        if (restored.isNotEmpty) {
-          final payload =
-              jsonDecode(restored.first['payload'] as String) as Map;
-          for (final table in tables) {
-            for (final row in (payload[table] as List? ?? [])) {
-              await txn.insert(table, Map<String, Object?>.from(row as Map));
-            }
-          }
-          for (final row in (payload['metadata'] as List? ?? [])) {
-            await txn.insert(
-              'local_sync_metadata',
-              Map<String, Object?>.from(row as Map),
-            );
-          }
-        }
-      }
-      if (account == null) {
-        await txn.delete(
-          'local_sync_metadata',
-          where: 'key = ?',
-          whereArgs: ['account'],
-        );
-      } else {
-        await txn.insert('local_sync_metadata', {
-          'key': 'account',
-          'value': jsonEncode(account),
-        }, conflictAlgorithm: ConflictAlgorithm.replace);
-      }
-    });
+    } else {
+      updates['account'] = jsonEncode(targetAccount);
+    }
+    for (final e in updates.entries) {
+      await txn.insert('local_sync_metadata', {
+        'key': e.key,
+        'value': e.value,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    }
   }
 
   @override
@@ -681,7 +839,7 @@ class LocalDatabase implements LocalStore {
     final placeholders = List.filled(ids.length, '?').join(',');
     await db.update(
       'local_sync_queue',
-      {'status': 'in_progress'},
+      {'status': 'in_progress', 'sent': 1},
       where: 'id IN ($placeholders)',
       whereArgs: ids,
     );
@@ -1053,11 +1211,22 @@ class LocalDatabase implements LocalStore {
   }
 
   @override
-  Future<void> selectBackend(String baseUrl) async {}
+  Future<void> selectBackend(String baseUrl) async {
+    final db = await database;
+    await db.transaction((txn) => _switchPrivateProfile(txn, backend: baseUrl));
+  }
+
   @override
   Future<void> clearCurrentProfile() => withProfileLock(() async {
     final db = await database;
     await db.transaction((txn) async {
+      final rows = await txn.query(
+        'local_sync_metadata',
+        where: 'key = ?',
+        whereArgs: ['__generation'],
+      );
+      final generation =
+          int.parse(rows.isEmpty ? '0' : rows.single['value'] as String) + 1;
       for (final table in [
         'local_sync_queue',
         'local_review_logs',
@@ -1065,6 +1234,7 @@ class LocalDatabase implements LocalStore {
         'local_fsrs_cards',
         'local_lessons',
         'local_daily_activity',
+        'local_private_profile',
       ]) {
         await txn.delete(table);
       }
@@ -1073,6 +1243,10 @@ class LocalDatabase implements LocalStore {
         where: 'key IN (?,?)',
         whereArgs: ['last_pull_time', 'latest_sync_seq'],
       );
+      await txn.insert('local_sync_metadata', {
+        'key': '__generation',
+        'value': '$generation',
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
     });
   });
 
@@ -1080,6 +1254,13 @@ class LocalDatabase implements LocalStore {
   Future<void> clearAll() => withProfileLock(() async {
     final db = await database;
     await db.transaction((txn) async {
+      final rows = await txn.query(
+        'local_sync_metadata',
+        where: 'key = ?',
+        whereArgs: ['__generation'],
+      );
+      final generation =
+          int.parse(rows.isEmpty ? '0' : rows.single['value'] as String) + 1;
       await txn.delete('local_sync_queue');
       await txn.delete('local_review_logs');
       await txn.delete('local_completed_lessons');
@@ -1087,7 +1268,12 @@ class LocalDatabase implements LocalStore {
       await txn.delete('local_lessons');
       await txn.delete('local_sync_metadata');
       await txn.delete('local_profile_snapshots');
+      await txn.delete('local_private_profile');
       await txn.delete('local_daily_activity');
+      await txn.insert('local_sync_metadata', {
+        'key': '__generation',
+        'value': '$generation',
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
     });
   });
 

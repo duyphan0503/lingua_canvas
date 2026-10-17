@@ -8,6 +8,11 @@ import 'package:flutter_test/flutter_test.dart';
 
 class Phase3Api extends ApiService {
   @override
+  Future<List<PrivateLessonState>> getPrivateLessons({
+    bool includeDeleted = false,
+  }) async => [];
+
+  @override
   Future<List<LessonItem>> getLessons({String? language}) async =>
       phase3Lessons;
   @override
