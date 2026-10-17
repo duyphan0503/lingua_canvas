@@ -35,6 +35,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
   late final ApiService _apiService;
   int _currentIndex = 0;
   int _profileGeneration = 0;
+  int _profileDataGeneration = 0;
   String? _targetLessonId;
 
   @override
@@ -53,6 +54,14 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
   void _stopPlayback() {
     unawaited((widget.ttsService ?? TtsService.defaultInstance).stop());
+  }
+
+  void _handleProfileDataChanged() {
+    _stopPlayback();
+    setState(() {
+      _profileDataGeneration++;
+      _targetLessonId = null;
+    });
   }
 
   void _selectDestination(int index) {
@@ -157,7 +166,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       children: [
                         // 0. Canvas Practice Screen
                         CanvasPracticeScreen(
-                          key: ValueKey('canvas_$_targetLessonId'),
+                          key: ValueKey(
+                            'canvas_${_profileDataGeneration}_$_targetLessonId',
+                          ),
                           isActive: _currentIndex == 0,
                           apiService: _apiService,
                           digitalInkEngine: widget.digitalInkEngine,
@@ -176,6 +187,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
                         // 2. Curriculum & Word Vault Screen
                         CurriculumScreen(
+                          key: ValueKey('curriculum_$_profileDataGeneration'),
                           apiService: _apiService,
                           onSelectLesson: (lesson) =>
                               _navigateToCanvasWithLesson(lesson.id),
@@ -184,6 +196,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
                         // 3. FSRS Memory Analytics Dashboard
                         AnalyticsScreen(
+                          key: ValueKey('analytics_$_profileDataGeneration'),
                           apiService: _apiService,
                           onPracticeDueLesson: (lesson) =>
                               _navigateToCanvasWithLesson(lesson.id),
@@ -193,6 +206,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                         SettingsScreen(
                           apiService: _apiService,
                           accountService: widget.accountService,
+                          onProfileDataChanged: _handleProfileDataChanged,
                           onAccountChanged: () {
                             _stopPlayback();
                             setState(() {

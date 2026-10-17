@@ -3,7 +3,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import '../widgets/web_capability_card.dart';
 import '../services/api_service.dart';
 import '../services/account_service.dart';
+import '../services/backup_file_transport.dart';
 import '../widgets/account_settings_card.dart';
+import '../widgets/backup_settings_panel.dart';
 
 class SettingsScreen extends StatefulWidget {
   final ApiService? apiService;
@@ -11,6 +13,8 @@ class SettingsScreen extends StatefulWidget {
   final VoidCallback? onResetData;
   final AccountService? accountService;
   final VoidCallback? onAccountChanged;
+  final VoidCallback? onProfileDataChanged;
+  final BackupFileTransport? backupTransport;
 
   const SettingsScreen({
     super.key,
@@ -19,6 +23,8 @@ class SettingsScreen extends StatefulWidget {
     this.onResetData,
     this.accountService,
     this.onAccountChanged,
+    this.onProfileDataChanged,
+    this.backupTransport,
   });
 
   @override
@@ -131,10 +137,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             key: ValueKey(_apiService.baseUrl),
             service: _accountService,
             onAccountChanged: widget.onAccountChanged,
+            onProfileDataChanged: widget.onProfileDataChanged,
           ),
           const SizedBox(height: 16),
           if (widget.isWeb) const WebCapabilityCard(),
           _buildAIEngineSection(),
+          const SizedBox(height: 16),
+          BackupSettingsPanel(
+            apiService: _apiService,
+            transport: widget.backupTransport,
+            onProfileDataChanged: widget.onProfileDataChanged,
+          ),
           const SizedBox(height: 16),
           _buildStorageManagementSection(),
           const SizedBox(height: 16),
