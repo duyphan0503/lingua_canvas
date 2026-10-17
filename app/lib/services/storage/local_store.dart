@@ -1,8 +1,34 @@
 import '../../models/lesson_item.dart';
+import '../../models/profile_backup.dart';
+import '../../models/private_lesson_state.dart';
 import '../fsrs_engine.dart';
 import 'local_models.dart';
 
 abstract interface class LocalStore {
+  Future<ProfileBackup> exportProfileBackup();
+  Future<ProfileBackup> exportGuestBackup({Set<String>? lessonIds});
+  Future<ProfileMergePreview> previewProfileBackup(ProfileBackup backup);
+  Future<void> mergeProfileBackup(ProfileMergePreview preview);
+  Future<List<PrivateLessonState>> getPrivateLessons({
+    bool includeDeleted = false,
+  });
+  Future<PrivateLessonState?> getPrivateLesson(String id);
+  Future<PrivateLessonState> savePrivateLesson(LessonItem lesson);
+  Future<void> deletePrivateLesson(String id);
+  Future<void> restorePrivateLesson(String id);
+  Future<void> resolvePrivateLessonConflict(
+    String id, {
+    required bool keepLocal,
+  });
+  Future<void> applyPrivateLessonSync({
+    List<PrivateLessonAck> acks = const [],
+    List<PrivateLessonSyncConflict> conflicts = const [],
+    List<PrivateLessonWireState> deltas = const [],
+    List<String> progressImportAcks = const [],
+  });
+  Future<T> editPrivateProfile<T>(T Function(Map<String, dynamic>) change);
+  Future<Map<String, dynamic>> readPrivateProfile();
+  Future<Map<String, dynamic>> readGuestProfile();
   Future<void> initialize();
   Future<void> selectBackend(String baseUrl);
   Future<void> clearCurrentProfile();

@@ -6,9 +6,11 @@ import '../fsrs_engine.dart';
 import 'local_models.dart';
 import 'local_store.dart';
 import 'snapshot_persistence.dart';
+import 'private_store.dart';
+import 'private_profile.dart';
 
 /// Domain operations over JSON-safe state. A durable commit precedes publication.
-class BrowserLocalStore implements LocalStore {
+class BrowserLocalStore with PrivateStore implements LocalStore {
   final SnapshotPersistence persistence;
   final String initialBackend;
   Map<String, dynamic>? _state;
@@ -30,7 +32,8 @@ class BrowserLocalStore implements LocalStore {
   static String _date(DateTime date) =>
       '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   Map<String, dynamic> _newRoot() => {
-    'version': 1,
+    'version': 2,
+    'generation': 0,
     'client_id': _id('client_'),
     'active_backend': initialBackend,
     'active_profiles': <String, dynamic>{},
@@ -45,6 +48,9 @@ class BrowserLocalStore implements LocalStore {
     'completions': <String, dynamic>{},
     'activity': <String, dynamic>{},
     'next_queue_id': 1,
+    'private_lessons': <String, dynamic>{},
+    'aliases': <String, dynamic>{},
+    'merge_receipts': <String, dynamic>{},
   };
   static Map<String, dynamic> _profile(Map<String, dynamic> root) {
     final backend = root['active_backend'] as String;
@@ -69,7 +75,7 @@ class BrowserLocalStore implements LocalStore {
         _state = fresh;
         return;
       }
-      if (loaded['version'] != 1 ||
+      if (![1, 2].contains(loaded['version']) ||
           loaded['client_id'] is! String ||
           loaded['active_backend'] is! String ||
           loaded['active_profiles'] is! Map ||
@@ -90,14 +96,33 @@ class BrowserLocalStore implements LocalStore {
               'queue',
               'completions',
               'activity',
-            ].any((t) => profile[t] is! Map)) {
+            ].any((t) => profile[t] is! Map) ||
+            (loaded['version'] == 2 &&
+                [
+                  'private_lessons',
+                  'aliases',
+                  'merge_receipts',
+                ].any((t) => profile[t] is! Map))) {
           throw const BrowserStorageException(
             'corrupt',
             'Hồ sơ trình duyệt bị lỗi. Chưa thay đổi dữ liệu.',
           );
         }
       }
-      _state = _copy(loaded);
+      final candidate = _copy(loaded);
+      if (candidate['version'] == 1) {
+        for (final entry in (candidate['profiles'] as Map).entries) {
+          final identity = jsonDecode(entry.key as String) as List;
+          PrivateProfile.migrate(
+            entry.value as Map<String, dynamic>,
+            account: identity[1] != 'default_user',
+          );
+        }
+        candidate['version'] = 2;
+        candidate['generation'] = 0;
+        await persistence.save(candidate);
+      }
+      _state = candidate;
     } catch (_) {
       _opening = null;
       rethrow;
@@ -137,7 +162,47 @@ class BrowserLocalStore implements LocalStore {
   }
 
   @override
+  Future<T> editPrivateProfile<T>(T Function(Map<String, dynamic>) change) =>
+      _edit((root) {
+        final p = _profile(root);
+        p['_binding'] = jsonEncode([
+          root['active_backend'],
+          (root['active_profiles'] as Map)[root['active_backend']] ??
+              'default_user',
+          root['generation'] ?? 0,
+        ]);
+        final result = change(p);
+        p.remove('_binding');
+        return result;
+      });
+  @override
+  Future<Map<String, dynamic>> readPrivateProfile() async {
+    await initialize();
+    await _mutations;
+    final p = _copy(_profile(_state!));
+    p['_binding'] = jsonEncode([
+      _state!['active_backend'],
+      (_state!['active_profiles'] as Map)[_state!['active_backend']] ??
+          'default_user',
+      _state!['generation'] ?? 0,
+    ]);
+    return p;
+  }
+
+  @override
+  Future<Map<String, dynamic>> readGuestProfile() async {
+    await initialize();
+    await _mutations;
+    final key = jsonEncode([_state!['active_backend'], 'default_user']);
+    return _copy(
+      (_state!['profiles'] as Map)[key] as Map<String, dynamic>? ??
+          _emptyProfile(),
+    );
+  }
+
+  @override
   Future<void> selectBackend(String baseUrl) => _edit((root) {
+    root['generation'] = (root['generation'] as int? ?? 0) + 1;
     root['active_backend'] = baseUrl;
     _profile(root);
   });
@@ -145,6 +210,7 @@ class BrowserLocalStore implements LocalStore {
   Future<void> saveLessons(List<LessonItem> lessons) => _edit((root) {
     final table = _table(root, 'lessons');
     for (final lesson in lessons) {
+      if (_table(root, 'private_lessons').containsKey(lesson.id)) continue;
       final old = table[lesson.id] as Map?;
       if (lesson.language == 'custom' &&
           old != null &&
@@ -170,7 +236,12 @@ class BrowserLocalStore implements LocalStore {
         .where(
           (l) =>
               (language == null || l.language == language) &&
-              (category == null || l.category == category),
+              (category == null || l.category == category) &&
+              !(PrivateProfile.table(
+                    _profile(_state!),
+                    'private_lessons',
+                  )[l.id]?['deleted'] ==
+                  true),
         )
         .toList();
   }
@@ -178,6 +249,7 @@ class BrowserLocalStore implements LocalStore {
   @override
   Future<LessonItem?> getLesson(String id) async {
     final row = (await _read('lessons'))[id];
+    if ((await _read('private_lessons'))[id]?['deleted'] == true) return null;
     return row == null
         ? null
         : LessonItem.fromJson(row as Map<String, dynamic>);
@@ -207,7 +279,11 @@ class BrowserLocalStore implements LocalStore {
     final cards =
         (await getAllCards()).where((c) => !c.nextReview.isAfter(asOf)).toList()
           ..sort((a, b) => a.nextReview.compareTo(b.nextReview));
-    return cards.map((c) => c.itemId).toList();
+    final states = await _read('private_lessons');
+    return cards
+        .where((c) => states[c.itemId]?['deleted'] != true)
+        .map((c) => c.itemId)
+        .toList();
   }
 
   @override
@@ -324,6 +400,7 @@ class BrowserLocalStore implements LocalStore {
         'Hồ sơ thuộc máy chủ khác. Hãy liên kết lại tài khoản.',
       );
     }
+    root['generation'] = (root['generation'] as int? ?? 0) + 1;
     (root['active_profiles'] as Map)[backend] =
         account?['user_id'] ?? 'default_user';
     final metadata = _table(root, 'metadata');
@@ -354,6 +431,8 @@ class BrowserLocalStore implements LocalStore {
     for (final id in ids) {
       if (rows['$id'] != null) {
         (rows['$id'] as Map)['status'] = 'in_progress';
+        // A retried mutation keeps its identity and payload forever.
+        (rows['$id'] as Map)['sent'] = true;
       }
     }
   });
@@ -524,6 +603,7 @@ class BrowserLocalStore implements LocalStore {
   @override
   Future<void> clearCurrentProfile() => withProfileLock(
     () => _edit((root) {
+      root['generation'] = (root['generation'] as int? ?? 0) + 1;
       final account = _table(root, 'metadata')['account'];
       final backend = root['active_backend'] as String;
       final user = (root['active_profiles'] as Map)[backend] ?? 'default_user';
@@ -538,6 +618,7 @@ class BrowserLocalStore implements LocalStore {
   Future<void> clearAll() => withProfileLock(
     () => _edit((root) {
       final fresh = _newRoot();
+      fresh['generation'] = (root['generation'] as int? ?? 0) + 1;
       root
         ..clear()
         ..addAll(fresh);
