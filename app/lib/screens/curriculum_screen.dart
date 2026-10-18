@@ -29,7 +29,8 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
   bool _isLoading = true;
 
   String _selectedLanguage = 'all'; // 'all', 'ja', 'en'
-  String _selectedCategory = 'all'; // 'all', 'alphabet', 'it_workplace'
+  String _selectedCategory =
+      'all'; // all, alphabet, jlpt_n5, it_workplace, custom
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
 
@@ -100,10 +101,47 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
     });
   }
 
+  Future<void> _createCustomLesson() async {
+    final values = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (_) => _CustomLessonDialog(
+        initialLanguage: _selectedLanguage == 'en' ? 'en' : 'ja',
+      ),
+    );
+    if (values == null || !mounted) return;
+    try {
+      final lesson = await _apiService.ensureLessonForWord(
+        word: values['word']!,
+        language: values['language']!,
+        meaningVi: values['meaning'],
+        phoneticOrKana: values['phonetic'],
+        workplaceContext: values['context'],
+        workplaceContextVi: values['contextVi'],
+      );
+      if (!mounted) return;
+      await _loadLessonsAndCards();
+      if (!mounted) return;
+      widget.onSelectLesson?.call(lesson);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không thể lưu từ mới. Vui lòng thử lại.'),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F19),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _createCustomLesson,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Thêm từ mới'),
+      ),
       appBar: AppBar(
         title: const Row(
           children: [
@@ -256,6 +294,24 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
                   },
                 ),
                 const SizedBox(width: 6),
+                for (final category in {
+                  'jlpt_n5': 'JLPT N5 (Kanji)',
+                  'jlpt_n4': 'JLPT N4',
+                  'business_toeic': 'Business / TOEIC',
+                  'custom': 'Từ tự tạo',
+                }.entries) ...[
+                  _buildFilterChip(
+                    category.value,
+                    _selectedCategory == category.key,
+                    () {
+                      _selectedCategory = _selectedCategory == category.key
+                          ? 'all'
+                          : category.key;
+                      _applyFilters();
+                    },
+                  ),
+                  const SizedBox(width: 6),
+                ],
                 _buildFilterChip(
                   'IT Chuyên ngành',
                   _selectedCategory == 'it_workplace',
@@ -294,7 +350,7 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
 
   Widget _buildLessonList() {
     return ListView.builder(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 88),
       itemCount: _filteredLessons.length,
       itemBuilder: (context, index) {
         final item = _filteredLessons[index];
@@ -345,6 +401,16 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
                       iconSize: 20,
                       tooltip: 'Phát âm "${item.targetText}"',
                       ttsService: widget.ttsService,
+                    ),
+                    Chip(
+                      label: Text(switch (item.category) {
+                        'alphabet' => 'Bảng chữ cái',
+                        'jlpt_n5' => 'JLPT N5 (Kanji)',
+                        'jlpt_n4' => 'JLPT N4',
+                        'business_toeic' => 'Business / TOEIC',
+                        'custom' => 'Từ tự tạo',
+                        _ => 'IT Chuyên ngành',
+                      }),
                     ),
                     _buildFSRSBadge(isMastered, isLearning, card),
                   ],
@@ -537,6 +603,135 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _CustomLessonDialog extends StatefulWidget {
+  final String initialLanguage;
+  const _CustomLessonDialog({required this.initialLanguage});
+
+  @override
+  State<_CustomLessonDialog> createState() => _CustomLessonDialogState();
+}
+
+class _CustomLessonDialogState extends State<_CustomLessonDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _word = TextEditingController();
+  final _meaning = TextEditingController();
+  final _phonetic = TextEditingController();
+  final _context = TextEditingController();
+  final _contextVi = TextEditingController();
+  late String _language = widget.initialLanguage;
+
+  @override
+  void dispose() {
+    for (final controller in [
+      _word,
+      _meaning,
+      _phonetic,
+      _context,
+      _contextVi,
+    ]) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: const Color(0xFF1E293B),
+      title: const Text('Thêm từ mới'),
+      content: SizedBox(
+        width: 440,
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  initialValue: _language,
+                  decoration: const InputDecoration(labelText: 'Ngôn ngữ'),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'ja',
+                      child: Text('Tiếng Nhật (ja)'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'en',
+                      child: Text('Tiếng Anh (en)'),
+                    ),
+                  ],
+                  onChanged: (value) => setState(() => _language = value!),
+                ),
+                TextFormField(
+                  key: const Key('custom-word'),
+                  controller: _word,
+                  decoration: const InputDecoration(
+                    labelText: 'Từ vựng / Chữ cần luyện viết',
+                  ),
+                  validator: (value) => value?.trim().isNotEmpty == true
+                      ? null
+                      : 'Vui lòng nhập từ vựng',
+                ),
+                TextFormField(
+                  key: const Key('custom-phonetic'),
+                  controller: _phonetic,
+                  decoration: const InputDecoration(
+                    labelText: 'Phiên âm / Kana',
+                  ),
+                ),
+                TextFormField(
+                  key: const Key('custom-meaning'),
+                  controller: _meaning,
+                  decoration: const InputDecoration(
+                    labelText: 'Nghĩa tiếng Việt',
+                  ),
+                  validator: (value) => value?.trim().isNotEmpty == true
+                      ? null
+                      : 'Vui lòng nhập nghĩa tiếng Việt',
+                ),
+                TextFormField(
+                  key: const Key('custom-context'),
+                  controller: _context,
+                  decoration: const InputDecoration(
+                    labelText: 'Câu ví dụ công sở',
+                  ),
+                ),
+                TextFormField(
+                  key: const Key('custom-context-vi'),
+                  controller: _contextVi,
+                  decoration: const InputDecoration(
+                    labelText: 'Dịch nghĩa câu ví dụ',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Hủy'),
+        ),
+        FilledButton(
+          onPressed: () {
+            if (!_formKey.currentState!.validate()) return;
+            Navigator.pop(context, {
+              'word': _word.text,
+              'language': _language,
+              'meaning': _meaning.text,
+              'phonetic': _phonetic.text,
+              'context': _context.text,
+              'contextVi': _contextVi.text,
+            });
+          },
+          child: const Text('Lưu & Luyện viết'),
+        ),
+      ],
     );
   }
 }

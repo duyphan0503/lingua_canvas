@@ -53,6 +53,8 @@ class MockTestApiService extends ApiService {
     required String targetLanguage,
     required String topic,
     required String message,
+    String profession = 'it',
+    String userLevel = 'beginner',
   }) async => {
     'reply': '了解しました。',
     'romaji': 'Ryoukai shimashita.',

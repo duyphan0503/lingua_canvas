@@ -113,24 +113,15 @@ pub async fn init_pool(database_url: Option<&str>) -> Option<PgPool> {
     Some(pool)
 }
 
-/// Seeds database with initial curriculum lessons if table is currently empty.
+/// Inserts missing curriculum IDs while preserving existing and custom lessons.
 pub async fn seed_lessons_if_empty(
     pool: &PgPool,
     lessons: &[LessonItem],
 ) -> Result<(), sqlx::Error> {
-    let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM lessons")
-        .fetch_one(pool)
-        .await?;
-    if count.0 < lessons.len() as i64 {
-        tracing::info!(
-            "Seeding/updating PostgreSQL with initial lessons (current count: {}, target: {})...",
-            count.0,
-            lessons.len()
-        );
-        for l in lessons {
-            let hints = sqlx::types::Json(&l.stroke_order_hints);
-            sqlx::query(
-                r#"
+    for l in lessons {
+        let hints = sqlx::types::Json(&l.stroke_order_hints);
+        sqlx::query(
+            r#"
                 INSERT INTO lessons (
                     id, language, category, target_text, phonetic_or_kana,
                     meaning_vi, workplace_context, workplace_context_vi,
@@ -138,22 +129,21 @@ pub async fn seed_lessons_if_empty(
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
                 ON CONFLICT (id) DO NOTHING
                 "#,
-            )
-            .bind(&l.id)
-            .bind(&l.language)
-            .bind(&l.category)
-            .bind(&l.target_text)
-            .bind(&l.phonetic_or_kana)
-            .bind(&l.meaning_vi)
-            .bind(&l.workplace_context)
-            .bind(&l.workplace_context_vi)
-            .bind(hints)
-            .bind(l.difficulty_level as i16)
-            .execute(pool)
-            .await?;
-        }
-        tracing::info!("Initial curriculum seeding completed.");
+        )
+        .bind(&l.id)
+        .bind(&l.language)
+        .bind(&l.category)
+        .bind(&l.target_text)
+        .bind(&l.phonetic_or_kana)
+        .bind(&l.meaning_vi)
+        .bind(&l.workplace_context)
+        .bind(&l.workplace_context_vi)
+        .bind(hints)
+        .bind(l.difficulty_level as i16)
+        .execute(pool)
+        .await?;
     }
+    tracing::info!("Initial curriculum seeding completed.");
     Ok(())
 }
 

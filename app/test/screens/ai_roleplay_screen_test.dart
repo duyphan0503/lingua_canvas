@@ -9,6 +9,8 @@ class MockRoleplayApiService extends ApiService {
     required String targetLanguage,
     required String topic,
     required String message,
+    String profession = 'it',
+    String userLevel = 'beginner',
   }) async {
     return {
       'reply': 'テスト返信です (Test response)',
@@ -52,7 +54,28 @@ class MockRoleplayApiService extends ApiService {
 
 void main() {
   group('AIRoleplayScreen Widget Tests', () {
-    testWidgets('English dialogue never offers handwriting actions', (
+    testWidgets('profession and level can be selected for roleplay', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AIRoleplayScreen(apiService: MockRoleplayApiService()),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('profession-selector')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Kinh doanh').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('level-selector')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Nâng cao').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Kinh doanh'), findsOneWidget);
+      expect(find.text('Nâng cao'), findsOneWidget);
+    });
+
+    testWidgets('English dialogue offers working handwriting actions', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(394, 853);
@@ -75,9 +98,10 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('I completed the API integration yesterday.'));
       await tester.pumpAndSettle();
-      expect(find.textContaining('Thử thách viết'), findsNothing);
-      expect(find.byIcon(Icons.draw_rounded), findsNothing);
-      expect(practicedWord, isNull);
+      expect(find.textContaining('Thử thách viết'), findsOneWidget);
+      expect(find.byIcon(Icons.draw_rounded), findsWidgets);
+      await tester.tap(find.textContaining('Thử thách viết'));
+      expect(practicedWord, '返信');
     });
 
     testWidgets('renders roleplay chat and sends interactive message', (

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import '../services/handwriting_recognizer.dart';
 
+enum HandwritingGrid { japanese, english }
+
 /// Interactive touch/pen canvas for handwriting practice.
 ///
 /// Features:
@@ -20,6 +22,7 @@ class HandwritingCanvas extends StatefulWidget {
   final Color strokeColor;
   final double strokeWidth;
   final bool isReadOnly;
+  final HandwritingGrid grid;
 
   const HandwritingCanvas({
     super.key,
@@ -32,6 +35,7 @@ class HandwritingCanvas extends StatefulWidget {
     this.strokeColor = const Color(0xFF38BDF8),
     this.strokeWidth = 4.5,
     this.isReadOnly = false,
+    this.grid = HandwritingGrid.japanese,
   });
 
   @override
@@ -178,6 +182,7 @@ class _HandwritingCanvasState extends State<HandwritingCanvas> {
             painter: _CanvasPainter(
               strokes: widget.strokes,
               watermarkText: widget.watermarkText,
+              grid: widget.grid,
             ),
           ),
         ),
@@ -190,7 +195,13 @@ class _CanvasPainter extends CustomPainter {
   final List<HandwritingStroke> strokes;
   final String? watermarkText;
 
-  _CanvasPainter({required this.strokes, this.watermarkText});
+  final HandwritingGrid grid;
+
+  _CanvasPainter({
+    required this.strokes,
+    this.watermarkText,
+    required this.grid,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -221,6 +232,20 @@ class _CanvasPainter extends CustomPainter {
       const Radius.circular(16),
     );
     canvas.drawRRect(borderRect, guidePaint);
+
+    if (grid == HandwritingGrid.english) {
+      // Ascender, x-height, baseline and descender guides.
+      for (final fraction in [0.30, 0.45, 0.65, 0.80]) {
+        final start = Offset(20, size.height * fraction);
+        final end = Offset(size.width - 20, size.height * fraction);
+        if (fraction == 0.45) {
+          _drawDashedLine(canvas, start, end, guidePaint);
+        } else {
+          canvas.drawLine(start, end, guidePaint);
+        }
+      }
+      return;
+    }
 
     // Horizontal center dashed line
     final midY = size.height / 2;
@@ -375,7 +400,8 @@ class _CanvasPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _CanvasPainter oldDelegate) {
-    return oldDelegate.strokes != strokes ||
+    return oldDelegate.grid != grid ||
+        oldDelegate.strokes != strokes ||
         oldDelegate.watermarkText != watermarkText;
   }
 }

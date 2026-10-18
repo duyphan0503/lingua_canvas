@@ -11,7 +11,7 @@ import '../services/tts_service.dart';
 import '../widgets/handwriting_canvas.dart';
 import '../widgets/tts_speaker_button.dart';
 
-/// Japanese writing and English recall practice for workplace lessons.
+/// Japanese and English writing practice for workplace lessons.
 ///
 /// Refined with:
 /// - Google ML Kit Digital Ink recognition model status & download manager
@@ -61,6 +61,8 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
   bool _isDownloadingModel = false;
   bool _isModelDownloaded = false;
   bool _isRecognizing = false;
+  int _recognitionEpoch = 0;
+  int _modelEpoch = 0;
   bool _syncInProgress = false;
   Timer? _syncTimer;
 
@@ -146,6 +148,8 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
     }
   }
 
+  bool _supportsHandwriting(String? lang) => lang == 'ja' || lang == 'en';
+
   Future<void> _loadInitialData() async {
     setState(() => _isLoading = true);
     final lessons = await _apiService.getLessons();
@@ -159,7 +163,9 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
       _isLoading = false;
     });
 
-    if (_currentLesson?.language == 'ja') await _checkModelStatus();
+    if (_supportsHandwriting(_currentLesson?.language)) {
+      await _checkModelStatus();
+    }
     _syncInBackground();
   }
 
@@ -172,7 +178,12 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
     }
   }
 
-  void _focusLessonById(String id) {
+  Future<void> _focusLessonById(String id) async {
+    if (!_allLessons.any((l) => l.id == id || l.targetText == id)) {
+      final refreshed = await _apiService.getLessons();
+      if (!mounted || widget.initialLessonId != id) return;
+      _allLessons = refreshed;
+    }
     final idx = _filteredLessons.indexWhere(
       (l) => l.id == id || l.targetText == id,
     );
@@ -181,7 +192,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
         _currentIndex = idx;
         _clearCanvas();
       });
-      if (_currentLesson?.language == 'ja') _checkModelStatus();
+      if (_supportsHandwriting(_currentLesson?.language)) _checkModelStatus();
     } else {
       // If not in current filtered list, try searching across all lessons
       final allIdx = _allLessons.indexWhere(
@@ -194,7 +205,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
           _currentIndex = allIdx;
           _clearCanvas();
         });
-        if (_currentLesson?.language == 'ja') _checkModelStatus();
+        if (_supportsHandwriting(_currentLesson?.language)) _checkModelStatus();
       }
     }
   }
@@ -222,17 +233,21 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
 
   Future<void> _checkModelStatus() async {
     final lang = _currentLesson?.language ?? 'ja';
-    if (!mounted || lang != 'ja') {
+    if (!mounted || !_supportsHandwriting(lang)) {
       if (mounted) setState(() => _isCheckingModel = false);
       return;
     }
-    final lessonId = _currentLesson?.id;
-    setState(() => _isCheckingModel = true);
+    final epoch = ++_modelEpoch;
+    setState(() {
+      _isCheckingModel = true;
+      _isDownloadingModel = false;
+      _isModelDownloaded = false;
+    });
 
     try {
       final downloaded = await _digitalInkEngine.isModelDownloaded(lang);
-      if (!mounted) return;
-      if (_currentLesson?.id == lessonId) {
+      if (!mounted || epoch != _modelEpoch) return;
+      if (_currentLesson?.language == lang) {
         setState(() {
           _isModelDownloaded = downloaded;
         });
@@ -240,7 +255,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
     } catch (_) {
       // Graceful fallback
     } finally {
-      if (mounted) {
+      if (mounted && epoch == _modelEpoch) {
         setState(() => _isCheckingModel = false);
       }
     }
@@ -248,15 +263,24 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
 
   Future<void> _downloadModel() async {
     final lang = _currentLesson?.language ?? 'ja';
-    if (!mounted || lang != 'ja') return;
+    if (!mounted || !_supportsHandwriting(lang)) return;
+    final epoch = ++_modelEpoch;
     setState(() {
+      _isCheckingModel = false;
       _isDownloadingModel = true;
       _statusNotification =
           'Đang kết nối Google Play Services để tải model ML Kit ($lang)...';
     });
 
-    final success = await _digitalInkEngine.downloadModel(lang);
-    if (!mounted) return;
+    bool success;
+    try {
+      success = await _digitalInkEngine.downloadModel(lang);
+    } catch (_) {
+      success = false;
+    }
+    if (!mounted || epoch != _modelEpoch || _currentLesson?.language != lang) {
+      return;
+    }
     setState(() {
       _isDownloadingModel = false;
       _isModelDownloaded = success;
@@ -272,7 +296,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
       _selectedLanguage = lang;
       _filterLessons();
     });
-    if (_currentLesson?.language == 'ja') _checkModelStatus();
+    if (_supportsHandwriting(_currentLesson?.language)) _checkModelStatus();
   }
 
   LessonItem? get _currentLesson {
@@ -283,6 +307,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
   }
 
   void _clearCanvas() {
+    _recognitionEpoch++;
     setState(() {
       _strokes = [];
       _recognitionResult = null;
@@ -291,15 +316,27 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
     });
   }
 
+  void _undoStroke() {
+    if (_strokes.isEmpty) return;
+    _recognitionEpoch++;
+    setState(() {
+      _strokes = _strokes.sublist(0, _strokes.length - 1);
+      _recognitionResult = null;
+      _isRecognizing = false;
+    });
+    if (_strokes.isNotEmpty) _evaluateHandwriting();
+  }
+
   Future<void> _evaluateHandwriting() async {
     final lesson = _currentLesson;
     if (lesson == null ||
-        lesson.language != 'ja' ||
+        !_supportsHandwriting(lesson.language) ||
         _strokes.isEmpty ||
         _isRecognizing) {
       return;
     }
     final evaluatedStrokes = _strokes;
+    final epoch = ++_recognitionEpoch;
 
     setState(() => _isRecognizing = true);
 
@@ -310,7 +347,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
       languageTag: lesson.language,
     );
 
-    if (!mounted) return;
+    if (!mounted || epoch != _recognitionEpoch) return;
     if (_currentLesson?.id != lesson.id ||
         !identical(_strokes, evaluatedStrokes)) {
       if (_isRecognizing) setState(() => _isRecognizing = false);
@@ -357,7 +394,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
           _filteredLessons.length;
       _clearCanvas();
     });
-    if (_currentLesson?.language == 'ja') _checkModelStatus();
+    if (_supportsHandwriting(_currentLesson?.language)) _checkModelStatus();
   }
 
   void _goToNextLesson() {
@@ -366,7 +403,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
       _currentIndex = (_currentIndex + 1) % _filteredLessons.length;
       _clearCanvas();
     });
-    if (_currentLesson?.language == 'ja') _checkModelStatus();
+    if (_supportsHandwriting(_currentLesson?.language)) _checkModelStatus();
   }
 
   @override
@@ -474,7 +511,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
                       const SizedBox(height: 12),
 
                       // Interactive Drawing Canvas Container with Model Status
-                      if (lesson.language == 'ja') ...[
+                      if (_supportsHandwriting(lesson.language)) ...[
                         _buildCanvasSection(lesson),
                         const SizedBox(height: 12),
                       ],
@@ -654,9 +691,14 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  lesson.language == 'ja'
-                      ? 'JA • JLPT/IT'
-                      : 'EN • IT Workplace',
+                  '${lesson.language.toUpperCase()} • ${switch (lesson.category) {
+                    'alphabet' => 'Bảng chữ cái',
+                    'jlpt_n5' => 'JLPT N5',
+                    'jlpt_n4' => 'JLPT N4',
+                    'business_toeic' => 'Business / TOEIC',
+                    'custom' => 'Từ tự tạo',
+                    _ => 'IT Workplace',
+                  }}',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -715,8 +757,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
             ),
 
           // Stroke Order Hints Accordion
-          if (lesson.language == 'ja' &&
-              lesson.strokeOrderHints.isNotEmpty) ...[
+          if (lesson.strokeOrderHints.isNotEmpty) ...[
             const SizedBox(height: 10),
             InkWell(
               onTap: () => setState(() => _showHints = !_showHints),
@@ -730,12 +771,14 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
                     color: const Color(0xFF818CF8),
                   ),
                   const SizedBox(width: 4),
-                  const Text(
-                    'Hướng dẫn thứ tự nét viết',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF818CF8),
+                  const Expanded(
+                    child: Text(
+                      'Hướng dẫn thứ tự nét viết',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF818CF8),
+                      ),
                     ),
                   ),
                 ],
@@ -821,7 +864,9 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
       );
     }
 
-    if (_isModelDownloaded && !kIsWeb && Platform.isAndroid) {
+    if (_isModelDownloaded &&
+        !kIsWeb &&
+        Theme.of(context).platform == TargetPlatform.android) {
       return const Wrap(
         spacing: 6,
         runSpacing: 4,
@@ -874,7 +919,7 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
             ],
           ),
         ),
-        if (!kIsWeb && Platform.isAndroid)
+        if (!kIsWeb && Theme.of(context).platform == TargetPlatform.android)
           TextButton.icon(
             onPressed: _downloadModel,
             icon: const Icon(Icons.download_rounded, size: 14),
@@ -947,6 +992,11 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
                           setState(() => _showWatermark = !_showWatermark),
                     ),
                     TextButton.icon(
+                      onPressed: _strokes.isEmpty ? null : _undoStroke,
+                      icon: const Icon(Icons.undo_rounded),
+                      label: const Text('Hoàn tác'),
+                    ),
+                    TextButton.icon(
                       onPressed: _strokes.isEmpty ? null : _clearCanvas,
                       icon: const Icon(Icons.refresh_rounded),
                       label: const Text('Xóa'),
@@ -983,6 +1033,13 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 _buildModelStatusIndicator(lesson.language),
+                Text(
+                  'Nét đã viết: ${_strokes.length} / ${lesson.strokeOrderHints.length} nét gợi ý',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF94A3B8),
+                  ),
+                ),
                 if (_isRecognizing) ...[
                   const SizedBox(
                     width: 12,
@@ -1008,11 +1065,16 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
             width: double.infinity,
             child: HandwritingCanvas(
               strokes: _strokes,
+              grid: lesson.language == 'en'
+                  ? HandwritingGrid.english
+                  : HandwritingGrid.japanese,
               watermarkText: _showWatermark ? lesson.targetText : null,
               onStrokesChanged: (newStrokes) {
                 setState(() {
+                  _recognitionEpoch++;
                   _strokes = newStrokes;
                   _recognitionResult = null;
+                  _isRecognizing = false;
                 });
               },
               onDebouncedEvaluation: _evaluateHandwriting,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:app/models/lesson_item.dart';
@@ -43,7 +44,7 @@ class PracticeApiService extends ApiService {
       meaningVi: 'Triển khai phần mềm lên server',
       workplaceContext: '',
       workplaceContextVi: '',
-      strokeOrderHints: ['English writing hints must stay hidden'],
+      strokeOrderHints: ['Write English letters along the baseline'],
       difficultyLevel: 1,
     ),
   ];
@@ -80,14 +81,145 @@ class TrackingDigitalInkEngine extends MockDigitalInkEngine {
   }
 }
 
+class DeferredInkEngine extends MockDigitalInkEngine {
+  final pending = <Completer<List<String>>>[];
+  @override
+  Future<List<String>> getCandidates(
+    List<HandwritingStroke> strokes,
+    String languageTag,
+  ) {
+    final result = Completer<List<String>>();
+    pending.add(result);
+    return result.future;
+  }
+}
+
+class DeferredDownloadEngine extends MockDigitalInkEngine {
+  final download = Completer<bool>();
+  @override
+  Future<bool> isModelDownloaded(String languageTag) async => false;
+  @override
+  Future<bool> downloadModel(String languageTag) => download.future;
+}
+
 void main() {
   late PracticeApiService service;
   setUp(() => service = PracticeApiService());
 
   group('Lingua Canvas Widget Tests', () {
+    testWidgets('download completion cannot mark a different language ready', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final engine = DeferredDownloadEngine();
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(platform: TargetPlatform.android),
+          home: CanvasPracticeScreen(
+            apiService: service,
+            digitalInkEngine: engine,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Tải mô hình'));
+      await tester.pump();
+      await tester.tap(find.text('Tiếng Anh (IT)'));
+      await tester.pump();
+      engine.download.complete(true);
+      await tester.pumpAndSettle();
+      expect(find.text('Tải mô hình'), findsOneWidget);
+      expect(find.text('Mô hình AI: Sẵn sàng (On-device)'), findsNothing);
+    });
+
+    testWidgets('cleared drawing cannot finish a newer recognition request', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final engine = DeferredInkEngine();
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(platform: TargetPlatform.linux),
+          home: CanvasPracticeScreen(
+            apiService: service,
+            digitalInkEngine: engine,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      Future<void> drawAndEvaluate() async {
+        final canvas = find.byType(HandwritingCanvas);
+        final gesture = await tester.startGesture(tester.getCenter(canvas));
+        for (var i = 0; i < 15; i++) {
+          await gesture.moveBy(const Offset(4, 4));
+          await tester.pump(const Duration(milliseconds: 10));
+        }
+        await gesture.up();
+        await tester.pump();
+        await tester.tap(find.text('Đánh giá'));
+        await tester.pump();
+      }
+
+      await drawAndEvaluate();
+      await tester.tap(find.text('Xóa'));
+      await tester.pump();
+      await drawAndEvaluate();
+      expect(engine.pending.length, 2);
+      engine.pending.first.complete(['あ']);
+      await tester.pump();
+      expect(find.text('Đang nhận diện...'), findsOneWidget);
+      expect(find.textContaining('Độ tương đồng:'), findsNothing);
+      engine.pending.last.complete(['あ']);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Độ tương đồng:'), findsOneWidget);
+    });
+
+    testWidgets('undo removes only the last stroke and updates the count', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(platform: TargetPlatform.linux),
+          home: CanvasPracticeScreen(apiService: service),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final canvas = find.byType(HandwritingCanvas);
+      for (var i = 0; i < 2; i++) {
+        final gesture = await tester.startGesture(
+          tester.getCenter(canvas) + Offset(i * 25, 0),
+        );
+        await gesture.moveBy(const Offset(30, 30));
+        await gesture.up();
+        await tester.pump();
+      }
+      expect(tester.widget<HandwritingCanvas>(canvas).strokes.length, 2);
+      await tester.tap(find.text('Hoàn tác'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<HandwritingCanvas>(canvas).strokes.length, 1);
+      expect(find.textContaining('Nét đã viết: 1'), findsOneWidget);
+      await tester.tap(find.text('Hoàn tác'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<HandwritingCanvas>(canvas).strokes, isEmpty);
+      expect(find.textContaining('Độ tương đồng:'), findsNothing);
+    });
+
     testWidgets('syncs on launch and when app resumes', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(home: CanvasPracticeScreen(apiService: service)),
+        MaterialApp(
+          theme: ThemeData(platform: TargetPlatform.linux),
+          home: CanvasPracticeScreen(apiService: service),
+        ),
       );
       await tester.pumpAndSettle();
       expect(service.syncAttempts, 1);
@@ -100,7 +232,10 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(home: CanvasPracticeScreen(apiService: service)),
+        MaterialApp(
+          theme: ThemeData(platform: TargetPlatform.linux),
+          home: CanvasPracticeScreen(apiService: service),
+        ),
       );
       await tester.pumpAndSettle();
       expect(service.syncAttempts, 1);
@@ -121,7 +256,10 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(
-        MaterialApp(home: CanvasPracticeScreen(apiService: service)),
+        MaterialApp(
+          theme: ThemeData(platform: TargetPlatform.linux),
+          home: CanvasPracticeScreen(apiService: service),
+        ),
       );
       await tester.pumpAndSettle();
       final canvas = find.byType(HandwritingCanvas);
@@ -145,7 +283,10 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(
-        MaterialApp(home: CanvasPracticeScreen(apiService: service)),
+        MaterialApp(
+          theme: ThemeData(platform: TargetPlatform.linux),
+          home: CanvasPracticeScreen(apiService: service),
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -183,7 +324,10 @@ void main() {
         addTearDown(tester.view.resetDevicePixelRatio);
 
         await tester.pumpWidget(
-          MaterialApp(home: CanvasPracticeScreen(apiService: service)),
+          MaterialApp(
+            theme: ThemeData(platform: TargetPlatform.linux),
+            home: CanvasPracticeScreen(apiService: service),
+          ),
         );
         await tester.pumpAndSettle();
 
@@ -230,7 +374,10 @@ void main() {
         addTearDown(tester.view.resetDevicePixelRatio);
 
         await tester.pumpWidget(
-          MaterialApp(home: CanvasPracticeScreen(apiService: service)),
+          MaterialApp(
+            theme: ThemeData(platform: TargetPlatform.linux),
+            home: CanvasPracticeScreen(apiService: service),
+          ),
         );
         await tester.pumpAndSettle();
 
@@ -243,12 +390,12 @@ void main() {
         // Should display English IT lesson: 'deploy'
         expect(find.text('deploy'), findsOneWidget);
         expect(find.text('Triển khai phần mềm lên server'), findsOneWidget);
-        expect(find.byType(HandwritingCanvas), findsNothing);
+        expect(find.byType(HandwritingCanvas), findsOneWidget);
         expect(find.textContaining('Mô hình AI:'), findsNothing);
-        expect(find.text('Hướng dẫn thứ tự nét viết'), findsNothing);
+        expect(find.text('Hướng dẫn thứ tự nét viết'), findsOneWidget);
         expect(
-          find.text('English writing hints must stay hidden'),
-          findsNothing,
+          find.text('Write English letters along the baseline'),
+          findsOneWidget,
         );
 
         // Switch to Japanese IT Workplace
@@ -258,7 +405,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Should display Japanese lessons
-        expect(find.text('JA • JLPT/IT'), findsOneWidget);
+        expect(find.text('JA • Bảng chữ cái'), findsOneWidget);
       },
     );
 
@@ -271,7 +418,10 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(
-        MaterialApp(home: CanvasPracticeScreen(apiService: service)),
+        MaterialApp(
+          theme: ThemeData(platform: TargetPlatform.linux),
+          home: CanvasPracticeScreen(apiService: service),
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -303,6 +453,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          theme: ThemeData(platform: TargetPlatform.linux),
           home: CanvasPracticeScreen(
             apiService: service,
             digitalInkEngine: engine,
@@ -329,6 +480,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          theme: ThemeData(platform: TargetPlatform.linux),
           home: CanvasPracticeScreen(
             apiService: service,
             digitalInkEngine: engine,
@@ -349,7 +501,10 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(
-        MaterialApp(home: CanvasPracticeScreen(apiService: service)),
+        MaterialApp(
+          theme: ThemeData(platform: TargetPlatform.linux),
+          home: CanvasPracticeScreen(apiService: service),
+        ),
       );
       await tester.pumpAndSettle();
       final scrollable = tester.state<ScrollableState>(find.byType(Scrollable));
@@ -374,6 +529,7 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(
         MaterialApp(
+          theme: ThemeData(platform: TargetPlatform.linux),
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(
               context,
@@ -388,15 +544,16 @@ void main() {
       await tester.tap(find.text('Tiếng Anh (IT)'));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      expect(find.byType(HandwritingCanvas), findsNothing);
+      expect(find.byType(HandwritingCanvas), findsOneWidget);
     });
 
-    testWidgets('English study never requests a handwriting model', (
+    testWidgets('English study checks its model and evaluates drawn strokes', (
       tester,
     ) async {
       final engine = TrackingDigitalInkEngine();
       await tester.pumpWidget(
         MaterialApp(
+          theme: ThemeData(platform: TargetPlatform.linux),
           home: CanvasPracticeScreen(
             apiService: service,
             digitalInkEngine: engine,
@@ -408,10 +565,28 @@ void main() {
 
       await tester.tap(find.text('Tiếng Anh (IT)'));
       await tester.pumpAndSettle();
-      expect(find.byType(HandwritingCanvas), findsNothing);
+      expect(find.byType(HandwritingCanvas), findsOneWidget);
       expect(find.textContaining('Mô hình AI:'), findsNothing);
-      expect(engine.checkedLanguages, ['ja']);
-      expect(engine.recognizedLanguages, isEmpty);
+      expect(engine.checkedLanguages, ['ja', 'en']);
+      expect(
+        tester.widget<HandwritingCanvas>(find.byType(HandwritingCanvas)).grid,
+        HandwritingGrid.english,
+      );
+      final canvas = find.byType(HandwritingCanvas);
+      await tester.ensureVisible(canvas);
+      final gesture = await tester.startGesture(tester.getCenter(canvas));
+      for (var i = 0; i < 15; i++) {
+        await gesture.moveBy(const Offset(5, 4));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      await gesture.up();
+      await tester.pump();
+      final evaluate = find.text('Đánh giá');
+      await tester.ensureVisible(evaluate);
+      await tester.tap(evaluate);
+      await tester.pumpAndSettle();
+      expect(engine.recognizedLanguages, contains('en'));
+      expect(find.textContaining('Độ tương đồng:'), findsOneWidget);
     });
   });
 }

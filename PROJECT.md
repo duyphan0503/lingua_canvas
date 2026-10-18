@@ -71,11 +71,28 @@ Every feature from the Survey phase and user requirements is cataloged and assig
 | M1 | Backend Local AI Integration | Rust Axum Ollama/Llama.cpp connector, roleplay/dialogue endpoints, fallbacks, tests | M0 | DONE (automated verification) |
 | M2 | Mobile ML Kit & Smooth Canvas | Digital Ink model manager, smoothing, scoring, headless mock engine, widget tests | M0 | DONE (implementation and automated tests; device checks pending) |
 | M3 | Offline Storage & Bidirectional Sync | SQLite local tables, FSRS offline review, PostgreSQL sync routes, LWW conflict resolution | M1, M2 | DONE (SQLite and PostgreSQL verified) |
-| M4 | Comprehensive E2E Tests & Remote Sync | 100% test pass across server/app/e2e, GitNexus update, secure commit & push | M3 | LOCAL_TESTS_VERIFIED; dependency audit clearance and remote integration pending |
+| M4 | Comprehensive E2E Tests & Remote Sync | 100% test pass across server/app/e2e, GitNexus update, secure commit & push | M3 | LOCAL_TESTS_VERIFIED; remote integration pending |
+
+## Latest verification — 2026-10-14
+
+All nine tasks in `lingua_canvas_phase1_execution_plan.md` are implemented on `codex/phase1-learning-expansion`.
+
+- Flutter 3.47.6 / Dart 3.13.5: **145 unit/widget tests passed**, analyzer clean, repository-wide formatting passed.
+- Rust: **41 tests passed**, including opt-in PostgreSQL 16 tests and the seed-upgrade regression; formatting, check and Clippy with warnings denied passed.
+- Four E2E tiers: **47/47 passed** against a freshly seeded, disposable PostgreSQL 16 database and an isolated localhost backend. The pinned Flutter SDK was first on PATH.
+- Adversarial provider/parser/timeout suite: **59/59 passed**. E2E runner/stub Python unit tests: **5/5 passed**. Docker Compose configuration validated.
+- Live Flutter SQLite → Rust HTTP → PostgreSQL review sync → lesson reload passed, preserving custom word, language, meaning and example metadata.
+- GitNexus indexing and complete change analysis passed without partial/truncated flags. Aggregate graph risk is HIGH because the shared lesson persistence/loading and canvas lifecycle paths changed; these paths have regression coverage.
+- Both catalogs now contain **135 lessons**, including **52 additions**. Existing lesson IDs/content are retained; upgrades insert missing IDs rather than relying on total row counts.
+- `cargo audit` exits **0**. `quinn-proto` is patched to **0.11.18**. `server/.cargo/audit.toml` explicitly ignores only `RUSTSEC-2023-0071` for inactive optional `rsa`; `cargo tree --locked --target all -i rsa` confirms no active dependency. Re-evaluate the exception if SQLx features/database support change.
+
+Custom lesson metadata is protected locally against server ID-only placeholders. Full metadata transfer to another device is not added by this plan. The canvas counter still derives suggested strokes from the number of hint paragraphs; explicit expected-stroke metadata is a deferred minor UX improvement.
+
+Native Android ML Kit/download behavior, physical-device handwriting accuracy, Linux desktop launch, and a real Ollama/Llama.cpp deployment remain device/live-provider checks. This verification used controlled local providers; it does not replace those checks.
 
 ## Continuation Verification — 2026-10-02
 
-The counts below are the historical verification record from before the Flutter 3.47.6 toolchain and Android/Linux-only cleanup. Re-run status for the updated toolchain and platform set is pending; do not interpret these counts as the latest verification.
+The counts below are the historical verification record from before the Flutter 3.47.6 toolchain and Android/Linux-only cleanup. Current verification is recorded above; these historical counts are retained for comparison.
 
 - Backend: 38 tests passed, including opt-in tests against temporary PostgreSQL 16; formatting, check and Clippy passed.
 - Flutter: 82 tests passed; analyze and app-wide formatting checks passed.

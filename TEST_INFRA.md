@@ -28,7 +28,7 @@ tests/e2e/
 Validates baseline features and environment cleanliness:
 - **Git Baseline**: Monorepo root `.git` presence, `.gitignore` exclusions (`target/`, `.dart_tool/`, `build/`, `.env*`) and remote origin configuration. This check is not a secret scanner.
 - **Multi-Environment Configurations**: Existence and non-emptiness of `.env.example`, `.env.development.example`, `.env.staging.example`, and `.env.production.example`.
-- **Flutter Client Health**: Automated `../tools/flutter analyze` and `../tools/flutter test` execution (82 tests in the historical 2026-10-02 verification record; current run pending).
+- **Flutter Client Health**: Automated `../tools/flutter analyze` and `../tools/flutter test` execution (145 tests in the 2026-10-14 verification record).
 - **Docker Configuration**: Syntactic validation of `docker-compose.yml` and `Dockerfile` (Progressive Testability aware).
 - **Axum REST API Endpoints**:
   - `GET /api/v1/health` -> HTTP 200, valid service metadata schema.
@@ -143,14 +143,22 @@ The test runner handles the Axum backend process automatically:
 ## 5. Quality Thresholds & Gates
 | Metric | Threshold | Verification Method |
 |---|---|---|
-| **E2E Pass Rate** | Historical 100% (47/47 passing); current run pending | `./tests/e2e/run_e2e_tests.sh --all` exit code 0 |
+| **E2E Pass Rate** | 100% (47/47 passing, 2026-10-14) | `./tests/e2e/run_e2e_tests.sh --all` exit code 0 |
 | **Health API Latency** | < 100 ms | Measured during Tier 4 health check |
-| **Flutter Analysis** | Historical 0 warnings, 0 errors; current run pending | `../tools/flutter analyze` |
-| **Flutter Tests** | Historical 100% pass (82/82); current run pending | `../tools/flutter test` |
-| **Backend Tests** | 100% pass (38/38) | `TEST_DATABASE_URL=... cargo test --all-targets` in `server/` |
+| **Flutter Analysis** | 0 warnings, 0 errors (2026-10-14) | `../tools/flutter analyze` |
+| **Flutter Tests** | 100% pass (145/145, 2026-10-14) | `../tools/flutter test` |
+| **Backend Tests** | 100% pass (41/41, PostgreSQL 16, 2026-10-14) | `TEST_DATABASE_URL=... cargo test --all-targets` in `server/` |
 | **Backend Lints** | 0 warnings, 0 errors | `cargo clippy --all-targets -- -D warnings` |
 | **Security Hygiene** | Required `.gitignore` exclusions; no Gitleaks findings | Tier 1 checks exclusions; Gitleaks history/current source scans are recorded in `TEST_READY.md` |
 | **Sync Conflict Resolution** | Last-Write-Wins (LWW) | Validated in Tier 3 cross-feature test |
 | **Clock Skew Safety** | Clamped to <= 5 min future | Validated in Tier 2 boundary test |
 | **FSRS Difficulty** | Clamped in [1.0, 10.0] | Validated in Tier 3 under extreme ratings |
 | **Offline Resilience** | 0 unhandled 500 errors | Verified in Tier 2 offline AI fallback |
+
+## Phase 1 and learning expansion verification — 2026-10-14
+
+The current result is 145 Flutter tests, 41 Rust tests with disposable PostgreSQL 16, 47 four-tier E2E cases, 59 adversarial provider cases, and 5 E2E-runner/stub Python tests. A live custom-lesson SQLite → HTTP → PostgreSQL → reload test also ran as part of the Flutter suite. Use `TEST_DATABASE_URL` for Rust database tests and `TEST_SYNC_API_BASE_URL` for the optional Flutter live sync test; both must point to disposable services.
+
+For E2E, put `.toolchains/flutter/3.47.6/flutter/bin` first on PATH, set `API_BASE_URL` to a fresh localhost port, and ensure `PORT` matches that URL (or leave it unset). A reused backend can contain review state and invalidate first-review assertions. A disposable `DATABASE_URL` exercises PostgreSQL rather than the process-memory fallback. Keep the live-sync backend running for the entire Flutter invocation.
+
+`cargo audit` passes with `quinn-proto` 0.11.18 and the documented inactive-rsa exception in `server/.cargo/audit.toml`. Recheck `cargo tree --locked --target all -i rsa` whenever SQLx features change. Stub coverage exercises both provider envelopes and deserializes actual Compose content using the Rust dialogue schema.

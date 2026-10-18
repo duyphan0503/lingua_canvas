@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:app/models/lesson_item.dart';
 import 'package:app/screens/main_shell_screen.dart';
+import 'package:app/widgets/handwriting_canvas.dart';
 import 'package:app/services/api_service.dart';
 import 'package:app/services/digital_ink_engine.dart';
 import 'package:app/services/fsrs_engine.dart';
@@ -11,6 +12,29 @@ import 'package:app/services/sync_coordinator.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class MockNavigationApiService extends ApiService {
+  final customLessons = <LessonItem>[];
+
+  @override
+  Future<LessonItem> ensureLessonForWord({
+    required String word,
+    required String language,
+    String? phoneticOrKana,
+    String? meaningVi,
+    String? workplaceContext,
+    String? workplaceContextVi,
+  }) async {
+    final lesson = await super.ensureLessonForWord(
+      word: word,
+      language: language,
+      phoneticOrKana: phoneticOrKana,
+      meaningVi: meaningVi,
+      workplaceContext: workplaceContext,
+      workplaceContextVi: workplaceContextVi,
+    );
+    customLessons.add(lesson);
+    return lesson;
+  }
+
   @override
   Future<List<FSRSCard>> getAllCards() async => [];
 
@@ -35,6 +59,7 @@ class MockNavigationApiService extends ApiService {
       strokeOrderHints: [],
       difficultyLevel: 1,
     ),
+    ...customLessons,
   ];
 
   @override
@@ -86,37 +111,46 @@ void main() {
   });
 
   group('MainShellScreen Navigation Tests', () {
-    testWidgets('unknown roleplay word does not open an unrelated lesson', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(394, 853);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      await tester.pumpWidget(
-        MaterialApp(
-          home: MainShellScreen(
-            apiService: service,
-            digitalInkEngine: MockNavigationInkEngine(),
+    testWidgets(
+      'unknown roleplay word is saved and opens its custom writing lesson',
+      (tester) async {
+        tester.view.physicalSize = const Size(394, 853);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(
+          MaterialApp(
+            home: MainShellScreen(
+              apiService: service,
+              digitalInkEngine: MockNavigationInkEngine(),
+            ),
           ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.text('AI Đối Thoại'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('AI Đối Thoại'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      final writingChallenge = find.textContaining('Thử thách viết: "進捗"');
-      await tester.ensureVisible(writingChallenge);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(writingChallenge);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('AI Workplace Role-Play'), findsOneWidget);
-      expect(find.textContaining('chưa có bài luyện viết'), findsOneWidget);
-    });
+        final writingChallenge = find.textContaining('Thử thách viết: "進捗"');
+        await tester.ensureVisible(writingChallenge);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.runAsync(() async {
+          await tester.tap(writingChallenge);
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        });
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
+        expect(find.text('進捗'), findsOneWidget);
+        expect(find.byType(HandwritingCanvas), findsOneWidget);
+        final lessons = (await tester.runAsync(
+          () => service.localDatabase.getLessons(category: 'custom'),
+        ))!;
+        expect(lessons.single.targetText, '進捗');
+      },
+    );
 
     testWidgets('all tabs fit a narrow viewport with larger text', (
       tester,

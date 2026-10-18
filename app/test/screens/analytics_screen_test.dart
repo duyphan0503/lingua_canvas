@@ -135,65 +135,77 @@ void main() {
       expect(streak.activityHistory.values.every((v) => v == 0), isTrue);
     });
 
-    test('maintains quiet streak when user studied yesterday but not yet today', () async {
-      final today = DateTime(2026, 10, 2);
-      final yesterday = DateTime(2026, 10, 1);
+    test(
+      'maintains quiet streak when user studied yesterday but not yet today',
+      () async {
+        final today = DateTime(2026, 10, 2);
+        final yesterday = DateTime(2026, 10, 1);
 
-      await localDb.logDailyActivity(yesterday, 5);
+        await localDb.logDailyActivity(yesterday, 5);
 
-      final streak = await localDb.getStudyStreak(asOf: today);
-      expect(streak.currentStreak, 1);
-      expect(streak.longestStreak, 1);
-      expect(streak.activityHistory['2026-10-01'], 5);
-      expect(streak.activityHistory['2026-10-02'], 0);
-    });
+        final streak = await localDb.getStudyStreak(asOf: today);
+        expect(streak.currentStreak, 1);
+        expect(streak.longestStreak, 1);
+        expect(streak.activityHistory['2026-10-01'], 5);
+        expect(streak.activityHistory['2026-10-02'], 0);
+      },
+    );
 
-    test('accumulates multiple logs on same date and extends streak today', () async {
-      final today = DateTime(2026, 10, 2);
-      final yesterday = DateTime(2026, 10, 1);
+    test(
+      'accumulates multiple logs on same date and extends streak today',
+      () async {
+        final today = DateTime(2026, 10, 2);
+        final yesterday = DateTime(2026, 10, 1);
 
-      await localDb.logDailyActivity(yesterday, 3);
-      await localDb.logDailyActivity(today, 2);
-      await localDb.logDailyActivity(today, 4); // accumulates to 6
+        await localDb.logDailyActivity(yesterday, 3);
+        await localDb.logDailyActivity(today, 2);
+        await localDb.logDailyActivity(today, 4); // accumulates to 6
 
-      final streak = await localDb.getStudyStreak(asOf: today);
-      expect(streak.currentStreak, 2);
-      expect(streak.longestStreak, 2);
-      expect(streak.activityHistory['2026-10-02'], 6);
-    });
+        final streak = await localDb.getStudyStreak(asOf: today);
+        expect(streak.currentStreak, 2);
+        expect(streak.longestStreak, 2);
+        expect(streak.activityHistory['2026-10-02'], 6);
+      },
+    );
 
-    test('calculates multi-day streak, gaps, and preserves historical longest streak', () async {
-      final ref = DateTime(2026, 10, 15);
+    test(
+      'calculates multi-day streak, gaps, and preserves historical longest streak',
+      () async {
+        final ref = DateTime(2026, 10, 15);
 
-      // Period 1: 5 consecutive days (Oct 1 to Oct 5)
-      for (int day = 1; day <= 5; day++) {
-        await localDb.logDailyActivity(DateTime(2026, 10, day), 10);
-      }
+        // Period 1: 5 consecutive days (Oct 1 to Oct 5)
+        for (int day = 1; day <= 5; day++) {
+          await localDb.logDailyActivity(DateTime(2026, 10, day), 10);
+        }
 
-      // Gap: Oct 6 to Oct 12 (7 days break)
+        // Gap: Oct 6 to Oct 12 (7 days break)
 
-      // Period 2: 3 consecutive days (Oct 13 to Oct 15)
-      for (int day = 13; day <= 15; day++) {
-        await localDb.logDailyActivity(DateTime(2026, 10, day), 5);
-      }
+        // Period 2: 3 consecutive days (Oct 13 to Oct 15)
+        for (int day = 13; day <= 15; day++) {
+          await localDb.logDailyActivity(DateTime(2026, 10, day), 5);
+        }
 
-      final streak = await localDb.getStudyStreak(asOf: ref);
-      expect(streak.currentStreak, 3);
-      expect(streak.longestStreak, 5);
-    });
+        final streak = await localDb.getStudyStreak(asOf: ref);
+        expect(streak.currentStreak, 3);
+        expect(streak.longestStreak, 5);
+      },
+    );
 
-    test('ApiService exposes getStudyStreak and delegates to local database', () async {
-      final today = DateTime(2026, 10, 2);
-      final api = ApiService(localDb: localDb);
+    test(
+      'ApiService exposes getStudyStreak and delegates to local database',
+      () async {
+        final today = DateTime(2026, 10, 2);
+        final api = ApiService(localDb: localDb);
 
-      await api.logDailyActivity(today, 8);
-      final streak = await api.getStudyStreak(asOf: today);
+        await api.logDailyActivity(today, 8);
+        final streak = await api.getStudyStreak(asOf: today);
 
-      expect(streak.currentStreak, 1);
-      expect(streak.longestStreak, 1);
-      expect(streak['current_streak'], 1);
-      expect(streak['longest_streak'], 1);
-      expect(streak['last_30_days']['2026-10-02'], 8);
-    });
+        expect(streak.currentStreak, 1);
+        expect(streak.longestStreak, 1);
+        expect(streak['current_streak'], 1);
+        expect(streak['longest_streak'], 1);
+        expect(streak['last_30_days']['2026-10-02'], 8);
+      },
+    );
   });
 }

@@ -38,6 +38,30 @@ class MockCurriculumApiService extends ApiService {
       strokeOrderHints: [],
       difficultyLevel: 1,
     ),
+    LessonItem(
+      id: 'ja_n5_day',
+      language: 'ja',
+      category: 'jlpt_n5',
+      targetText: '日',
+      phoneticOrKana: 'にち',
+      meaningVi: 'Ngày',
+      workplaceContext: '',
+      workplaceContextVi: '',
+      strokeOrderHints: [],
+      difficultyLevel: 1,
+    ),
+    LessonItem(
+      id: 'custom_en_commit',
+      language: 'en',
+      category: 'custom',
+      targetText: 'commit',
+      phoneticOrKana: '',
+      meaningVi: 'Lưu thay đổi',
+      workplaceContext: '',
+      workplaceContextVi: '',
+      strokeOrderHints: [],
+      difficultyLevel: 2,
+    ),
   ];
 }
 
@@ -59,6 +83,72 @@ void main() {
   });
 
   group('CurriculumScreen Widget Tests', () {
+    testWidgets(
+      'custom builder validates fields and persists before opening practice',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        LessonItem? selected;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: CurriculumScreen(
+              apiService: service,
+              onSelectLesson: (lesson) => selected = lesson,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.runAsync(() => tester.tap(find.text('Thêm từ mới')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Lưu & Luyện viết'));
+        await tester.pumpAndSettle();
+        expect(find.text('Vui lòng nhập từ vựng'), findsOneWidget);
+        expect(find.text('Vui lòng nhập nghĩa tiếng Việt'), findsOneWidget);
+        expect(selected, isNull);
+        await tester.enterText(find.byKey(const Key('custom-word')), '相談');
+        await tester.enterText(
+          find.byKey(const Key('custom-meaning')),
+          'Trao đổi với cấp trên',
+        );
+        await tester.runAsync(() async {
+          await tester.tap(find.text('Lưu & Luyện viết'));
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        });
+        await tester.pumpAndSettle();
+        expect(selected?.targetText, '相談');
+        final stored = (await tester.runAsync(
+          () => LocalDatabase.instance.getLessons(category: 'custom'),
+        ))!;
+        expect(stored.single.meaningVi, 'Trao đổi với cấp trên');
+      },
+    );
+
+    testWidgets('N5 and custom categories filter the lesson list', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1200, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        MaterialApp(home: CurriculumScreen(apiService: service)),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ChoiceChip, 'JLPT N5 (Kanji)'));
+      await tester.pumpAndSettle();
+      expect(find.text('日'), findsOneWidget);
+      expect(find.text('あ'), findsNothing);
+      expect(find.text('commit'), findsNothing);
+      await tester.ensureVisible(find.widgetWithText(ChoiceChip, 'Từ tự tạo'));
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Từ tự tạo'));
+      await tester.pumpAndSettle();
+      expect(find.text('commit'), findsOneWidget);
+      expect(find.text('日'), findsNothing);
+      expect(find.text('deploy'), findsNothing);
+    });
+
     testWidgets(
       'renders curriculum items and filters by search query and chips',
       (tester) async {
