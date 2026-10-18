@@ -1,12 +1,15 @@
 package com.linguacanvas.app
 
 import android.Manifest
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.provider.OpenableColumns
+import android.provider.DocumentsContract
 import android.util.Log
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
@@ -28,8 +31,20 @@ import com.google.mlkit.vision.digitalink.recognition.Ink
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.io.IOException
 
 class MainActivity : FlutterActivity() {
+    private var backupMethodChannel: MethodChannel? = null
+    private var backupExecutor: ExecutorService? = null
+    private var nextBackupRequestCode = 27140
+    private data class PendingBackupDocument(
+        val requestCode: Int,
+        val session: BackupDocumentSession,
+        val bytes: ByteArray?,
+    )
+    private var pendingBackupDocument: PendingBackupDocument? = null
     private val DIGITAL_INK_CHANNEL = "com.linguacanvas.app/digital_ink_native"
     private val TTS_CHANNEL = "com.linguacanvas.app/tts_native"
     private val STT_CHANNEL = "com.linguacanvas.app/stt_native"
@@ -58,6 +73,7 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
+        configureBackupChannel(flutterEngine)
         configureSpeechChannel(flutterEngine)
 
         // Initialize Android TextToSpeech engine
@@ -237,6 +253,132 @@ class MainActivity : FlutterActivity() {
                 }
             }
         }
+    }
+
+    private fun configureBackupChannel(flutterEngine: FlutterEngine) {
+        backupExecutor = Executors.newSingleThreadExecutor()
+        backupMethodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.linguacanvas.app/backup").apply {
+            setMethodCallHandler { call, result ->
+                if (call.method != "pickBackup" && call.method != "saveBackup") {
+                    result.notImplemented()
+                    return@setMethodCallHandler
+                }
+                if (pendingBackupDocument != null) {
+                    result.error("busy", "A backup document operation is already pending", null)
+                    return@setMethodCallHandler
+                }
+                val saving = call.method == "saveBackup"
+                val bytes = if (saving) call.argument<ByteArray>("bytes") else null
+                val name = if (saving) call.argument<String>("suggestedName") else null
+                if (saving && (bytes == null || name.isNullOrBlank())) {
+                    result.error("invalid_arguments", "Backup bytes and a suggested name are required", null)
+                    return@setMethodCallHandler
+                }
+                if (bytes != null && bytes.size > BackupDocumentIo.MAX_BYTES) {
+                    result.error("too_large", "Backup exceeds 10 MiB", null)
+                    return@setMethodCallHandler
+                }
+                val requestCode = nextBackupRequestCode++
+                if (nextBackupRequestCode > 30000) nextBackupRequestCode = 27140
+                val session = BackupDocumentSession { value, code, message ->
+                    runOnUiThread {
+                        if (pendingBackupDocument?.requestCode == requestCode) pendingBackupDocument = null
+                        if (code == null) result.success(value) else result.error(code, message, null)
+                    }
+                }
+                pendingBackupDocument = PendingBackupDocument(requestCode, session, bytes)
+                val intent = Intent(if (saving) Intent.ACTION_CREATE_DOCUMENT else Intent.ACTION_OPEN_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    // Providers do not consistently assign JSON MIME types to
+                    // backups; import validates the complete file after selection.
+                    type = if (saving) "application/json" else "*/*"
+                    if (saving) putExtra(Intent.EXTRA_TITLE, name)
+                }
+                try {
+                    @Suppress("DEPRECATION")
+                    startActivityForResult(intent, requestCode)
+                } catch (_: Exception) {
+                    session.finish(errorCode = "picker_unavailable", errorMessage = "Could not open the document picker")
+                }
+            }
+        }
+    }
+
+    @Deprecated("Uses the Activity result API supported by FlutterActivity")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        val pending = pendingBackupDocument ?: return
+        if (requestCode != pending.requestCode) return
+        val session = pending.session
+        if (resultCode == Activity.RESULT_CANCELED) {
+            session.finish(if (pending.bytes == null) null else false)
+            return
+        }
+        val uri = data?.data
+        if (resultCode != Activity.RESULT_OK || uri == null) {
+            session.finish(errorCode = "invalid_result", errorMessage = "The document picker returned no document")
+            return
+        }
+        val executor = backupExecutor
+        if (executor == null || executor.isShutdown) {
+            session.finish(errorCode = "activity_closed", errorMessage = "Backup activity closed")
+            return
+        }
+        executor.execute {
+            try {
+                if (session.isClosed) throw BackupDocumentCancelledException()
+                if (pending.bytes == null) {
+                    val size = try {
+                        contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use { cursor ->
+                            if (cursor.moveToFirst() && !cursor.isNull(0)) cursor.getLong(0) else null
+                        }
+                    } catch (_: Exception) { null }
+                    val bytes = BackupDocumentIo.readBounded(size, {
+                        val input = contentResolver.openInputStream(uri) ?: throw IOException("Could not open backup document")
+                        if (!session.attach(input)) throw BackupDocumentCancelledException()
+                        input
+                    }, { session.isClosed })
+                    session.finish(bytes)
+                } else {
+                    val output = contentResolver.openOutputStream(uri, "wt") ?: throw IOException("Could not create backup document")
+                    if (!session.attach(output)) throw BackupDocumentCancelledException()
+                    output.use {
+                        if (session.isClosed) throw BackupDocumentCancelledException()
+                        it.write(pending.bytes)
+                        it.flush()
+                        if (session.isClosed) throw BackupDocumentCancelledException()
+                    }
+                    session.finish(true)
+                }
+            } catch (error: Exception) {
+                if (pending.bytes != null) {
+                    // ACTION_CREATE_DOCUMENT grants access to this new document
+                    // only. Remove a partial export if its provider permits it.
+                    try { DocumentsContract.deleteDocument(contentResolver, uri) } catch (_: Exception) {}
+                }
+                val code = when (error) {
+                    is BackupDocumentTooLargeException -> "too_large"
+                    is BackupDocumentCancelledException -> "activity_closed"
+                    is SecurityException -> "permission_denied"
+                    else -> if (pending.bytes == null) "read_failed" else "write_failed"
+                }
+                session.finish(errorCode = code, errorMessage = error.localizedMessage ?: "Backup document operation failed")
+            }
+        }
+    }
+
+    private fun closeBackupChannel() {
+        pendingBackupDocument?.session?.finish(errorCode = "activity_closed", errorMessage = "Backup activity closed")
+        pendingBackupDocument = null
+        backupMethodChannel?.setMethodCallHandler(null)
+        backupMethodChannel = null
+        backupExecutor?.shutdownNow()
+        backupExecutor = null
+    }
+
+    override fun cleanUpFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
+        closeBackupChannel()
+        super.cleanUpFlutterEngine(flutterEngine)
     }
 
     private fun configureSpeechChannel(flutterEngine: FlutterEngine) {
@@ -456,6 +598,7 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
+        closeBackupChannel()
         releaseSpeechRecognizer()
         speechMethodChannel?.setMethodCallHandler(null)
         speechMethodChannel = null
