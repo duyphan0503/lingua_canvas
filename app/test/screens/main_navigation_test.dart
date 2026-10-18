@@ -4,6 +4,7 @@ import 'package:app/models/lesson_item.dart';
 import 'package:app/screens/main_shell_screen.dart';
 import 'package:app/widgets/handwriting_canvas.dart';
 import 'package:app/services/api_service.dart';
+import 'package:app/services/account_service.dart';
 import 'package:app/services/digital_ink_engine.dart';
 import 'package:app/services/fsrs_engine.dart';
 import 'package:app/services/local_database.dart';
@@ -13,6 +14,8 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class MockNavigationApiService extends ApiService {
   final customLessons = <LessonItem>[];
+  ProfileBackup? guestBackup;
+  int guestMerges = 0;
 
   @override
   Future<LessonItem> ensureLessonForWord({
@@ -37,6 +40,34 @@ class MockNavigationApiService extends ApiService {
 
   @override
   Future<List<FSRSCard>> getAllCards() async => [];
+
+  @override
+  Future<List<PrivateLessonState>> getPrivateLessons({
+    bool includeDeleted = false,
+  }) async => [];
+
+  @override
+  Future<ProfileBackup> exportGuestBackup({Set<String>? lessonIds}) async =>
+      guestBackup!;
+
+  @override
+  Future<ProfileMergePreview> previewProfileBackup(
+    ProfileBackup backup,
+  ) async => ProfileMergePreview(
+    backup: backup,
+    binding: 'linked-profile',
+    contentRevision: '1',
+    backupRevision: '1',
+    additions: backup.privateLessons.length,
+    updates: 0,
+    skips: 0,
+    conflicts: 0,
+  );
+
+  @override
+  Future<void> mergeProfileBackup(ProfileMergePreview preview) async {
+    guestMerges++;
+  }
 
   @override
   Future<List<LessonItem>> getDueLessons() async => [];
@@ -91,6 +122,20 @@ class MockNavigationApiService extends ApiService {
 class MockNavigationInkEngine extends HeuristicDigitalInkEngine {
   @override
   Future<bool> isModelDownloaded(String languageTag) async => true;
+}
+
+class _LinkedNavigationAccountService extends AccountService {
+  _LinkedNavigationAccountService(ApiService api) : super(apiService: api);
+
+  @override
+  Future<Map<String, dynamic>?> currentAccount() async => {
+    'user_id': 'usr_linked',
+    'username': 'linked',
+    'display_name': 'Linked',
+    'sync_token': 'token_linked',
+    'server_url': apiService.baseUrl,
+    'devices': <Map<String, dynamic>>[],
+  };
 }
 
 void main() {
@@ -280,6 +325,67 @@ void main() {
       // Should automatically switch back to Canvas tab
       expect(find.text('Lingua Canvas'), findsOneWidget);
       expect(find.text('あ'), findsOneWidget);
+    });
+
+    testWidgets('guest transfer is not offered again after profile refresh', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      service.guestBackup = ProfileBackup(
+        backupId: 'guest-source',
+        createdAt: DateTime.now().toUtc(),
+        privateLessons: [
+          PrivateLessonState(
+            lesson: LessonItem(
+              id: 'custom_en_guest',
+              language: 'en',
+              category: 'custom',
+              targetText: 'guest',
+              phoneticOrKana: '',
+              meaningVi: 'Khách',
+              workplaceContext: '',
+              workplaceContextVi: '',
+              strokeOrderHints: const [],
+              difficultyLevel: 2,
+            ),
+            revision: 0,
+            deleted: false,
+            updatedAt: DateTime.now().toUtc(),
+            localVersion: 1,
+            pending: true,
+          ),
+        ],
+        cards: const [],
+        reviewLogs: const [],
+        completedLessons: const [],
+        dailyActivity: const {},
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MainShellScreen(
+            apiService: service,
+            accountService: _LinkedNavigationAccountService(service),
+            digitalInkEngine: MockNavigationInkEngine(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cài Đặt'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Xem và chọn dữ liệu để gộp'));
+      await tester.tap(find.text('Xem và chọn dữ liệu để gộp'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Xem trước'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Xác nhận gộp'));
+      await tester.pumpAndSettle();
+
+      expect(service.guestMerges, 1);
+      expect(find.text('Xem và chọn dữ liệu để gộp'), findsNothing);
     });
   });
 }

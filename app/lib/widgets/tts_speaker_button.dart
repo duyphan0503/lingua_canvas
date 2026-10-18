@@ -1,6 +1,39 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../services/tts_service.dart';
+
+SnackBar _playbackErrorSnackBar(BuildContext context, TtsService service) {
+  if (kIsWeb) {
+    return const SnackBar(
+      content: Text(
+        'Không phát được âm thanh. Hãy kiểm tra giọng tiếng Nhật/Anh '
+        'trên trình duyệt và hệ điều hành, rồi thử lại.',
+      ),
+    );
+  }
+  return SnackBar(
+    content: const Text(
+      'Không phát được âm thanh. Hãy chọn bộ máy đọc và tải giọng '
+      'tiếng Nhật/Anh trong cài đặt giọng đọc.',
+    ),
+    action: SnackBarAction(
+      label: 'Cài đặt giọng',
+      onPressed: () async {
+        final opened = await service.openSettings();
+        if (!opened && context.mounted) {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Mở Cài đặt Android → Chuyển văn bản thành giọng nói.',
+              ),
+            ),
+          );
+        }
+      },
+    ),
+  );
+}
 
 /// Interactive audio speaker button that pronounces text using [TtsService].
 class TtsSpeakerButton extends StatefulWidget {
@@ -70,29 +103,9 @@ class _TtsSpeakerButtonState extends State<TtsSpeakerButton> {
     if (!_ownsPlayback || !mounted) return;
     _ownsPlayback = false;
     setState(() => _isPlaying = false);
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      SnackBar(
-        content: const Text(
-          'Không phát được âm thanh. Hãy chọn bộ máy đọc và tải giọng '
-          'tiếng Nhật/Anh trong cài đặt giọng đọc.',
-        ),
-        action: SnackBarAction(
-          label: 'Cài đặt giọng',
-          onPressed: () async {
-            final opened = await _service.openSettings();
-            if (!opened && mounted) {
-              ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Mở Cài đặt Android → Chuyển văn bản thành giọng nói.',
-                  ),
-                ),
-              );
-            }
-          },
-        ),
-      ),
-    );
+    ScaffoldMessenger.maybeOf(
+      context,
+    )?.showSnackBar(_playbackErrorSnackBar(context, _service));
   }
 
   Future<void> _handleSpeak() async {
@@ -200,29 +213,9 @@ class _TtsChipSpeakerIconState extends State<TtsChipSpeakerIcon> {
     if (!_ownsPlayback || !mounted) return;
     _ownsPlayback = false;
     setState(() => _isPlaying = false);
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      SnackBar(
-        content: const Text(
-          'Không phát được âm thanh. Hãy chọn bộ máy đọc và tải giọng '
-          'tiếng Nhật/Anh trong cài đặt giọng đọc.',
-        ),
-        action: SnackBarAction(
-          label: 'Cài đặt giọng',
-          onPressed: () async {
-            final opened = await _service.openSettings();
-            if (!opened && mounted) {
-              ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Mở Cài đặt Android → Chuyển văn bản thành giọng nói.',
-                  ),
-                ),
-              );
-            }
-          },
-        ),
-      ),
-    );
+    ScaffoldMessenger.maybeOf(
+      context,
+    )?.showSnackBar(_playbackErrorSnackBar(context, _service));
   }
 
   Future<void> _handleSpeak() async {
