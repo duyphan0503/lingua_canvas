@@ -9,6 +9,8 @@ on:
       - develop
     paths:
       - 'server/**'
+      - 'tests/private_vocabulary/**'
+      - 'app/test/integration/**'
       - '.github/workflows/ci-backend.yml'
   pull_request:
     branches:
@@ -16,8 +18,11 @@ on:
       - master
       - staging
       - develop
+      - 'codex/**'
     paths:
       - 'server/**'
+      - 'tests/private_vocabulary/**'
+      - 'app/test/integration/**'
       - '.github/workflows/ci-backend.yml'
 
 concurrency:
@@ -58,3 +63,63 @@ jobs:
         run: |
           which cargo-audit || cargo install cargo-audit --locked
           cargo audit || echo "Cargo audit completed"
+
+  private-vocabulary-live:
+    name: SQLite and IndexedDB live sync
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: lingua_private_test_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d lingua_private_test_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/lingua_private_test_ci
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: server -> target
+
+      - name: Set up Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version-file: .fvmrc
+          cache: true
+
+      - name: Install Linux SQLite FFI dependency
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-0
+
+      - name: Install Chrome
+        id: chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Resolve Flutter dependencies
+        working-directory: app
+        run: flutter pub get
+
+      - name: Run PostgreSQL-backed client integration
+        env:
+          CHROME_EXECUTABLE: ${{ steps.chrome.outputs.chrome-path }}
+        run: tests/private_vocabulary/run_live_tests.sh

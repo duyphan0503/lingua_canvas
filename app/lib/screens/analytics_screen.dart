@@ -646,7 +646,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 color: Color(0xFF38BDF8),
               ),
               const Text(
-                'Đồng Bộ Hóa SQLite & Backend',
+                'Đồng bộ tiến độ với máy chủ',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
@@ -685,7 +685,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           Text(
             pending > 0
                 ? 'Có $pending thao tác ôn tập đang xếp hàng chờ đồng bộ lên máy chủ.'
-                : 'Cơ sở dữ liệu cục bộ đã đồng bộ khớp với Cloud.',
+                : 'Không có đánh giá đang chờ gửi.',
             style: TextStyle(
               fontSize: 12,
               color: pending > 0
@@ -719,14 +719,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Danh sách Bài Cần Ôn Tập (Due Queue)',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+            const Expanded(
+              child: Text(
+                'Danh sách Bài Cần Ôn Tập (Due Queue)',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
             ),
+            const SizedBox(width: 8),
             Text(
               '${_dueLessons.length} bài',
               style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
