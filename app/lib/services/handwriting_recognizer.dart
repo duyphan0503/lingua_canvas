@@ -1,34 +1,7 @@
-import 'dart:io' show Platform;
 import 'dart:math';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/material.dart';
 import 'digital_ink_engine.dart';
-
-/// Represents a single 2D touch or pen coordinate with a millisecond timestamp.
-class StrokePoint {
-  final double x;
-  final double y;
-  final int timestamp;
-
-  const StrokePoint({
-    required this.x,
-    required this.y,
-    required this.timestamp,
-  });
-}
-
-/// Represents a continuous handwriting stroke composed of sequential [StrokePoint]s.
-class HandwritingStroke {
-  final List<StrokePoint> points;
-  final Color color;
-  final double strokeWidth;
-
-  HandwritingStroke({
-    required this.points,
-    this.color = const Color(0xFF6366F1),
-    this.strokeWidth = 4.0,
-  });
-}
+import '../models/handwriting_stroke.dart';
+export '../models/handwriting_stroke.dart';
 
 /// Evaluated evaluation outcome produced by [HandwritingRecognizer].
 class RecognitionResult {
@@ -55,11 +28,7 @@ class HandwritingRecognizer {
   final DigitalInkEngine engine;
 
   HandwritingRecognizer({DigitalInkEngine? engine})
-    : engine =
-          engine ??
-          (!kIsWeb && Platform.isAndroid
-              ? MlKitDigitalInkEngine()
-              : HeuristicDigitalInkEngine());
+    : engine = engine ?? createDigitalInkEngine();
 
   /// Computes the Levenshtein edit distance between two strings.
   static int levenshteinDistance(String s, String t) {

@@ -11,7 +11,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::{AllowHeaders, Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 
 use routes::AppState;
@@ -20,7 +20,8 @@ pub fn create_app(state: AppState) -> Router {
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_methods(Any)
-        .allow_headers(Any);
+        .allow_headers(AllowHeaders::mirror_request())
+        .expose_headers([axum::http::HeaderName::from_static("x-cache")]);
 
     Router::new()
         .route("/api/v1/auth/register", post(routes::auth::register))

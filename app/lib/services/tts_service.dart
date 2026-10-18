@@ -52,6 +52,7 @@ class PlatformTTSEngine implements TTSEngine {
   final FlutterTts _flutterTts;
   final MethodChannel _nativeChannel;
   TTSState _state = TTSState.stopped;
+  int _playbackEpoch = 0;
   double _speechRate = 0.9;
   double _volume = 1.0;
   double _pitch = 1.0;
@@ -69,21 +70,23 @@ class PlatformTTSEngine implements TTSEngine {
   }
 
   void _initHandlers() {
-    try {
-      _nativeChannel.setMethodCallHandler((call) async {
-        switch (call.method) {
-          case 'onSpeakStart':
-            _updateState(TTSState.speaking);
-            break;
-          case 'onSpeakDone':
-            _updateState(TTSState.stopped);
-            break;
-          case 'onSpeakError':
-            _updateState(TTSState.error);
-            break;
-        }
-      });
-    } catch (_) {}
+    if (!kIsWeb) {
+      try {
+        _nativeChannel.setMethodCallHandler((call) async {
+          switch (call.method) {
+            case 'onSpeakStart':
+              _updateState(TTSState.speaking);
+              break;
+            case 'onSpeakDone':
+              _updateState(TTSState.stopped);
+              break;
+            case 'onSpeakError':
+              _updateState(TTSState.error);
+              break;
+          }
+        });
+      } catch (_) {}
+    }
 
     try {
       _flutterTts.setStartHandler(() {
@@ -122,16 +125,18 @@ class PlatformTTSEngine implements TTSEngine {
   @override
   Future<bool> isLanguageAvailable(String languageTag) async {
     final lang = normalizeTtsLanguage(languageTag);
-    try {
-      final bool? res = await _nativeChannel.invokeMethod<bool>(
-        'isLanguageAvailable',
-        {'language': lang},
-      );
-      if (res != null) return res;
-    } catch (e) {
-      debugPrint(
-        'Native TTS isLanguageAvailable check failed: $e, trying flutter_tts',
-      );
+    if (!kIsWeb) {
+      try {
+        final bool? res = await _nativeChannel.invokeMethod<bool>(
+          'isLanguageAvailable',
+          {'language': lang},
+        );
+        if (res != null) return res;
+      } catch (e) {
+        debugPrint(
+          'Native TTS isLanguageAvailable check failed: $e, trying flutter_tts',
+        );
+      }
     }
 
     try {
@@ -150,43 +155,56 @@ class PlatformTTSEngine implements TTSEngine {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return false;
 
+    final epoch = ++_playbackEpoch;
     final lang = normalizeTtsLanguage(languageTag);
 
     // 1. Try Direct Android OS Native TextToSpeech
-    try {
-      final bool? nativeRes = await _nativeChannel.invokeMethod<bool>('speak', {
-        'text': trimmed,
-        'language': lang,
-        'rate': _speechRate,
-        'pitch': _pitch,
-        'volume': _volume,
-      });
-      if (nativeRes == true) {
-        _updateState(TTSState.speaking);
-        return true;
+    if (!kIsWeb) {
+      try {
+        final bool? nativeRes = await _nativeChannel
+            .invokeMethod<bool>('speak', {
+              'text': trimmed,
+              'language': lang,
+              'rate': _speechRate,
+              'pitch': _pitch,
+              'volume': _volume,
+            });
+        if (epoch != _playbackEpoch) return false;
+        if (nativeRes == true) {
+          _updateState(TTSState.speaking);
+          return true;
+        }
+      } catch (e) {
+        debugPrint('Native TTS speak error: $e, falling back to flutter_tts');
       }
-    } catch (e) {
-      debugPrint('Native TTS speak error: $e, falling back to flutter_tts');
     }
+
+    if (epoch != _playbackEpoch) return false;
 
     // 2. Fallback to FlutterTts plugin
     try {
       final dynamic languageResult = await _flutterTts.setLanguage(lang);
+      if (epoch != _playbackEpoch) return false;
       if (languageResult != 1 && languageResult != true) {
         _updateState(TTSState.error);
         return false;
       }
       await _flutterTts.setSpeechRate((_speechRate / 2).clamp(0.0, 1.0));
+      if (epoch != _playbackEpoch) return false;
       await _flutterTts.setVolume(_volume);
+      if (epoch != _playbackEpoch) return false;
       await _flutterTts.setPitch(_pitch);
+      if (epoch != _playbackEpoch) return false;
       _updateState(TTSState.speaking);
       final dynamic res = await _flutterTts.speak(trimmed);
+      if (epoch != _playbackEpoch) return false;
       final success = res == 1 || res == true;
       if (!success) {
         _updateState(TTSState.error);
       }
       return success;
     } catch (e) {
+      if (epoch != _playbackEpoch) return false;
       debugPrint('TTS speak error: $e');
       _updateState(TTSState.error);
       return false;
@@ -194,6 +212,7 @@ class PlatformTTSEngine implements TTSEngine {
   }
 
   Future<bool> openSettings() async {
+    if (kIsWeb) return false;
     try {
       return await _nativeChannel.invokeMethod<bool>('openSettings') ?? false;
     } catch (_) {
@@ -203,9 +222,12 @@ class PlatformTTSEngine implements TTSEngine {
 
   @override
   Future<void> stop() async {
-    try {
-      await _nativeChannel.invokeMethod('stop');
-    } catch (_) {}
+    _playbackEpoch++;
+    if (!kIsWeb) {
+      try {
+        await _nativeChannel.invokeMethod('stop');
+      } catch (_) {}
+    }
     try {
       await _flutterTts.stop();
     } catch (e) {
@@ -388,6 +410,7 @@ class TtsService {
 
   /// Opens Android's voice engine and voice data settings.
   Future<bool> openSettings() async {
+    if (kIsWeb) return false;
     final platformEngine = engine;
     return platformEngine is PlatformTTSEngine
         ? platformEngine.openSettings()

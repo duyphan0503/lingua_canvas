@@ -79,7 +79,7 @@ void main() {
       );
       await settleIo();
       expect(
-        find.text('Tài Khoản & Đồng Bộ Đa Thiết Bị (Android ↔ Linux)'),
+        find.text('Tài Khoản & Đồng Bộ Đa Thiết Bị (Android ↔ Linux ↔ Web)'),
         findsOneWidget,
       );
       await tester.tap(find.text('Tạo Tài Khoản Đồng Bộ'));

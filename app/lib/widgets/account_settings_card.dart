@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/account_service.dart';
+import '../models/profile_backup.dart';
 
 class AccountSettingsCard extends StatefulWidget {
   final AccountService service;
   final VoidCallback? onAccountChanged;
+  final VoidCallback? onProfileDataChanged;
   const AccountSettingsCard({
     super.key,
     required this.service,
     this.onAccountChanged,
+    this.onProfileDataChanged,
   });
   @override
   State<AccountSettingsCard> createState() => _AccountSettingsCardState();
@@ -19,6 +22,8 @@ class _AccountSettingsCardState extends State<AccountSettingsCard> {
   List<Map<String, dynamic>> _devices = [];
   bool _busy = true;
   String? _error;
+  ProfileBackup? _guestBackup;
+  bool _guestTransferDone = false;
 
   @override
   void initState() {
@@ -30,6 +35,9 @@ class _AccountSettingsCardState extends State<AccountSettingsCard> {
     try {
       final account = await widget.service.currentAccount();
       if (!mounted) return;
+      if (_account?['user_id'] != account?['user_id']) {
+        _guestTransferDone = false;
+      }
       setState(() {
         _account = account;
         _devices = ((account?['devices'] as List?) ?? [])
@@ -37,6 +45,11 @@ class _AccountSettingsCardState extends State<AccountSettingsCard> {
             .toList();
         _busy = false;
       });
+      if (account != null && widget.service.matchesServer(account)) {
+        await _loadGuestTransferOffer();
+      } else if (mounted) {
+        setState(() => _guestBackup = null);
+      }
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -46,6 +59,119 @@ class _AccountSettingsCardState extends State<AccountSettingsCard> {
       }
     }
   }
+
+  Future<void> _loadGuestTransferOffer() async {
+    try {
+      final backup = await widget.service.apiService.exportGuestBackup();
+      if (!mounted) return;
+      setState(() {
+        _guestBackup = backup.privateLessons.isEmpty ? null : backup;
+      });
+    } catch (_) {
+      // A missing or unavailable guest snapshot should not block account use.
+      if (mounted) setState(() => _guestBackup = null);
+    }
+  }
+
+  Future<void> _offerGuestTransfer() async {
+    final source = _guestBackup;
+    if (source == null || _busy) return;
+    final selected = await showDialog<Set<String>>(
+      context: context,
+      builder: (_) => _GuestWordSelectionDialog(backup: source),
+    );
+    if (selected == null || selected.isEmpty || !mounted) return;
+
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final selectedBackup = await widget.service.apiService.exportGuestBackup(
+        lessonIds: selected,
+      );
+      var preview = await widget.service.apiService.previewProfileBackup(
+        selectedBackup,
+      );
+      if (!mounted) return;
+      setState(() => _busy = false);
+      while (mounted) {
+        final confirmed = await _confirmGuestMerge(preview);
+        if (confirmed != true || !mounted) return;
+        setState(() => _busy = true);
+        try {
+          await widget.service.apiService.mergeProfileBackup(preview);
+          if (!mounted) return;
+          widget.onProfileDataChanged?.call();
+          if (!mounted) return;
+          setState(() => _guestTransferDone = true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Đã gộp dữ liệu đã chọn. Hồ sơ khách ban đầu vẫn được giữ.',
+              ),
+            ),
+          );
+          return;
+        } on StaleProfileMergeException {
+          preview = await widget.service.apiService.previewProfileBackup(
+            selectedBackup,
+          );
+          if (!mounted) return;
+          setState(() {
+            _busy = false;
+            _error =
+                'Hồ sơ đã thay đổi. Kiểm tra bản xem trước mới và xác nhận lại.';
+          });
+        }
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _error = error is FormatException
+              ? error.message
+              : 'Chưa thể chuyển dữ liệu. Hồ sơ khách vẫn được giữ nguyên.';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<bool?> _confirmGuestMerge(
+    ProfileMergePreview preview,
+  ) => showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Xem trước dữ liệu hồ sơ khách'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Thêm: ${preview.additions}'),
+            Text('Cập nhật: ${preview.updates}'),
+            Text('Bỏ qua: ${preview.skips}'),
+            Text('Xung đột cần chọn: ${preview.conflicts}'),
+            const SizedBox(height: 12),
+            const Text(
+              'Chỉ dữ liệu đã chọn được gộp. Bản gốc và hàng đợi của hồ sơ khách sẽ được giữ lại.',
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext, false),
+          child: const Text('Để sau'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(dialogContext, true),
+          child: const Text('Xác nhận gộp'),
+        ),
+      ],
+    ),
+  );
 
   Future<void> _run(
     Future<void> Function() action, {
@@ -112,7 +238,7 @@ class _AccountSettingsCardState extends State<AccountSettingsCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Tài Khoản & Đồng Bộ Đa Thiết Bị (Android ↔ Linux)',
+              'Tài Khoản & Đồng Bộ Đa Thiết Bị (Android ↔ Linux ↔ Web)',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -155,12 +281,55 @@ class _AccountSettingsCardState extends State<AccountSettingsCard> {
                   child: const Text('Liên Kết Thiết Bị Đã Có'),
                 ),
               ],
+              if (!mismatch && !_guestTransferDone && _guestBackup != null) ...[
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F172A),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFF334155)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Từ hồ sơ khách trên thiết bị này',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${_guestBackup!.privateLessons.length} từ cá nhân có thể được chuyển cùng tiến độ liên quan.',
+                      ),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: _busy ? null : _offerGuestTransfer,
+                        icon: const Icon(Icons.move_up_rounded, size: 16),
+                        label: const Text('Xem và chọn dữ liệu để gộp'),
+                      ),
+                      const Text(
+                        'Không có dữ liệu nào được chuyển nếu bạn chưa xác nhận.',
+                        style: TextStyle(
+                          color: Color(0xFF94A3B8),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 8),
               for (final device in _devices)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Text(
-                    '${device['device_name']} (${device['platform'] == 'android' ? 'Android' : 'Linux Desktop'})\nLần cuối: ${device['last_seen_at'] ?? 'Chưa đồng bộ'} • Seq: ${device['last_sync_seq']}',
+                    '${device['device_name']} (${switch (device['platform']) {
+                      'android' => 'Android',
+                      'linux' => 'Linux Desktop',
+                      'web' => 'Web Browser',
+                      _ => 'Thiết bị khác',
+                    }})\nLần cuối: ${device['last_seen_at'] ?? 'Chưa đồng bộ'} • Seq: ${device['last_sync_seq']}',
                   ),
                 ),
               Wrap(
@@ -305,6 +474,71 @@ class _AccountDialogState extends State<_AccountDialog> {
                 },
         ),
         child: Text(widget.register ? 'Tạo tài khoản' : 'Liên kết'),
+      ),
+    ],
+  );
+}
+
+class _GuestWordSelectionDialog extends StatefulWidget {
+  final ProfileBackup backup;
+  const _GuestWordSelectionDialog({required this.backup});
+
+  @override
+  State<_GuestWordSelectionDialog> createState() =>
+      _GuestWordSelectionDialogState();
+}
+
+class _GuestWordSelectionDialogState extends State<_GuestWordSelectionDialog> {
+  late final Set<String> _selected = {
+    for (final state in widget.backup.privateLessons) state.lesson.id,
+  };
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Chọn từ cần gộp'),
+    content: SizedBox(
+      width: 520,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 420),
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            const Text(
+              'Tiến độ và lịch sử liên quan sẽ đi cùng từng từ được chọn.',
+            ),
+            const SizedBox(height: 8),
+            for (final state in widget.backup.privateLessons)
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _selected.contains(state.lesson.id),
+                title: Text(state.lesson.targetText),
+                subtitle: Text(
+                  state.deleted
+                      ? 'Đã xóa • ${state.lesson.meaningVi}'
+                      : state.lesson.meaningVi,
+                ),
+                onChanged: (selected) => setState(() {
+                  if (selected == true) {
+                    _selected.add(state.lesson.id);
+                  } else {
+                    _selected.remove(state.lesson.id);
+                  }
+                }),
+              ),
+          ],
+        ),
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Hủy'),
+      ),
+      FilledButton(
+        onPressed: _selected.isEmpty
+            ? null
+            : () => Navigator.pop(context, Set<String>.of(_selected)),
+        child: const Text('Xem trước'),
       ),
     ],
   );

@@ -1,20 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import '../widgets/web_capability_card.dart';
 import '../services/api_service.dart';
 import '../services/account_service.dart';
+import '../services/backup_file_transport.dart';
 import '../widgets/account_settings_card.dart';
+import '../widgets/backup_settings_panel.dart';
 
 class SettingsScreen extends StatefulWidget {
   final ApiService? apiService;
+  final bool isWeb;
   final VoidCallback? onResetData;
   final AccountService? accountService;
   final VoidCallback? onAccountChanged;
+  final VoidCallback? onProfileDataChanged;
+  final BackupFileTransport? backupTransport;
 
   const SettingsScreen({
     super.key,
     this.apiService,
+    this.isWeb = kIsWeb,
     this.onResetData,
     this.accountService,
     this.onAccountChanged,
+    this.onProfileDataChanged,
+    this.backupTransport,
   });
 
   @override
@@ -63,22 +73,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  void _saveUrl(String newUrl) {
+  Future<void> _saveUrl(String newUrl) async {
     try {
-      _apiService.setBaseUrl(newUrl.trim());
-    } on FormatException {
+      await _apiService.configureServer(newUrl.trim());
+    } catch (error) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Địa chỉ máy chủ không hợp lệ. Nhập URL http hoặc https đầy đủ.',
+            error is FormatException
+                ? 'Địa chỉ máy chủ không hợp lệ. Nhập URL http hoặc https đầy đủ.'
+                : 'Không thể áp dụng máy chủ. Kiểm tra bộ nhớ rồi thử lại.',
           ),
-          backgroundColor: Color(0xFF991B1B),
+          backgroundColor: const Color(0xFF991B1B),
         ),
       );
       return;
     }
+    if (!mounted) return;
     setState(() {});
     _checkServer();
+    widget.onAccountChanged?.call();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Đã cập nhật API Base URL: $newUrl'),
@@ -122,9 +137,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             key: ValueKey(_apiService.baseUrl),
             service: _accountService,
             onAccountChanged: widget.onAccountChanged,
+            onProfileDataChanged: widget.onProfileDataChanged,
           ),
           const SizedBox(height: 16),
+          if (widget.isWeb) const WebCapabilityCard(),
           _buildAIEngineSection(),
+          const SizedBox(height: 16),
+          BackupSettingsPanel(
+            apiService: _apiService,
+            transport: widget.backupTransport,
+            onProfileDataChanged: widget.onProfileDataChanged,
+          ),
           const SizedBox(height: 16),
           _buildStorageManagementSection(),
           const SizedBox(height: 16),
@@ -297,10 +320,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFF334155)),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
               Icon(
                 Icons.psychology_alt_rounded,
@@ -320,16 +343,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ],
           ),
-          SizedBox(height: 10),
-          _SettingInfoRow(
+          const SizedBox(height: 10),
+          const _SettingInfoRow(
             label: 'Local LLM Engine',
             value: 'Llama.cpp (OpenAI-compatible) + Matrix Fallback',
           ),
           _SettingInfoRow(
             label: 'Nhận diện nét viết (Handwriting)',
-            value: 'Google ML Kit On-device + Heuristic Engine',
+            value: widget.isWeb
+                ? 'Đánh giá hình học gần đúng trên trình duyệt'
+                : 'Google ML Kit On-device + Heuristic Engine',
           ),
-          _SettingInfoRow(
+          const _SettingInfoRow(
             label: 'Thuật toán lặp lại ngắt quãng',
             value: 'FSRS v4 (Free Spaced Repetition Scheduler)',
           ),
@@ -338,96 +363,113 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildStorageManagementSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF334155)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(Icons.storage_rounded, size: 18, color: Color(0xFFF59E0B)),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Bộ Nhớ Cục Bộ (SQLite Database)',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
+  Future<void> _resetData() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xác nhận đặt lại dữ liệu?'),
+        content: Text(
+          widget.isWeb
+              ? 'Chỉ tiến độ học tập của hồ sơ hiện tại sẽ bị xóa. Các hồ sơ khác và tài khoản được giữ nguyên.'
+              : 'Toàn bộ lịch sử ôn tập cục bộ sẽ được xóa và khởi tạo lại theo mặc định.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Dữ liệu bài học, thẻ FSRS và tiến độ ôn tập được lưu trữ an toàn trong SQLite cục bộ trên thiết bị của bạn.',
-            style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () async {
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    backgroundColor: const Color(0xFF1E293B),
-                    title: const Text('Xác nhận đặt lại dữ liệu?'),
-                    content: const Text(
-                      'Toàn bộ lịch sử ôn tập cục bộ sẽ được xóa và khởi tạo lại theo mặc định.',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: const Text('Hủy'),
-                      ),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFEF4444),
-                        ),
-                        onPressed: () => Navigator.pop(ctx, true),
-                        child: const Text('Xác nhận Xóa'),
-                      ),
-                    ],
-                  ),
-                );
-
-                if (confirmed == true) {
-                  await _apiService.localDatabase.clearAll();
-                  if (widget.onResetData != null) widget.onResetData!();
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Đã đặt lại cơ sở dữ liệu SQLite thành công.',
-                        ),
-                      ),
-                    );
-                  }
-                }
-              },
-              icon: const Icon(
-                Icons.delete_outline_rounded,
-                size: 16,
-                color: Color(0xFFEF4444),
-              ),
-              label: const Text(
-                'Đặt lại cơ sở dữ liệu',
-                style: TextStyle(color: Color(0xFFEF4444), fontSize: 12),
-              ),
-            ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Xác nhận Xóa'),
           ),
         ],
       ),
     );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+    try {
+      if (widget.isWeb) {
+        await _apiService.localDatabase.clearCurrentProfile();
+      } else {
+        await _apiService.localDatabase.clearAll();
+      }
+      if (!mounted) {
+        return;
+      }
+      widget.onResetData?.call();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Đã đặt lại dữ liệu học tập thành công.')),
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Chưa đặt lại dữ liệu. Kiểm tra bộ nhớ rồi thử lại.'),
+          ),
+        );
+      }
+    }
   }
+
+  Widget _buildStorageManagementSection() => Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: const Color(0xFF1E293B),
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: const Color(0xFF334155)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(
+              Icons.storage_rounded,
+              size: 18,
+              color: Color(0xFFF59E0B),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                widget.isWeb
+                    ? 'Bộ nhớ trình duyệt (IndexedDB)'
+                    : 'Bộ Nhớ Cục Bộ (SQLite Database)',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          widget.isWeb
+              ? 'Dữ liệu được giữ trong trình duyệt này. Xóa dữ liệu trang hoặc trình duyệt thu hồi dung lượng có thể làm mất tiến độ chưa đồng bộ; hãy đồng bộ thường xuyên.'
+              : 'Dữ liệu bài học, thẻ FSRS và tiến độ ôn tập được lưu trữ an toàn trong SQLite cục bộ trên thiết bị của bạn.',
+          style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _resetData,
+            icon: const Icon(
+              Icons.delete_outline_rounded,
+              size: 16,
+              color: Color(0xFFEF4444),
+            ),
+            label: Text(
+              widget.isWeb ? 'Đặt lại hồ sơ hiện tại' : 'Đặt lại cơ sở dữ liệu',
+              style: const TextStyle(color: Color(0xFFEF4444), fontSize: 12),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 
   Widget _buildAboutSection() {
     return Container(
@@ -465,7 +507,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             label: 'Ứng dụng',
             value: 'Lingua Canvas — Smart Language Studio',
           ),
-          _SettingInfoRow(label: 'Phiên bản', value: 'v0.2.0 (Phase 2 Pro)'),
+          _SettingInfoRow(label: 'Phiên bản', value: 'v1.0.0'),
           _SettingInfoRow(
             label: 'Kiến trúc',
             value: 'Flutter Client • Rust Axum Backend • Local AI',

@@ -5,7 +5,7 @@
 [![Security Scan](https://github.com/duyphan0503/lingua_canvas/actions/workflows/security-scan.yml/badge.svg)](https://github.com/duyphan0503/lingua_canvas/actions/workflows/security-scan.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-An Android and Linux language learning application for workplace communication in Japanese (Kanji/Kana, Keigo, tech jargon, hospitality) and English (Agile rituals, PR reviews, standups, customer service). It combines an interactive handwriting canvas with Google ML Kit Digital Ink recognition on Android, local SQLite persistent caching, bidirectional sync with Last-Write-Wins (LWW) conflict resolution, Free Spaced Repetition Scheduler (FSRS v4.5), and local AI-assisted roleplay dialogues (Ollama / Llama.cpp connector).
+An Android, Linux and browser language learning application for workplace communication in Japanese (Kanji/Kana, Keigo, tech jargon, hospitality) and English (Agile rituals, PR reviews, standups, customer service). It combines an interactive handwriting canvas with Google ML Kit Digital Ink recognition on Android, local SQLite persistent caching, bidirectional sync with Last-Write-Wins (LWW) conflict resolution, Free Spaced Repetition Scheduler (FSRS v4.5), and local AI-assisted roleplay dialogues (Ollama / Llama.cpp connector).
 
 ---
 
@@ -17,11 +17,26 @@ In Settings, register with a username and 4–12 digit PIN, or link another devi
 
 Set `REDIS_URL` for shared AI caching and rate limits; unavailable Redis falls back to bounded memory storage. AI responses include `X-Cache: HIT/MISS`. PostgreSQL stores accounts and device history across restarts; memory-only mode lasts for the server process.
 
+## Web platform
+
+All five screens run in the browser: Canvas, roleplay, curriculum, analytics and settings. The layout uses bottom navigation on narrow windows and a sidebar at 900px. Browser profiles and offline review queues are committed atomically to IndexedDB; Android/Linux retain SQLite. Accounts and server URLs isolate progress, queues and credentials. One tab per origin owns the writer lease; other tabs show a retry screen.
+
+```sh
+cd app
+../tools/flutter --no-version-check build web --no-pub --release --no-web-resources-cdn --pwa-strategy=none
+cd ..
+python3 tools/serve_web.py --directory app/build/web --port 28190 --api-origin http://127.0.0.1:28191
+```
+
+Run the Rust API on port 28191 and open `http://127.0.0.1:28190`. Production hosting needs HTTPS and the same-origin `/api/v1` proxy; see [hosting instructions](deploy/web/README.md). `--dart-define=API_BASE_URL=https://your-api.example/api/v1` is an optional compile-time override. Browser handwriting uses approximate geometry; microphone recognition and TTS depend on browser APIs and installed voices. Speech may use a vendor network service. Denied/unsupported recognition offers explicit typed text. There is no service worker or cold-start offline guarantee; browsers can evict local data.
+
+See [web verification](WEB_PLATFORM_EXECUTION_REPORT.md) and [approved implementation plan](docs/superpowers/plans/2026-10-15-web-platform.md).
+
 ## 🏛️ Monorepo Architecture
 
 ```
 lingua_canvas/
-├── app/                           # Flutter application for Android and Linux
+├── app/                           # Flutter application for Android, Linux and Web
 │   ├── lib/                       # UI components, ML Kit canvas, FSRS engine, SQLite sync
 │   │   ├── screens/               # Canvas practice & study screens
 │   │   ├── services/              # DigitalInkEngine, ModelManager, LocalDatabase, SyncCoordinator

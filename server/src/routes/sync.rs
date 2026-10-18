@@ -1,3 +1,4 @@
+mod private;
 use super::{
     auth::{self, Identity, DEFAULT_USER},
     AppState,
@@ -11,13 +12,14 @@ use crate::{
     },
 };
 use axum::{
-    extract::{Query, State},
+    body::{Body, Bytes},
+    extract::{FromRequest, Query, Request, State},
     http::{HeaderMap, StatusCode},
     Json,
 };
 use chrono::{DateTime, Duration, Utc};
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     sync::{
         atomic::{AtomicI64, Ordering},
         Arc,
@@ -31,6 +33,8 @@ pub struct MemorySync {
     card_seq: RwLock<HashMap<String, i64>>,
     completed: RwLock<HashMap<String, CompletedEntry>>,
     locks: Mutex<HashMap<String, Arc<Mutex<()>>>>,
+    private_lessons: RwLock<HashMap<String, (crate::models::PrivateLessonWireState, i64)>>,
+    receipts: RwLock<HashMap<String, private::Receipt>>,
 }
 impl MemorySync {
     pub async fn user_lock(&self, user: &str) -> Arc<Mutex<()>> {
@@ -96,11 +100,49 @@ pub async fn record_memory_card(state: &AppState, user: &str, card: FSRSCard) {
         .insert(k.clone(), Utc::now());
     state.memory.changed(k).await;
 }
+/// Apply the private-protocol byte budget to the received HTTP body, including
+/// fields a typed DTO would discard. Legacy review-only requests retain Axum's
+/// existing body cap. The oversized probe skips entity values without allocating
+/// metadata, and runs before the actual SyncPushRequest JSON decoding.
+pub struct SyncPushJson(SyncPushRequest);
+#[axum::async_trait]
+impl<S: Send + Sync> FromRequest<S> for SyncPushJson {
+    type Rejection = StatusCode;
+
+    async fn from_request(request: Request, state: &S) -> Result<Self, Self::Rejection> {
+        let (parts, body) = request.into_parts();
+        let bytes = Bytes::from_request(Request::from_parts(parts.clone(), body), state)
+            .await
+            .map_err(|rejection| rejection.status())?;
+        if bytes.len() > 512 * 1024 {
+            #[derive(serde::Deserialize)]
+            struct PrivateFeatureProbe {
+                #[serde(default)]
+                custom_lesson_mutations: Vec<serde::de::IgnoredAny>,
+                #[serde(default)]
+                progress_imports: Vec<serde::de::IgnoredAny>,
+            }
+            let probe: PrivateFeatureProbe =
+                serde_json::from_slice(&bytes).map_err(|_| StatusCode::BAD_REQUEST)?;
+            if !probe.custom_lesson_mutations.is_empty() || !probe.progress_imports.is_empty() {
+                return Err(StatusCode::PAYLOAD_TOO_LARGE);
+            }
+        }
+        let Json(request) = Json::<SyncPushRequest>::from_request(
+            Request::from_parts(parts, Body::from(bytes)),
+            state,
+        )
+        .await
+        .map_err(|rejection| rejection.status())?;
+        Ok(Self(request))
+    }
+}
+
 pub async fn push_sync(
     State(state): State<AppState>,
     headers: HeaderMap,
     Query(identity): Query<Identity>,
-    Json(req): Json<SyncPushRequest>,
+    SyncPushJson(req): SyncPushJson,
 ) -> Result<Json<SyncPushResponse>, StatusCode> {
     let user = auth::resolve(
         &state,
@@ -125,15 +167,56 @@ pub async fn push_sync(
     }
     let client = req.client_id.as_deref().unwrap_or("default_device");
     let now = Utc::now();
+    private::validate(&req, &user, now)?;
     let lock = state.memory.user_lock(&user).await;
     let _guard = if state.pool.is_none() {
         Some(lock.lock().await)
     } else {
         None
     };
+    let mut custom_lesson_acks = Vec::new();
+    let mut custom_lesson_conflicts = Vec::new();
+    let mut progress_import_acks = Vec::new();
+    let mut blocked = HashSet::new();
+    for mutation in &req.custom_lesson_mutations {
+        if blocked.contains(&mutation.lesson.id) {
+            continue;
+        }
+        match private::mutate(&state, &user, mutation).await? {
+            private::MutationResult::Ack(state) => {
+                custom_lesson_acks.push(crate::models::CustomLessonAck {
+                    mutation_id: mutation.mutation_id.clone(),
+                    state,
+                })
+            }
+            private::MutationResult::Conflict(server) => {
+                blocked.insert(mutation.lesson.id.clone());
+                custom_lesson_conflicts.push(crate::models::CustomLessonConflict {
+                    mutation_id: mutation.mutation_id.clone(),
+                    server,
+                });
+            }
+            private::MutationResult::Import => return Err(StatusCode::BAD_REQUEST),
+        }
+    }
+    for import in &req.progress_imports {
+        if import.cards.iter().any(|c| blocked.contains(&c.item_id))
+            || import
+                .completed_lessons
+                .iter()
+                .any(|c| blocked.contains(&c.lesson_id))
+        {
+            continue;
+        }
+        private::import(&state, &user, import).await?;
+        progress_import_acks.push(import.mutation_id.clone());
+    }
     let mut ids = Vec::new();
     let mut updated = HashMap::new();
     for rev in req.reviews {
+        if blocked.contains(&rev.item_id) {
+            continue;
+        }
         let rating = match rev.rating {
             1 => Rating::Again,
             2 => Rating::Hard,
@@ -184,9 +267,14 @@ pub async fn push_sync(
                 .map_err(error)?
         } else {
             state.cards.read().await.get(&card_key).cloned()
-        }
-        .unwrap_or_else(|| FSRSCard::new(rev.item_id.clone()));
-        let changed = seen.is_none() && (card.reps == 0 || time > card.last_review);
+        };
+        // PostgreSQL stores microseconds; a retried nanosecond timestamp must not
+        // become newer than an identical imported baseline after persistence.
+        let changed = seen.is_none()
+            && card
+                .as_ref()
+                .is_none_or(|card| time.timestamp_micros() > card.last_review.timestamp_micros());
+        let card = card.unwrap_or_else(|| FSRSCard::new(rev.item_id.clone()));
         let card = if changed {
             state.fsrs.review(&card, rating, time)
         } else {
@@ -217,9 +305,24 @@ pub async fn push_sync(
     }
     let mut completed_ids = Vec::new();
     for comp in req.completed_lessons.unwrap_or_default() {
+        if blocked.contains(&comp.lesson_id) {
+            continue;
+        }
         if let Some(p) = &state.pool {
             let mut tx = p.begin().await.map_err(error)?;
             writer_lock(&mut tx, &user).await?;
+            // Only account-owned metadata authorizes a new custom FK placeholder.
+            if sqlx::query_scalar::<_, bool>(
+                "SELECT EXISTS(SELECT 1 FROM private_lessons WHERE user_id=$1 AND lesson_id=$2)",
+            )
+            .bind(&user)
+            .bind(&comp.lesson_id)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(error)?
+            {
+                private::ensure_parent(&mut tx, &comp.lesson_id).await?;
+            }
             sqlx::query("INSERT INTO completed_lessons(user_id,lesson_id,client_id,completed_at,score) VALUES($1,$2,$3,$4,$5) ON CONFLICT(user_id,lesson_id,client_id) DO UPDATE SET completed_at=EXCLUDED.completed_at,score=EXCLUDED.score,updated_at=clock_timestamp(),sync_seq=nextval('sync_change_seq') WHERE completed_lessons.completed_at<EXCLUDED.completed_at").bind(&user).bind(&comp.lesson_id).bind(client).bind(comp.completed_at).bind(comp.score.unwrap_or(1.0)).execute(&mut *tx).await.map_err(error)?;
             tx.commit().await.map_err(error)?;
         } else {
@@ -239,6 +342,10 @@ pub async fn push_sync(
     let latest_sync_seq = req.since_seq.unwrap_or(0);
     auth::seen_device(&state, &user, req.client_id.as_deref(), latest_sync_seq).await?;
     Ok(Json(SyncPushResponse {
+        capabilities: Default::default(),
+        custom_lesson_acks,
+        custom_lesson_conflicts,
+        progress_import_acks,
         latest_sync_seq,
         synced_reviews: ids.len(),
         synced_lessons: completed_ids.len(),
@@ -272,6 +379,7 @@ pub async fn pull_sync(
     let mut cards = Vec::new();
     let lessons;
     let mut completed = Vec::new();
+    let mut private_lessons = Vec::new();
     let latest_sync_seq;
     if let Some(p) = &state.pool {
         let mut tx = p.begin().await.map_err(error)?;
@@ -285,7 +393,7 @@ pub async fn pull_sync(
             .fetch_one(&mut *tx)
             .await
             .map_err(error)?;
-        latest_sync_seq=sqlx::query_scalar::<_,i64>("SELECT GREATEST(COALESCE((SELECT MAX(sync_seq) FROM fsrs_cards WHERE user_id=$1),0),COALESCE((SELECT MAX(sync_seq) FROM completed_lessons WHERE user_id=$1),0),COALESCE((SELECT MAX(sync_seq) FROM review_logs WHERE user_id=$1),0))").bind(&user).fetch_one(&mut *tx).await.map_err(error)?;
+        latest_sync_seq=sqlx::query_scalar::<_,i64>("SELECT GREATEST(COALESCE((SELECT MAX(sync_seq) FROM fsrs_cards WHERE user_id=$1),0),COALESCE((SELECT MAX(sync_seq) FROM completed_lessons WHERE user_id=$1),0),COALESCE((SELECT MAX(sync_seq) FROM review_logs WHERE user_id=$1),0),COALESCE((SELECT MAX(sync_seq) FROM private_lessons WHERE user_id=$1),0))").bind(&user).fetch_one(&mut *tx).await.map_err(error)?;
         let rows=sqlx::query_as::<_,DbFsrsCard>("SELECT item_id,state,stability,difficulty,reps,lapses,last_review,next_review,updated_at FROM fsrs_cards WHERE user_id=$1 AND (($2::BIGINT IS NOT NULL AND sync_seq>$2) OR ($2 IS NULL AND ($3::TIMESTAMPTZ IS NULL OR updated_at >= $3))) ORDER BY item_id").bind(&user).bind(seq).bind(since).fetch_all(&mut *tx).await.map_err(error)?;
         for row in rows {
             let at = row.updated_at;
@@ -296,6 +404,7 @@ pub async fn pull_sync(
         // Always send a complete public catalog statement snapshot with sequence pulls.
         // A catalog insert committing out of sequence cannot be skipped by an account's cursor.
         lessons=sqlx::query_as::<_,DbLessonItem>("SELECT id,language,category,target_text,phonetic_or_kana,meaning_vi,workplace_context,workplace_context_vi,stroke_order_hints,difficulty_level,created_at FROM lessons WHERE category <> 'custom' AND ($1::BIGINT IS NOT NULL OR $2::TIMESTAMPTZ IS NULL OR created_at >= $2) ORDER BY id").bind(seq).bind(since).fetch_all(&mut *tx).await.map_err(error)?.into_iter().map(Into::into).collect();
+        private_lessons = private::pull(&mut tx, &user, seq, since).await?;
         tx.commit().await.map_err(error)?;
     } else {
         let lock = state.memory.user_lock(&user).await;
@@ -321,6 +430,19 @@ pub async fn pull_sync(
                 }
             }
         }
+        if user != DEFAULT_USER {
+            for (k, (s, changed)) in state.memory.private_lessons.read().await.iter() {
+                if owns(&user, k) {
+                    latest = latest.max(*changed);
+                    if seq.map_or_else(
+                        || since.is_none_or(|at| s.updated_at >= at),
+                        |at| *changed > at,
+                    ) {
+                        private_lessons.push(s.clone());
+                    }
+                }
+            }
+        }
         latest_sync_seq = latest;
         lessons = if seq.is_some() || since.is_none() {
             state
@@ -334,8 +456,10 @@ pub async fn pull_sync(
         };
     }
     cards.sort_by(|a, b| a.item_id.cmp(&b.item_id));
+    private_lessons.sort_by(|a, b| a.lesson.id.cmp(&b.lesson.id));
     auth::seen_device(&state, &user, query.client_id.as_deref(), latest_sync_seq).await?;
     Ok(Json(SyncPullResponse {
+        private_lessons,
         latest_sync_seq,
         completed_lessons: completed,
         cards: cards.clone(),
