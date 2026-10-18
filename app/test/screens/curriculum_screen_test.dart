@@ -10,6 +10,11 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class MockCurriculumApiService extends ApiService {
   @override
+  Future<List<PrivateLessonState>> getPrivateLessons({
+    bool includeDeleted = false,
+  }) async => [];
+
+  @override
   Future<List<FSRSCard>> getAllCards() async => [];
 
   @override

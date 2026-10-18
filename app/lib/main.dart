@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'screens/main_shell_screen.dart';
+import 'widgets/platform_bootstrap_gate.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MyApp());
+  runApp(const PlatformBootstrapGate(child: MyApp()));
 }
 
 /// Root widget for Lingua Canvas application.

@@ -15,6 +15,11 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class MockTestApiService extends ApiService {
   @override
+  Future<List<PrivateLessonState>> getPrivateLessons({
+    bool includeDeleted = false,
+  }) async => [];
+
+  @override
   Future<List<LessonItem>> getLessons({String? language}) async => [
     LessonItem(
       id: 'ja_test_a',

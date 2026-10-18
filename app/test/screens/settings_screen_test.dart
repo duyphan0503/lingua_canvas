@@ -2,12 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:app/screens/settings_screen.dart';
 import 'package:app/services/api_service.dart';
+import 'package:app/services/account_service.dart';
 
 class MockSettingsApiService extends ApiService {
   bool healthResult = true;
 
   @override
   Future<bool> checkBackendHealth() async => healthResult;
+}
+
+class LocalSettingsAccountService extends AccountService {
+  LocalSettingsAccountService(ApiService api) : super(apiService: api);
+  @override
+  Future<Map<String, dynamic>?> currentAccount() async => null;
 }
 
 void main() {
@@ -18,7 +25,12 @@ void main() {
       final service = MockSettingsApiService();
       final initialUrl = service.baseUrl;
       await tester.pumpWidget(
-        MaterialApp(home: SettingsScreen(apiService: service)),
+        MaterialApp(
+          home: SettingsScreen(
+            apiService: service,
+            accountService: LocalSettingsAccountService(service),
+          ),
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -44,7 +56,12 @@ void main() {
       final service = MockSettingsApiService();
 
       await tester.pumpWidget(
-        MaterialApp(home: SettingsScreen(apiService: service)),
+        MaterialApp(
+          home: SettingsScreen(
+            apiService: service,
+            accountService: LocalSettingsAccountService(service),
+          ),
+        ),
       );
       await tester.pumpAndSettle();
 

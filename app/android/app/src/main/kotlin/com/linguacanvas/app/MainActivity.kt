@@ -1,14 +1,22 @@
 package com.linguacanvas.app
 
+import android.Manifest
+import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.provider.OpenableColumns
+import android.provider.DocumentsContract
 import android.util.Log
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -23,10 +31,32 @@ import com.google.mlkit.vision.digitalink.recognition.Ink
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.io.IOException
 
 class MainActivity : FlutterActivity() {
+    private var backupMethodChannel: MethodChannel? = null
+    private var backupExecutor: ExecutorService? = null
+    private var nextBackupRequestCode = 27140
+    private data class PendingBackupDocument(
+        val requestCode: Int,
+        val session: BackupDocumentSession,
+        val bytes: ByteArray?,
+    )
+    private var pendingBackupDocument: PendingBackupDocument? = null
     private val DIGITAL_INK_CHANNEL = "com.linguacanvas.app/digital_ink_native"
     private val TTS_CHANNEL = "com.linguacanvas.app/tts_native"
+    private val STT_CHANNEL = "com.linguacanvas.app/stt_native"
+    private val SPEECH_PERMISSION_REQUEST = 7041
+    private val speechHandler = Handler(Looper.getMainLooper())
+    private var speechMethodChannel: MethodChannel? = null
+    private var speechRecognizer: SpeechRecognizer? = null
+    private var activeSpeechSessionId: Long? = null
+    private var latestSpeechSessionId = 0L
+    private var pendingSpeechLanguage = "ja-JP"
+    private var speechPermissionRequested = false
+    private var speechTimeout: Runnable? = null
 
     private val recognizers = ConcurrentHashMap<String, com.google.mlkit.vision.digitalink.recognition.DigitalInkRecognizer>()
 
@@ -42,6 +72,9 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        configureBackupChannel(flutterEngine)
+        configureSpeechChannel(flutterEngine)
 
         // Initialize Android TextToSpeech engine
         initTextToSpeech()
@@ -222,6 +255,262 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    private fun configureBackupChannel(flutterEngine: FlutterEngine) {
+        backupExecutor = Executors.newSingleThreadExecutor()
+        backupMethodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.linguacanvas.app/backup").apply {
+            setMethodCallHandler { call, result ->
+                if (call.method != "pickBackup" && call.method != "saveBackup") {
+                    result.notImplemented()
+                    return@setMethodCallHandler
+                }
+                if (pendingBackupDocument != null) {
+                    result.error("busy", "A backup document operation is already pending", null)
+                    return@setMethodCallHandler
+                }
+                val saving = call.method == "saveBackup"
+                val bytes = if (saving) call.argument<ByteArray>("bytes") else null
+                val name = if (saving) call.argument<String>("suggestedName") else null
+                if (saving && (bytes == null || name.isNullOrBlank())) {
+                    result.error("invalid_arguments", "Backup bytes and a suggested name are required", null)
+                    return@setMethodCallHandler
+                }
+                if (bytes != null && bytes.size > BackupDocumentIo.MAX_BYTES) {
+                    result.error("too_large", "Backup exceeds 10 MiB", null)
+                    return@setMethodCallHandler
+                }
+                val requestCode = nextBackupRequestCode++
+                if (nextBackupRequestCode > 30000) nextBackupRequestCode = 27140
+                val session = BackupDocumentSession { value, code, message ->
+                    runOnUiThread {
+                        if (pendingBackupDocument?.requestCode == requestCode) pendingBackupDocument = null
+                        if (code == null) result.success(value) else result.error(code, message, null)
+                    }
+                }
+                pendingBackupDocument = PendingBackupDocument(requestCode, session, bytes)
+                val intent = Intent(if (saving) Intent.ACTION_CREATE_DOCUMENT else Intent.ACTION_OPEN_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    // Providers do not consistently assign JSON MIME types to
+                    // backups; import validates the complete file after selection.
+                    type = if (saving) "application/json" else "*/*"
+                    if (saving) putExtra(Intent.EXTRA_TITLE, name)
+                }
+                try {
+                    @Suppress("DEPRECATION")
+                    startActivityForResult(intent, requestCode)
+                } catch (_: Exception) {
+                    session.finish(errorCode = "picker_unavailable", errorMessage = "Could not open the document picker")
+                }
+            }
+        }
+    }
+
+    @Deprecated("Uses the Activity result API supported by FlutterActivity")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        val pending = pendingBackupDocument ?: return
+        if (requestCode != pending.requestCode) return
+        val session = pending.session
+        if (resultCode == Activity.RESULT_CANCELED) {
+            session.finish(if (pending.bytes == null) null else false)
+            return
+        }
+        val uri = data?.data
+        if (resultCode != Activity.RESULT_OK || uri == null) {
+            session.finish(errorCode = "invalid_result", errorMessage = "The document picker returned no document")
+            return
+        }
+        val executor = backupExecutor
+        if (executor == null || executor.isShutdown) {
+            session.finish(errorCode = "activity_closed", errorMessage = "Backup activity closed")
+            return
+        }
+        executor.execute {
+            try {
+                if (session.isClosed) throw BackupDocumentCancelledException()
+                if (pending.bytes == null) {
+                    val size = try {
+                        contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use { cursor ->
+                            if (cursor.moveToFirst() && !cursor.isNull(0)) cursor.getLong(0) else null
+                        }
+                    } catch (_: Exception) { null }
+                    val bytes = BackupDocumentIo.readBounded(size, {
+                        val input = contentResolver.openInputStream(uri) ?: throw IOException("Could not open backup document")
+                        if (!session.attach(input)) throw BackupDocumentCancelledException()
+                        input
+                    }, { session.isClosed })
+                    session.finish(bytes)
+                } else {
+                    val output = contentResolver.openOutputStream(uri, "wt") ?: throw IOException("Could not create backup document")
+                    if (!session.attach(output)) throw BackupDocumentCancelledException()
+                    output.use {
+                        if (session.isClosed) throw BackupDocumentCancelledException()
+                        it.write(pending.bytes)
+                        it.flush()
+                        if (session.isClosed) throw BackupDocumentCancelledException()
+                    }
+                    session.finish(true)
+                }
+            } catch (error: Exception) {
+                if (pending.bytes != null) {
+                    // ACTION_CREATE_DOCUMENT grants access to this new document
+                    // only. Remove a partial export if its provider permits it.
+                    try { DocumentsContract.deleteDocument(contentResolver, uri) } catch (_: Exception) {}
+                }
+                val code = when (error) {
+                    is BackupDocumentTooLargeException -> "too_large"
+                    is BackupDocumentCancelledException -> "activity_closed"
+                    is SecurityException -> "permission_denied"
+                    else -> if (pending.bytes == null) "read_failed" else "write_failed"
+                }
+                session.finish(errorCode = code, errorMessage = error.localizedMessage ?: "Backup document operation failed")
+            }
+        }
+    }
+
+    private fun closeBackupChannel() {
+        pendingBackupDocument?.session?.finish(errorCode = "activity_closed", errorMessage = "Backup activity closed")
+        pendingBackupDocument = null
+        backupMethodChannel?.setMethodCallHandler(null)
+        backupMethodChannel = null
+        backupExecutor?.shutdownNow()
+        backupExecutor = null
+    }
+
+    override fun cleanUpFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
+        closeBackupChannel()
+        super.cleanUpFlutterEngine(flutterEngine)
+    }
+
+    private fun configureSpeechChannel(flutterEngine: FlutterEngine) {
+        speechMethodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, STT_CHANNEL).apply {
+            setMethodCallHandler { call, result ->
+                runOnUiThread {
+                    when (call.method) {
+                        "isAvailable" -> result.success(SpeechRecognizer.isRecognitionAvailable(applicationContext))
+                        "startListening" -> {
+                            val sessionId = call.argument<Number>("sessionId")?.toLong()
+                            if (sessionId == null || sessionId <= latestSpeechSessionId) {
+                                result.error("cancelled", "Stale speech session", null)
+                            } else if (!SpeechRecognizer.isRecognitionAvailable(applicationContext)) {
+                                result.error("unavailable", "No speech recognition service installed", null)
+                            } else {
+                                activeSpeechSessionId?.let { finishSpeechError(it, "cancelled", "Recording replaced") }
+                                latestSpeechSessionId = sessionId
+                                activeSpeechSessionId = sessionId
+                                pendingSpeechLanguage = if ((call.argument<String>("language") ?: "ja-JP").startsWith("ja", true)) "ja-JP" else "en-US"
+                                // A bounded session also covers an unanswered permission prompt.
+                                speechTimeout = Runnable { finishSpeechError(sessionId, "timeout", "Recording timed out") }.also {
+                                    speechHandler.postDelayed(it, 30000)
+                                }
+                                result.success(true)
+                                if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                                    startSpeechRecognition(sessionId, pendingSpeechLanguage)
+                                } else if (!speechPermissionRequested) {
+                                    speechPermissionRequested = true
+                                    requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), SPEECH_PERMISSION_REQUEST)
+                                }
+                            }
+                        }
+                        "stopListening" -> {
+                            val sessionId = call.argument<Number>("sessionId")?.toLong()
+                            if (sessionId != null && sessionId == activeSpeechSessionId) {
+                                finishSpeechError(sessionId, "cancelled", "Recording cancelled")
+                            }
+                            result.success(true)
+                        }
+                        else -> result.notImplemented()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun startSpeechRecognition(sessionId: Long, language: String) {
+        if (activeSpeechSessionId != sessionId) return
+        try {
+            val recognizer = SpeechRecognizer.createSpeechRecognizer(this)
+            speechRecognizer = recognizer
+            recognizer.setRecognitionListener(object : RecognitionListener {
+                override fun onReadyForSpeech(params: Bundle?) {}
+                override fun onBeginningOfSpeech() {}
+                override fun onRmsChanged(rmsdB: Float) {}
+                override fun onBufferReceived(buffer: ByteArray?) {}
+                override fun onEndOfSpeech() {}
+                override fun onEvent(eventType: Int, params: Bundle?) {}
+
+                override fun onPartialResults(partialResults: Bundle?) {
+                    if (activeSpeechSessionId != sessionId) return
+                    val transcript = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty()
+                    speechMethodChannel?.invokeMethod("onSpeechPartial", mapOf("sessionId" to sessionId, "transcript" to transcript))
+                }
+
+                override fun onResults(results: Bundle?) {
+                    if (activeSpeechSessionId != sessionId) return
+                    val transcript = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull { it.isNotBlank() }
+                    if (transcript == null) {
+                        finishSpeechError(sessionId, "recognition_failed", "No speech recognized")
+                    } else {
+                        releaseSpeechRecognizer()
+                        speechMethodChannel?.invokeMethod("onSpeechResult", mapOf("sessionId" to sessionId, "transcript" to transcript))
+                    }
+                }
+
+                override fun onError(error: Int) {
+                    val code = when (error) {
+                        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "permission_denied"
+                        SpeechRecognizer.ERROR_SPEECH_TIMEOUT, SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "timeout"
+                        else -> "recognition_failed"
+                    }
+                    finishSpeechError(sessionId, code, "Speech recognition error $error")
+                }
+            })
+            recognizer.startListening(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, language)
+                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
+            })
+        } catch (_: SecurityException) {
+            finishSpeechError(sessionId, "permission_denied", "Microphone permission denied")
+        } catch (_: Exception) {
+            finishSpeechError(sessionId, "recognition_failed", "Could not start speech recognition")
+        }
+    }
+
+    private fun finishSpeechError(sessionId: Long, code: String, message: String) {
+        if (activeSpeechSessionId != sessionId) return
+        releaseSpeechRecognizer()
+        speechMethodChannel?.invokeMethod("onSpeechError", mapOf("sessionId" to sessionId, "code" to code, "message" to message))
+    }
+
+    private fun releaseSpeechRecognizer() {
+        // Clear identity before cancel/destroy, which can dispatch late callbacks.
+        activeSpeechSessionId = null
+        speechTimeout?.let { speechHandler.removeCallbacks(it) }
+        speechTimeout = null
+        val recognizer = speechRecognizer
+        speechRecognizer = null
+        try { recognizer?.cancel() } catch (_: Exception) {}
+        try { recognizer?.destroy() } catch (_: Exception) {}
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode != SPEECH_PERMISSION_REQUEST) return
+        speechPermissionRequested = false
+        val sessionId = activeSpeechSessionId ?: return
+        if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            startSpeechRecognition(sessionId, pendingSpeechLanguage)
+        } else {
+            finishSpeechError(sessionId, "permission_denied", "Microphone permission denied")
+        }
+    }
+
+    override fun onStop() {
+        activeSpeechSessionId?.let { finishSpeechError(it, "cancelled", "Activity stopped") }
+        super.onStop()
+    }
+
     private fun withTtsReady(result: MethodChannel.Result, action: (TextToSpeech) -> Unit) {
         val engine = tts
         if (ttsInitStatus == TextToSpeech.SUCCESS && engine != null) {
@@ -309,6 +598,10 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
+        closeBackupChannel()
+        releaseSpeechRecognizer()
+        speechMethodChannel?.setMethodCallHandler(null)
+        speechMethodChannel = null
         for (recognizer in recognizers.values) {
             recognizer.close()
         }

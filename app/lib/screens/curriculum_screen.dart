@@ -25,12 +25,14 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
   late final ApiService _apiService;
   List<LessonItem> _allLessons = [];
   List<LessonItem> _filteredLessons = [];
+  Map<String, PrivateLessonState> _privateStates = {};
   Map<String, FSRSCard> _cardMap = {};
   bool _isLoading = true;
 
   String _selectedLanguage = 'all'; // 'all', 'ja', 'en'
   String _selectedCategory =
       'all'; // all, alphabet, jlpt_n5, it_workplace, custom
+  bool _showTrash = false;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
 
@@ -52,11 +54,22 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
     try {
       final lessons = await _apiService.getLessons();
       final cards = await _apiService.getAllCards();
+      final privateStates = await _apiService.getPrivateLessons(
+        includeDeleted: true,
+      );
       final map = {for (var c in cards) c.itemId: c};
+      final states = {
+        for (final state in privateStates) state.lesson.id: state,
+      };
+      final allById = {for (final lesson in lessons) lesson.id: lesson};
+      for (final state in privateStates) {
+        allById[state.lesson.id] = state.lesson;
+      }
 
       if (mounted) {
         setState(() {
-          _allLessons = lessons;
+          _allLessons = allById.values.toList();
+          _privateStates = states;
           _cardMap = map;
           _filteredLessons = _computeFiltered();
           _isLoading = false;
@@ -69,6 +82,12 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
 
   List<LessonItem> _computeFiltered() {
     return _allLessons.where((item) {
+      final state = _privateStates[item.id];
+      if (_showTrash) {
+        if (state?.deleted != true) return false;
+      } else if (state?.deleted == true) {
+        return false;
+      }
       // Language filter
       if (_selectedLanguage != 'all' && item.language != _selectedLanguage) {
         return false;
@@ -110,13 +129,13 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
     );
     if (values == null || !mounted) return;
     try {
-      final lesson = await _apiService.ensureLessonForWord(
+      final lesson = await _apiService.createPrivateLesson(
         word: values['word']!,
         language: values['language']!,
-        meaningVi: values['meaning'],
-        phoneticOrKana: values['phonetic'],
-        workplaceContext: values['context'],
-        workplaceContextVi: values['contextVi'],
+        meaningVi: values['meaning']!.trim(),
+        phoneticOrKana: values['phonetic']!.trim(),
+        workplaceContext: values['context']!.trim(),
+        workplaceContextVi: values['contextVi']!.trim(),
       );
       if (!mounted) return;
       await _loadLessonsAndCards();
@@ -133,15 +152,155 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
     }
   }
 
+  Future<void> _editPrivateLesson(LessonItem lesson) async {
+    final values = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (_) =>
+          _CustomLessonDialog(initialLanguage: lesson.language, lesson: lesson),
+    );
+    if (values == null || !mounted) return;
+    try {
+      await _apiService.savePrivateLesson(
+        LessonItem(
+          id: lesson.id,
+          language: values['language']!,
+          category: 'custom',
+          targetText: values['word']!.trim(),
+          phoneticOrKana: values['phonetic']!.trim(),
+          meaningVi: values['meaning']!.trim(),
+          workplaceContext: values['context']!.trim(),
+          workplaceContextVi: values['contextVi']!.trim(),
+          strokeOrderHints: lesson.strokeOrderHints,
+          difficultyLevel: lesson.difficultyLevel,
+        ),
+      );
+      if (mounted) await _loadLessonsAndCards();
+    } catch (_) {
+      _showMessage('Chưa lưu được thay đổi. Từ vẫn được giữ nguyên.');
+    }
+  }
+
+  Future<void> _deletePrivateLesson(LessonItem lesson) async {
+    try {
+      await _apiService.deletePrivateLesson(lesson.id);
+      if (!mounted) return;
+      await _loadLessonsAndCards();
+      _showMessage('Đã chuyển từ vào thùng rác. Lịch sử học vẫn được giữ.');
+    } catch (_) {
+      _showMessage('Chưa chuyển được từ vào thùng rác.');
+    }
+  }
+
+  Future<void> _restorePrivateLesson(LessonItem lesson) async {
+    try {
+      await _apiService.restorePrivateLesson(lesson.id);
+      if (!mounted) return;
+      setState(() => _showTrash = false);
+      await _loadLessonsAndCards();
+      _showMessage('Đã khôi phục từ.');
+    } catch (_) {
+      _showMessage('Chưa khôi phục được từ.');
+    }
+  }
+
+  Future<void> _resolveConflict(PrivateLessonState state) async {
+    final conflict = state.conflict;
+    if (conflict == null) return;
+    final keepLocal = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Chọn nội dung muốn giữ'),
+        content: SizedBox(
+          width: 620,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _ConflictVersionCard(
+                  title: 'Bản trên thiết bị này',
+                  lesson: conflict.local.lesson,
+                  deleted: conflict.local.deleted,
+                ),
+                const SizedBox(height: 8),
+                if (conflict.remote == null)
+                  const Card(
+                    margin: EdgeInsets.zero,
+                    color: Color(0xFF0F172A),
+                    child: Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Bản trên máy chủ',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 6),
+                          Text('Máy chủ chưa có bản lưu cho từ này.'),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  _ConflictVersionCard(
+                    title: 'Bản trên máy chủ',
+                    lesson: conflict.remote!.lesson,
+                    deleted: conflict.remote!.deleted,
+                  ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Để sau'),
+          ),
+          if (conflict.remote != null)
+            OutlinedButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Giữ bản máy chủ'),
+            ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Giữ bản trên thiết bị'),
+          ),
+        ],
+      ),
+    );
+    if (keepLocal == null || !mounted) return;
+    try {
+      await _apiService.resolvePrivateLessonConflict(
+        state.lesson.id,
+        keepLocal: keepLocal,
+      );
+      if (mounted) await _loadLessonsAndCards();
+    } catch (_) {
+      _showMessage(
+        'Chưa giải quyết được xung đột. Hãy đồng bộ lại rồi thử tiếp.',
+      );
+    }
+  }
+
+  void _showMessage(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F19),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _createCustomLesson,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Thêm từ mới'),
-      ),
+      floatingActionButton: _showTrash
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: _createCustomLesson,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Thêm từ mới'),
+            ),
       appBar: AppBar(
         title: const Row(
           children: [
@@ -296,7 +455,8 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
                 const SizedBox(width: 6),
                 for (final category in {
                   'jlpt_n5': 'JLPT N5 (Kanji)',
-                  'jlpt_n4': 'JLPT N4',
+                  'jlpt_n4': 'JLPT N4 (Công sở)',
+                  'toeic_business': 'TOEIC & Business',
                   'business_toeic': 'Business / TOEIC',
                   'custom': 'Từ tự tạo',
                 }.entries) ...[
@@ -312,6 +472,13 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
                   ),
                   const SizedBox(width: 6),
                 ],
+                _buildFilterChip('Thùng rác', _showTrash, () {
+                  setState(() {
+                    _showTrash = !_showTrash;
+                    _filteredLessons = _computeFiltered();
+                  });
+                }),
+                const SizedBox(width: 6),
                 _buildFilterChip(
                   'IT Chuyên ngành',
                   _selectedCategory == 'it_workplace',
@@ -354,6 +521,7 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
       itemCount: _filteredLessons.length,
       itemBuilder: (context, index) {
         final item = _filteredLessons[index];
+        final privateState = _privateStates[item.id];
         final card = _cardMap[item.id];
         final isMastered = card != null && card.stability > 14.0;
         final isLearning = card != null && card.reps > 0 && !isMastered;
@@ -406,7 +574,8 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
                       label: Text(switch (item.category) {
                         'alphabet' => 'Bảng chữ cái',
                         'jlpt_n5' => 'JLPT N5 (Kanji)',
-                        'jlpt_n4' => 'JLPT N4',
+                        'jlpt_n4' => 'JLPT N4 (Công sở)',
+                        'toeic_business' => 'TOEIC & Business',
                         'business_toeic' => 'Business / TOEIC',
                         'custom' => 'Từ tự tạo',
                         _ => 'IT Chuyên ngành',
@@ -415,6 +584,36 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
                     _buildFSRSBadge(isMastered, isLearning, card),
                   ],
                 ),
+                if (privateState?.conflict != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0x33D97706),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFD97706)),
+                    ),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.sync_problem,
+                          color: Color(0xFFFBBF24),
+                        ),
+                        const Text(
+                          'Có hai phiên bản. Chọn nội dung muốn giữ.',
+                          style: TextStyle(color: Color(0xFFFDE68A)),
+                        ),
+                        TextButton(
+                          onPressed: () => _resolveConflict(privateState!),
+                          child: const Text('So sánh'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 if (item.phoneticOrKana.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
@@ -484,12 +683,39 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
                         color: Color(0xFF64748B),
                       ),
                     ),
+                    if (privateState?.deleted == true)
+                      OutlinedButton.icon(
+                        key: ValueKey('restore-${item.id}'),
+                        onPressed: () => _restorePrivateLesson(item),
+                        icon: const Icon(Icons.restore_rounded, size: 16),
+                        label: const Text('Khôi phục'),
+                      ),
+                    if (privateState != null && !privateState.deleted) ...[
+                      IconButton(
+                        tooltip: 'Sửa từ',
+                        onPressed: () => _editPrivateLesson(item),
+                        icon: const Icon(
+                          Icons.edit_outlined,
+                          color: Color(0xFF93C5FD),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Chuyển vào thùng rác',
+                        onPressed: () => _deletePrivateLesson(item),
+                        icon: const Icon(
+                          Icons.delete_outline,
+                          color: Color(0xFFF87171),
+                        ),
+                      ),
+                    ],
                     ElevatedButton.icon(
-                      onPressed: () {
-                        if (widget.onSelectLesson != null) {
-                          widget.onSelectLesson!(item);
-                        }
-                      },
+                      onPressed: privateState?.deleted == true
+                          ? null
+                          : () {
+                              if (widget.onSelectLesson != null) {
+                                widget.onSelectLesson!(item);
+                              }
+                            },
                       icon: Icon(
                         item.language == 'ja'
                             ? Icons.gesture
@@ -609,7 +835,8 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
 
 class _CustomLessonDialog extends StatefulWidget {
   final String initialLanguage;
-  const _CustomLessonDialog({required this.initialLanguage});
+  final LessonItem? lesson;
+  const _CustomLessonDialog({required this.initialLanguage, this.lesson});
 
   @override
   State<_CustomLessonDialog> createState() => _CustomLessonDialogState();
@@ -623,6 +850,19 @@ class _CustomLessonDialogState extends State<_CustomLessonDialog> {
   final _context = TextEditingController();
   final _contextVi = TextEditingController();
   late String _language = widget.initialLanguage;
+
+  @override
+  void initState() {
+    super.initState();
+    final lesson = widget.lesson;
+    if (lesson != null) {
+      _word.text = lesson.targetText;
+      _meaning.text = lesson.meaningVi;
+      _phonetic.text = lesson.phoneticOrKana;
+      _context.text = lesson.workplaceContext;
+      _contextVi.text = lesson.workplaceContextVi;
+    }
+  }
 
   @override
   void dispose() {
@@ -642,7 +882,7 @@ class _CustomLessonDialogState extends State<_CustomLessonDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: const Color(0xFF1E293B),
-      title: const Text('Thêm từ mới'),
+      title: Text(widget.lesson == null ? 'Thêm từ mới' : 'Sửa từ cá nhân'),
       content: SizedBox(
         width: 440,
         child: SingleChildScrollView(
@@ -652,6 +892,7 @@ class _CustomLessonDialogState extends State<_CustomLessonDialog> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<String>(
+                  isExpanded: true,
                   initialValue: _language,
                   decoration: const InputDecoration(labelText: 'Ngôn ngữ'),
                   items: const [
@@ -729,9 +970,53 @@ class _CustomLessonDialogState extends State<_CustomLessonDialog> {
               'contextVi': _contextVi.text,
             });
           },
-          child: const Text('Lưu & Luyện viết'),
+          child: Text(
+            widget.lesson == null ? 'Lưu & Luyện viết' : 'Lưu thay đổi',
+          ),
         ),
       ],
+    );
+  }
+}
+
+class _ConflictVersionCard extends StatelessWidget {
+  final String title;
+  final LessonItem? lesson;
+  final bool deleted;
+
+  const _ConflictVersionCard({
+    required this.title,
+    required this.lesson,
+    required this.deleted,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      color: const Color(0xFF0F172A),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            Text(
+              deleted ? 'Đã xóa' : (lesson?.targetText ?? 'Không có từ'),
+              style: const TextStyle(fontSize: 18, color: Colors.white),
+            ),
+            if (!deleted && lesson != null) ...[
+              Text(lesson!.phoneticOrKana),
+              Text(lesson!.meaningVi),
+              if (lesson!.workplaceContext.isNotEmpty)
+                Text(lesson!.workplaceContext),
+              if (lesson!.workplaceContextVi.isNotEmpty)
+                Text(lesson!.workplaceContextVi),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

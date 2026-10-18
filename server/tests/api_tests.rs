@@ -13,6 +13,9 @@ use server::{ai::AIService, create_app, data::get_seed_lessons, fsrs::FSRS, rout
 
 fn setup_test_app() -> axum::Router {
     let state = AppState {
+        cache: Arc::new(server::redis_cache::RedisCache::default()),
+        accounts: Default::default(),
+        memory: Default::default(),
         lessons: get_seed_lessons(),
         cards: Arc::new(RwLock::new(HashMap::new())),
         seen_review_ids: Arc::new(RwLock::new(HashMap::new())),
@@ -198,6 +201,9 @@ async fn test_fsrs_review_submission_and_lifecycle() {
 #[tokio::test]
 async fn test_fsrs_due_queue_and_eviction() {
     let state = AppState {
+        cache: Arc::new(server::redis_cache::RedisCache::default()),
+        accounts: Default::default(),
+        memory: Default::default(),
         lessons: get_seed_lessons(),
         cards: Arc::new(RwLock::new(HashMap::new())),
         seen_review_ids: Arc::new(RwLock::new(HashMap::new())),
@@ -665,6 +671,9 @@ fn test_dialogue_request_turn_count_clamped() {
 #[tokio::test]
 async fn test_ai_roleplay_fallback_disabled_returns_503() {
     let state = AppState {
+        cache: Arc::new(server::redis_cache::RedisCache::default()),
+        accounts: Default::default(),
+        memory: Default::default(),
         lessons: server::data::get_seed_lessons(),
         cards: Arc::new(RwLock::new(HashMap::new())),
         seen_review_ids: Arc::new(RwLock::new(HashMap::new())),
@@ -804,6 +813,9 @@ async fn test_sync_push_idempotency() {
 #[tokio::test]
 async fn test_sync_duplicate_review_id_does_not_advance_card() {
     let state = AppState {
+        cache: Arc::new(server::redis_cache::RedisCache::default()),
+        accounts: Default::default(),
+        memory: Default::default(),
         lessons: get_seed_lessons(),
         cards: Arc::new(RwLock::new(HashMap::new())),
         seen_review_ids: Arc::new(RwLock::new(HashMap::new())),
@@ -868,6 +880,9 @@ async fn test_sync_rejects_review_id_reused_for_different_item() {
 #[tokio::test]
 async fn test_sync_future_clock_retry_without_id_is_idempotent() {
     let state = AppState {
+        cache: Arc::new(server::redis_cache::RedisCache::default()),
+        accounts: Default::default(),
+        memory: Default::default(),
         lessons: get_seed_lessons(),
         cards: Arc::new(RwLock::new(HashMap::new())),
         seen_review_ids: Arc::new(RwLock::new(HashMap::new())),
@@ -908,6 +923,9 @@ async fn test_sync_does_not_ack_failed_postgres_lesson_write() {
     let pool = sqlx::PgPool::connect(&url).await.unwrap();
     sqlx::migrate!("./migrations").run(&pool).await.unwrap();
     let state = AppState {
+        cache: Arc::new(server::redis_cache::RedisCache::default()),
+        accounts: Default::default(),
+        memory: Default::default(),
         lessons: get_seed_lessons(),
         cards: Arc::new(RwLock::new(HashMap::new())),
         seen_review_ids: Arc::new(RwLock::new(HashMap::new())),
@@ -942,6 +960,9 @@ async fn test_sync_review_and_log_are_atomic_in_postgres() {
     sqlx::migrate!("./migrations").run(&pool).await.unwrap();
     let item_id = format!("atomic_{}", chrono::Utc::now().timestamp_micros());
     let state = AppState {
+        cache: Arc::new(server::redis_cache::RedisCache::default()),
+        accounts: Default::default(),
+        memory: Default::default(),
         lessons: get_seed_lessons(),
         cards: Arc::new(RwLock::new(HashMap::new())),
         seen_review_ids: Arc::new(RwLock::new(HashMap::new())),
@@ -981,6 +1002,9 @@ async fn test_direct_review_does_not_ack_failed_postgres_write() {
     let pool = sqlx::PgPool::connect(&url).await.unwrap();
     sqlx::migrate!("./migrations").run(&pool).await.unwrap();
     let state = AppState {
+        cache: Arc::new(server::redis_cache::RedisCache::default()),
+        accounts: Default::default(),
+        memory: Default::default(),
         lessons: get_seed_lessons(),
         cards: Arc::new(RwLock::new(HashMap::new())),
         seen_review_ids: Arc::new(RwLock::new(HashMap::new())),
@@ -1012,6 +1036,9 @@ async fn test_pull_waits_for_inflight_postgres_review_before_advancing_cursor() 
     let pool = sqlx::PgPool::connect(&url).await.unwrap();
     sqlx::migrate!("./migrations").run(&pool).await.unwrap();
     let state = AppState {
+        cache: Arc::new(server::redis_cache::RedisCache::default()),
+        accounts: Default::default(),
+        memory: Default::default(),
         lessons: get_seed_lessons(),
         cards: Arc::new(RwLock::new(HashMap::new())),
         seen_review_ids: Arc::new(RwLock::new(HashMap::new())),
@@ -1023,7 +1050,7 @@ async fn test_pull_waits_for_inflight_postgres_review_before_advancing_cursor() 
     let item_id = format!("cursor_{}", chrono::Utc::now().timestamp_micros());
     let since = chrono::Utc::now();
     let mut writer = pool.begin().await.unwrap();
-    sqlx::query("SELECT pg_advisory_xact_lock(0, 1)")
+    sqlx::query("SELECT pg_advisory_xact_lock_shared(0, hashtext('default_user'))")
         .execute(&mut *writer)
         .await
         .unwrap();
@@ -1068,6 +1095,9 @@ async fn test_postgres_sync_persists_lww_and_idempotency_across_app_restart() {
     let review_time = chrono::Utc::now() - chrono::Duration::minutes(5);
     let make_app = || {
         create_app(AppState {
+            cache: Arc::new(server::redis_cache::RedisCache::default()),
+            accounts: Default::default(),
+            memory: Default::default(),
             lessons: get_seed_lessons(),
             cards: Arc::new(RwLock::new(HashMap::new())),
             seen_review_ids: Arc::new(RwLock::new(HashMap::new())),
@@ -1132,6 +1162,9 @@ async fn test_postgres_sync_persists_lww_and_idempotency_across_app_restart() {
 #[tokio::test]
 async fn test_sync_push_last_write_wins_conflict_resolution() {
     let state = AppState {
+        cache: Arc::new(server::redis_cache::RedisCache::default()),
+        accounts: Default::default(),
+        memory: Default::default(),
         lessons: server::data::get_seed_lessons(),
         cards: std::sync::Arc::new(tokio::sync::RwLock::new(HashMap::new())),
         seen_review_ids: Arc::new(RwLock::new(HashMap::new())),
@@ -1203,6 +1236,9 @@ async fn test_sync_push_last_write_wins_conflict_resolution() {
 #[tokio::test]
 async fn test_sync_pull_delta_high_water_mark() {
     let state = AppState {
+        cache: Arc::new(server::redis_cache::RedisCache::default()),
+        accounts: Default::default(),
+        memory: Default::default(),
         lessons: server::data::get_seed_lessons(),
         cards: std::sync::Arc::new(tokio::sync::RwLock::new(HashMap::new())),
         seen_review_ids: Arc::new(RwLock::new(HashMap::new())),

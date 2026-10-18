@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct LessonItem {
     pub id: String,
     pub language: String, // "en" or "ja"
@@ -16,6 +16,8 @@ pub struct LessonItem {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ReviewRequest {
+    pub user_id: Option<String>,
+    pub sync_token: Option<String>,
     pub item_id: String,
     pub rating: u8, // 1=Again, 2=Hard, 3=Good, 4=Easy
 }
@@ -307,7 +309,7 @@ impl FsrsCardDto {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SyncReviewItem {
     #[serde(alias = "id")]
     pub review_id: Option<String>,
@@ -324,7 +326,7 @@ pub struct SyncReviewItem {
     pub client_card_snapshot: Option<serde_json::Value>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct SyncCompletedLessonItem {
     pub lesson_id: String,
     pub completed_at: chrono::DateTime<chrono::Utc>,
@@ -332,8 +334,11 @@ pub struct SyncCompletedLessonItem {
     pub score: Option<f64>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SyncPushRequest {
+    pub user_id: Option<String>,
+    pub sync_token: Option<String>,
+    pub since_seq: Option<i64>,
     #[serde(default)]
     pub client_id: Option<String>,
     #[serde(default)]
@@ -342,10 +347,19 @@ pub struct SyncPushRequest {
     pub reviews: Vec<SyncReviewItem>,
     #[serde(default)]
     pub completed_lessons: Option<Vec<SyncCompletedLessonItem>>,
+    #[serde(default)]
+    pub custom_lesson_mutations: Vec<CustomLessonMutation>,
+    #[serde(default)]
+    pub progress_imports: Vec<ProgressImport>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SyncPushResponse {
+    pub capabilities: SyncCapabilities,
+    pub custom_lesson_acks: Vec<CustomLessonAck>,
+    pub custom_lesson_conflicts: Vec<CustomLessonConflict>,
+    pub progress_import_acks: Vec<String>,
+    pub latest_sync_seq: i64,
     pub synced_reviews: usize,
     pub synced_lessons: usize,
     pub synced_review_ids: Vec<String>,
@@ -379,6 +393,10 @@ where
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct SyncPullQuery {
+    pub user_id: Option<String>,
+    pub sync_token: Option<String>,
+    pub client_id: Option<String>,
+    pub since_seq: Option<i64>,
     #[serde(default, deserialize_with = "deserialize_optional_datetime")]
     pub since: Option<chrono::DateTime<chrono::Utc>>,
     #[serde(default, deserialize_with = "deserialize_optional_datetime")]
@@ -387,10 +405,57 @@ pub struct SyncPullQuery {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SyncPullResponse {
+    pub private_lessons: Vec<PrivateLessonWireState>,
+    pub latest_sync_seq: i64,
+    pub completed_lessons: Vec<SyncCompletedLessonItem>,
     pub cards: Vec<FsrsCardDto>,
     pub updated_cards: Vec<FsrsCardDto>,
     pub lessons: Vec<LessonItem>,
     pub new_lessons: Vec<LessonItem>,
     pub server_time: chrono::DateTime<chrono::Utc>,
     pub timestamp: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CustomLessonMutation {
+    pub mutation_id: String,
+    pub base_revision: i64,
+    pub lesson: LessonItem,
+    pub deleted: bool,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct PrivateLessonWireState {
+    pub lesson: LessonItem,
+    pub revision: i64,
+    pub deleted: bool,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CustomLessonAck {
+    pub mutation_id: String,
+    pub state: PrivateLessonWireState,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CustomLessonConflict {
+    pub mutation_id: String,
+    pub server: Option<PrivateLessonWireState>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProgressImport {
+    pub mutation_id: String,
+    pub cards: Vec<FsrsCardDto>,
+    pub completed_lessons: Vec<SyncCompletedLessonItem>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SyncCapabilities {
+    pub private_vocabulary_sync: u8,
+    pub progress_import: u8,
+}
+impl Default for SyncCapabilities {
+    fn default() -> Self {
+        Self {
+            private_vocabulary_sync: 1,
+            progress_import: 1,
+        }
+    }
 }
