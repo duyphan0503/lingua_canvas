@@ -9,6 +9,7 @@ fn state() -> AppState {
     AppState {
         cache: Arc::new(server::redis_cache::RedisCache::default()),
         accounts: Default::default(),
+        auth_sessions: Default::default(),
         memory: Default::default(),
         lessons: server::data::get_seed_lessons(),
         cards: Arc::new(RwLock::new(HashMap::new())),
@@ -290,12 +291,14 @@ async fn postgres_accounts_and_sequence_barriers() {
     let token1 = format!("token_seq_{suffix}");
     let token2 = format!("token_other_{suffix}");
     for (user, token) in [(&user1, &token1), (&user2, &token2)] {
-        sqlx::query("INSERT INTO user_accounts(user_id,username,pin_hash,sync_token) VALUES($1,$1,'disabled',$2)").bind(user).bind(token).execute(&pool).await.unwrap();
+        sqlx::query("INSERT INTO user_accounts(user_id,username,pin_hash,sync_token) VALUES($1,$1,'disabled',$2)").bind(user).bind(format!("retired_{user}")).execute(&pool).await.unwrap();
+        fixture_session(&pool, user, token).await;
     }
     let make_app = || {
         server::create_app(AppState {
             cache: Arc::new(server::redis_cache::RedisCache::new(None)),
             accounts: Default::default(),
+            auth_sessions: Default::default(),
             memory: Default::default(),
             lessons: server::data::get_seed_lessons(),
             cards: Default::default(),
@@ -447,7 +450,8 @@ async fn postgres_custom_practice_never_enters_public_catalog() {
     let alice = format!("custom_alice_{suffix}");
     let bob = format!("custom_bob_{suffix}");
     for user in [&alice, &bob] {
-        sqlx::query("INSERT INTO user_accounts(user_id,username,pin_hash,sync_token) VALUES($1,$1,'disabled',$1)").bind(user).execute(&pool).await.unwrap();
+        sqlx::query("INSERT INTO user_accounts(user_id,username,pin_hash,sync_token) VALUES($1,$1,'disabled',('retired_' || $1))").bind(user).execute(&pool).await.unwrap();
+        fixture_session(&pool, user, user).await;
     }
     let mut state = state();
     state.pool = Some(pool);
@@ -580,4 +584,13 @@ async fn fallback_catalog_also_excludes_synthetic_custom_lessons() {
         .unwrap()
         .iter()
         .any(|l| l["id"] == "private_fallback"));
+}
+
+async fn fixture_session(pool: &sqlx::PgPool, user: &str, token: &str) {
+    sqlx::query("INSERT INTO user_devices(user_id,device_id) VALUES($1,'fixture')")
+        .bind(user)
+        .execute(pool)
+        .await
+        .unwrap();
+    sqlx::query("INSERT INTO auth_sessions(token_hash,user_id,device_id,expires_at) VALUES(encode(sha256(convert_to($1,'UTF8')),'hex'),$2,'fixture',clock_timestamp()+interval '1 day')").bind(token).bind(user).execute(pool).await.unwrap();
 }

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io' show Platform;
 import 'dart:math';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../../models/lesson_item.dart';
@@ -12,6 +12,7 @@ import 'local_store.dart';
 import 'private_store.dart';
 import 'private_profile.dart';
 import 'sql_private_profile.dart';
+import 'credential_vault.dart';
 
 String _randomId(String prefix) {
   final random = Random.secure();
@@ -31,6 +32,10 @@ class LocalDatabase with PrivateStore implements LocalStore {
 
   LocalDatabase._();
 
+  CredentialVault _credentialVault = const NativeCredentialVault();
+  Database? _credentialsMigratedDatabase;
+  Future<void>? _credentialMigration;
+
   static LocalDatabase get instance => _instance ??= LocalDatabase._();
 
   /// Initialize FFI factory for Linux / desktop and test environments
@@ -49,10 +54,115 @@ class LocalDatabase with PrivateStore implements LocalStore {
 
   Future<Database> get database async {
     if (_database != null && _database!.isOpen) {
+      await _ensureCredentialMigration(_database!);
       return _database!;
     }
     _database = await _initDatabase();
+    await _ensureCredentialMigration(_database!);
     return _database!;
+  }
+
+  Future<Map<String, dynamic>> _protectAccount(Map account) async {
+    final protected = Map<String, dynamic>.from(account);
+    final token = protected.remove('sync_token');
+    if (token != null) {
+      if (token is! String || token.isEmpty) {
+        throw StateError('Sync Token không hợp lệ.');
+      }
+      final existing = protected['credential_ref'] as String?;
+      if (existing != null && await _credentialVault.read(existing) == token) {
+        return protected;
+      }
+      // Immutable references prevent a failed SQL commit or rotation from
+      // overwriting credentials still referenced by the previous profile.
+      final reference = _randomId('credential_');
+      await _credentialVault.write(reference, token);
+      if (await _credentialVault.read(reference) != token) {
+        throw StateError('Không thể xác minh kho thông tin đăng nhập.');
+      }
+      protected['credential_ref'] = reference;
+    }
+    return protected;
+  }
+
+  Future<void> _protectMetadata(Map metadata) async {
+    final account = metadata['account'];
+    if (account != null) {
+      metadata['account'] = jsonEncode(
+        await _protectAccount(jsonDecode(account as String) as Map),
+      );
+    }
+    final active = metadata['__active_accounts'];
+    if (active != null) {
+      final accounts = jsonDecode(active as String) as Map<String, dynamic>;
+      for (final backend in accounts.keys.toList()) {
+        accounts[backend] = await _protectAccount(accounts[backend] as Map);
+      }
+      metadata['__active_accounts'] = jsonEncode(accounts);
+    }
+  }
+
+  Future<void> _ensureCredentialMigration(Database db) async {
+    if (identical(db, _credentialsMigratedDatabase)) return;
+    final pending = _credentialMigration;
+    if (pending != null) return pending;
+    final migration = () async {
+      await db.execute('PRAGMA secure_delete = ON');
+      await db.transaction((txn) async {
+        final metadata = <String, dynamic>{
+          for (final row in await txn.query('local_sync_metadata'))
+            row['key'] as String: row['value'],
+        };
+        await _protectMetadata(metadata);
+        final snapshots = <Map<String, Object?>>[];
+        for (final row in await txn.query('local_profile_snapshots')) {
+          final payload = jsonDecode(row['payload'] as String) as Map;
+          final rows = payload['metadata'];
+          final archived = <String, dynamic>{
+            if (rows is List)
+              for (final entry in rows) entry['key'] as String: entry['value'],
+            if (rows is Map) ...Map<String, dynamic>.from(rows),
+          };
+          await _protectMetadata(archived);
+          payload['metadata'] = [
+            for (final entry in archived.entries)
+              {'key': entry.key, 'value': entry.value},
+          ];
+          snapshots.add({...row, 'payload': jsonEncode(payload)});
+        }
+        // Every required secret has been persisted and read back before SQL is
+        // changed. Transaction rollback retains every original plaintext row.
+        for (final entry in metadata.entries) {
+          await txn.update(
+            'local_sync_metadata',
+            {'value': entry.value},
+            where: 'key = ?',
+            whereArgs: [entry.key],
+          );
+        }
+        for (final row in snapshots) {
+          await txn.update(
+            'local_profile_snapshots',
+            {'payload': row['payload']},
+            where: 'profile_key = ?',
+            whereArgs: [row['profile_key']],
+          );
+        }
+      });
+      final checkpoint = await db.rawQuery('PRAGMA wal_checkpoint(TRUNCATE)');
+      if (checkpoint.isNotEmpty && checkpoint.first['busy'] != 0) {
+        debugPrint(
+          'Credential migration completed; database checkpoint is busy and will retry on next initialization.',
+        );
+      }
+    }();
+    _credentialMigration = migration;
+    try {
+      await migration;
+      _credentialsMigratedDatabase = db;
+    } finally {
+      _credentialMigration = null;
+    }
   }
 
   Future<Database> _initDatabase({String? customPath}) async {
@@ -104,14 +214,22 @@ class LocalDatabase with PrivateStore implements LocalStore {
   }
 
   /// Initialize with a custom file or in-memory path (e.g. inMemoryDatabasePath)
-  Future<void> initCustom({String? customPath, Database? customDb}) async {
+  Future<void> initCustom({
+    String? customPath,
+    Database? customDb,
+    CredentialVault? credentialVault,
+  }) async {
+    if (credentialVault != null) _credentialVault = credentialVault;
+    _credentialsMigratedDatabase = null;
     if (customDb != null) {
       _database = customDb;
       await _createTables(customDb);
+      await _ensureCredentialMigration(customDb);
       return;
     }
     _database = await _initDatabase(customPath: customPath);
     await _createTables(_database!);
+    await _ensureCredentialMigration(_database!);
   }
 
   Future<void> _createTables(Database db) async {
@@ -289,6 +407,7 @@ class LocalDatabase with PrivateStore implements LocalStore {
         m['__generation'] ?? '0',
       ]);
       final result = change(p);
+      await _protectMetadata(m);
       await SqlPrivateProfile.write(txn, p);
       return result;
     });
@@ -663,6 +782,11 @@ class LocalDatabase with PrivateStore implements LocalStore {
 
   @override
   Future<void> setMetadata(String key, String value) async {
+    if (key == 'account' || key == '__active_accounts') {
+      final metadata = <String, dynamic>{key: value};
+      await _protectMetadata(metadata);
+      value = metadata[key] as String;
+    }
     await (await database).insert('local_sync_metadata', {
       'key': key,
       'value': value,
@@ -672,9 +796,18 @@ class LocalDatabase with PrivateStore implements LocalStore {
   @override
   Future<Map<String, dynamic>?> getAccount() async {
     final value = await getMetadata('account');
-    return value == null
-        ? null
-        : Map<String, dynamic>.from(jsonDecode(value) as Map);
+    if (value == null) return null;
+    final account = Map<String, dynamic>.from(jsonDecode(value) as Map);
+    final reference = account['credential_ref'] as String?;
+    if (reference == null) {
+      throw StateError('Hồ sơ chưa có thông tin đăng nhập trong kho an toàn.');
+    }
+    final token = await _credentialVault.read(reference);
+    if (token == null || token.isEmpty) {
+      throw StateError('Không thể mở kho thông tin đăng nhập. Hãy thử lại.');
+    }
+    account['sync_token'] = token;
+    return account;
   }
 
   @override
@@ -690,7 +823,10 @@ class LocalDatabase with PrivateStore implements LocalStore {
   @override
   Future<void> switchAccount(Map<String, dynamic>? account) async {
     final db = await database;
-    await db.transaction((txn) => _switchPrivateProfile(txn, account: account));
+    final protected = account == null ? null : await _protectAccount(account);
+    await db.transaction(
+      (txn) => _switchPrivateProfile(txn, account: protected),
+    );
   }
 
   Future<void> _switchPrivateProfile(
@@ -1282,6 +1418,7 @@ class LocalDatabase with PrivateStore implements LocalStore {
     if (_database != null && _database!.isOpen) {
       await _database!.close();
       _database = null;
+      _credentialsMigratedDatabase = null;
     }
   }
 }

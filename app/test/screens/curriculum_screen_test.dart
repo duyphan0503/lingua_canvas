@@ -1,3 +1,4 @@
+import 'package:app/services/storage/credential_vault.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:app/models/lesson_item.dart';
@@ -7,6 +8,8 @@ import 'package:app/services/fsrs_engine.dart';
 import 'package:app/services/local_database.dart';
 
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
+final testCredentialVault = InMemoryCredentialVault();
 
 class MockCurriculumApiService extends ApiService {
   @override
@@ -79,7 +82,10 @@ void main() {
   late MockCurriculumApiService service;
 
   setUp(() async {
-    await LocalDatabase.instance.initCustom(customPath: inMemoryDatabasePath);
+    await LocalDatabase.instance.initCustom(
+      credentialVault: testCredentialVault,
+      customPath: inMemoryDatabasePath,
+    );
     service = MockCurriculumApiService();
   });
 
@@ -204,5 +210,33 @@ void main() {
         expect(selectedLesson?.id, 'en_it_deploy');
       },
     );
+
+    testWidgets('optional cloze recall checks answer without touching FSRS', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1200, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        MaterialApp(home: CurriculumScreen(apiService: service)),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, 'deploy');
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byTooltip('Luyện nhớ từ deploy'));
+      await tester.tap(find.byTooltip('Luyện nhớ từ deploy'));
+      await tester.pumpAndSettle();
+      expect(find.text('____ to production'), findsOneWidget);
+      await tester.enterText(find.byKey(const Key('recall-answer')), 'release');
+      await tester.tap(find.text('Kiểm tra'));
+      await tester.pumpAndSettle();
+      expect(find.text('Chưa đúng. Hãy thử lại hoặc xem đáp án.'), findsOneWidget);
+      await tester.enterText(find.byKey(const Key('recall-answer')), 'deploy');
+      await tester.tap(find.text('Kiểm tra'));
+      await tester.pumpAndSettle();
+      expect(find.text('Chính xác!'), findsOneWidget);
+      expect(await service.getAllCards(), isEmpty);
+    });
   });
 }

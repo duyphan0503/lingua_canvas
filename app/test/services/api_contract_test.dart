@@ -49,6 +49,10 @@ void main() {
       final body = jsonDecode(await utf8.decoder.bind(request).join());
       expect(body['profession'], 'hospitality');
       expect(body['user_level'], 'advanced');
+      expect(body['recent_turns'], [
+        {'role': 'assistant', 'content': 'Earlier line'},
+        {'role': 'user', 'content': 'Previous question'},
+      ]);
       request.response.write(jsonEncode({'reply': 'Welcome'}));
       await request.response.close();
     });
@@ -59,6 +63,11 @@ void main() {
       message: 'Hi',
       profession: 'HOSPITALITY',
       userLevel: 'ADVANCED',
+      recentTurns: [
+        {'role': 'assistant', 'content': 'Earlier line'},
+        {'role': 'user', 'content': 'Previous question'},
+        {'role': 'system', 'content': 'discard me'},
+      ],
     );
     await requestDone;
     expect(response['reply'], 'Welcome');

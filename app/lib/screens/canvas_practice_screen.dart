@@ -132,7 +132,8 @@ class _CanvasPracticeScreenState extends State<CanvasPracticeScreen>
     try {
       final result = await _apiService.sync();
       if (!result.success || !mounted) return;
-      if (result.pulledLessons == 0) return;
+      // Private vocabulary and completion deltas can change local state without
+      // increasing the public lesson counter.
       final lessons = await _apiService.getLessons();
       final count = await _apiService.getCompletedCount();
       if (!mounted) return;

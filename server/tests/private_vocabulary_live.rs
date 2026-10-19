@@ -10,6 +10,7 @@ fn app(pool: sqlx::PgPool) -> Router {
     server::create_app(AppState {
         cache: Arc::new(server::redis_cache::RedisCache::new(None)),
         accounts: Default::default(),
+        auth_sessions: Default::default(),
         memory: Default::default(),
         lessons: server::data::get_seed_lessons(),
         cards: Default::default(),
@@ -152,7 +153,7 @@ async fn live_private_http_contract_requires_a_disposable_postgres_database() {
     assert_eq!(other_pull.1["private_lessons"], json!([]));
 
     let public = request(&app, "/api/v1/lessons", None, None).await;
-    assert_eq!(public.1.as_array().unwrap().len(), 155);
+    assert_eq!(public.1.as_array().unwrap().len(), 355);
     assert!(!public
         .1
         .as_array()
@@ -222,7 +223,7 @@ async fn live_private_http_contract_requires_a_disposable_postgres_database() {
         assert_eq!(response.1["progress_import_acks"], json!(["backup-import"]));
     }
     let card: (i32,) = sqlx::query_as(
-        "SELECT reps FROM fsrs_cards WHERE user_id=(SELECT user_id FROM user_accounts WHERE sync_token=$1) AND item_id=$2",
+        "SELECT reps FROM fsrs_cards WHERE user_id=(SELECT user_id FROM auth_sessions WHERE token_hash=encode(sha256(convert_to($1,'UTF8')),'hex')) AND item_id=$2",
     )
     .bind(&owner)
     .bind(&word_id)

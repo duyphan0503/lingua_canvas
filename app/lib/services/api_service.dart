@@ -2377,6 +2377,7 @@ class ApiService {
     required String message,
     String profession = 'it',
     String userLevel = 'beginner',
+    List<Map<String, String>> recentTurns = const [],
   }) async {
     try {
       final requestBaseUrl = baseUrl;
@@ -2396,6 +2397,26 @@ class ApiService {
           'profession': profession.toLowerCase(),
           'user_level': userLevel.toLowerCase(),
           'user_message': message,
+          'recent_turns': recentTurns
+              .where(
+                (turn) =>
+                    (turn['role'] == 'user' || turn['role'] == 'assistant') &&
+                    (turn['content'] ?? '').isNotEmpty,
+              )
+              .toList()
+              .reversed
+              .take(8)
+              .toList()
+              .reversed
+              .map(
+                (turn) => {
+                  'role': turn['role'],
+                  'content': String.fromCharCodes(
+                    turn['content']!.runes.take(500),
+                  ),
+                },
+              )
+              .toList(),
         }),
       ).timeout(const Duration(seconds: 12));
 

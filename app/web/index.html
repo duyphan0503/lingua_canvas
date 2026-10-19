@@ -7,4 +7,14 @@
   <meta name="theme-color" content="#0B0F19">
   <link rel="manifest" href="manifest.json">
   <title>Lingua Canvas</title>
-</head><body><script src="flutter_bootstrap.js" async></script></body></html>
+</head><body>
+  <script>
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+          .catch((error) => console.warn('Offline shell unavailable', error));
+      });
+    }
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+</body></html>

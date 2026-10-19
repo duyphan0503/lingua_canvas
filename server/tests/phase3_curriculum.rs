@@ -64,9 +64,9 @@ fn phase3_curriculum_supplies_complete_workplace_lessons_without_duplicates() {
 }
 
 #[test]
-fn phase3_expansion_preserves_all_135_legacy_lessons_byte_for_byte() {
+fn phase3_expansion_preserves_the_legacy_prefix_byte_for_byte() {
     let lessons = get_seed_lessons();
-    assert_eq!(lessons.len(), 155);
+    assert_eq!(lessons.len(), 355);
     // FNV-1a snapshot of the JSON of all legacy fields, captured from HEAD
     // before the append. This catches removed, reordered or edited lessons.
     let legacy_json = serde_json::to_vec(&lessons[..135]).unwrap();

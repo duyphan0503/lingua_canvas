@@ -1,3 +1,4 @@
+import 'package:app/services/stroke_guide_service.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -103,6 +104,11 @@ class DeferredDownloadEngine extends MockDigitalInkEngine {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(() async {
+    expect(await StrokeGuideService.initialize(), isTrue);
+  });
+
   late PracticeApiService service;
   setUp(() => service = PracticeApiService());
 

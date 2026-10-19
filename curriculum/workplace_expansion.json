@@ -1,0 +1,3002 @@
+[
+  {
+    "id": "ja_work_horenso_writing_01",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "進捗",
+    "phonetic_or_kana": "しんちょく",
+    "meaning_vi": "tiến độ",
+    "workplace_context": "本日の会議では「進捗」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “tiến độ” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「進捗」 theo kana しんちょく; giữ nhịp đọc đều.",
+      "Dùng 「進捗」 khi trao đổi về tiến độ trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_horenso_writing_02",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "報告",
+    "phonetic_or_kana": "ほうこく",
+    "meaning_vi": "báo cáo",
+    "workplace_context": "本日の会議では「報告」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “báo cáo” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「報告」 theo kana ほうこく; giữ nhịp đọc đều.",
+      "Dùng 「報告」 khi trao đổi về báo cáo trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_horenso_writing_03",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "連絡",
+    "phonetic_or_kana": "れんらく",
+    "meaning_vi": "liên lạc",
+    "workplace_context": "本日の会議では「連絡」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “liên lạc” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「連絡」 theo kana れんらく; giữ nhịp đọc đều.",
+      "Dùng 「連絡」 khi trao đổi về liên lạc trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_horenso_writing_04",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "相談",
+    "phonetic_or_kana": "そうだん",
+    "meaning_vi": "trao đổi xin ý kiến",
+    "workplace_context": "本日の会議では「相談」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “trao đổi xin ý kiến” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「相談」 theo kana そうだん; giữ nhịp đọc đều.",
+      "Dùng 「相談」 khi trao đổi về trao đổi xin ý kiến trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_horenso_writing_05",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "共有",
+    "phonetic_or_kana": "きょうゆう",
+    "meaning_vi": "chia sẻ",
+    "workplace_context": "本日の会議では「共有」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “chia sẻ” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「共有」 theo kana きょうゆう; giữ nhịp đọc đều.",
+      "Dùng 「共有」 khi trao đổi về chia sẻ trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_horenso_writing_06",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "確認",
+    "phonetic_or_kana": "かくにん",
+    "meaning_vi": "xác nhận",
+    "workplace_context": "本日の会議では「確認」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “xác nhận” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「確認」 theo kana かくにん; giữ nhịp đọc đều.",
+      "Dùng 「確認」 khi trao đổi về xác nhận trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_horenso_writing_07",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "議事録",
+    "phonetic_or_kana": "ぎじろく",
+    "meaning_vi": "biên bản họp",
+    "workplace_context": "本日の会議では「議事録」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “biên bản họp” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「議事録」 theo kana ぎじろく; giữ nhịp đọc đều.",
+      "Dùng 「議事録」 khi trao đổi về biên bản họp trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_horenso_writing_08",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "要点",
+    "phonetic_or_kana": "ようてん",
+    "meaning_vi": "ý chính",
+    "workplace_context": "本日の会議では「要点」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “ý chính” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「要点」 theo kana ようてん; giữ nhịp đọc đều.",
+      "Dùng 「要点」 khi trao đổi về ý chính trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_horenso_writing_09",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "結論",
+    "phonetic_or_kana": "けつろん",
+    "meaning_vi": "kết luận",
+    "workplace_context": "本日の会議では「結論」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “kết luận” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「結論」 theo kana けつろん; giữ nhịp đọc đều.",
+      "Dùng 「結論」 khi trao đổi về kết luận trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_horenso_writing_10",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "背景",
+    "phonetic_or_kana": "はいけい",
+    "meaning_vi": "bối cảnh",
+    "workplace_context": "本日の会議では「背景」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “bối cảnh” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「背景」 theo kana はいけい; giữ nhịp đọc đều.",
+      "Dùng 「背景」 khi trao đổi về bối cảnh trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_horenso_writing_11",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "経緯",
+    "phonetic_or_kana": "けいい",
+    "meaning_vi": "diễn biến",
+    "workplace_context": "本日の会議では「経緯」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “diễn biến” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「経緯」 theo kana けいい; giữ nhịp đọc đều.",
+      "Dùng 「経緯」 khi trao đổi về diễn biến trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_horenso_writing_12",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "課題",
+    "phonetic_or_kana": "かだい",
+    "meaning_vi": "vấn đề cần xử lý",
+    "workplace_context": "本日の会議では「課題」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “vấn đề cần xử lý” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「課題」 theo kana かだい; giữ nhịp đọc đều.",
+      "Dùng 「課題」 khi trao đổi về vấn đề cần xử lý trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_horenso_writing_13",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "原因",
+    "phonetic_or_kana": "げんいん",
+    "meaning_vi": "nguyên nhân",
+    "workplace_context": "本日の会議では「原因」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “nguyên nhân” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「原因」 theo kana げんいん; giữ nhịp đọc đều.",
+      "Dùng 「原因」 khi trao đổi về nguyên nhân trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_horenso_writing_14",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "対策",
+    "phonetic_or_kana": "たいさく",
+    "meaning_vi": "biện pháp",
+    "workplace_context": "本日の会議では「対策」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “biện pháp” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「対策」 theo kana たいさく; giữ nhịp đọc đều.",
+      "Dùng 「対策」 khi trao đổi về biện pháp trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_horenso_writing_15",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "結果",
+    "phonetic_or_kana": "けっか",
+    "meaning_vi": "kết quả",
+    "workplace_context": "本日の会議では「結果」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “kết quả” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「結果」 theo kana けっか; giữ nhịp đọc đều.",
+      "Dùng 「結果」 khi trao đổi về kết quả trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_horenso_writing_16",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "見通し",
+    "phonetic_or_kana": "みとおし",
+    "meaning_vi": "dự báo",
+    "workplace_context": "本日の会議では「見通し」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “dự báo” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「見通し」 theo kana みとおし; giữ nhịp đọc đều.",
+      "Dùng 「見通し」 khi trao đổi về dự báo trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_horenso_writing_17",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "期限",
+    "phonetic_or_kana": "きげん",
+    "meaning_vi": "thời hạn",
+    "workplace_context": "本日の会議では「期限」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “thời hạn” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「期限」 theo kana きげん; giữ nhịp đọc đều.",
+      "Dùng 「期限」 khi trao đổi về thời hạn trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_horenso_writing_18",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "担当",
+    "phonetic_or_kana": "たんとう",
+    "meaning_vi": "người phụ trách",
+    "workplace_context": "本日の会議では「担当」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “người phụ trách” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「担当」 theo kana たんとう; giữ nhịp đọc đều.",
+      "Dùng 「担当」 khi trao đổi về người phụ trách trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_horenso_writing_19",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "優先順位",
+    "phonetic_or_kana": "ゆうせんじゅんい",
+    "meaning_vi": "thứ tự ưu tiên",
+    "workplace_context": "本日の会議では「優先順位」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “thứ tự ưu tiên” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「優先順位」 theo kana ゆうせんじゅんい; giữ nhịp đọc đều.",
+      "Dùng 「優先順位」 khi trao đổi về thứ tự ưu tiên trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_horenso_writing_20",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "変更点",
+    "phonetic_or_kana": "へんこうてん",
+    "meaning_vi": "điểm thay đổi",
+    "workplace_context": "本日の会議では「変更点」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “điểm thay đổi” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「変更点」 theo kana へんこうてん; giữ nhịp đọc đều.",
+      "Dùng 「変更点」 khi trao đổi về điểm thay đổi trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_horenso_writing_21",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "注意点",
+    "phonetic_or_kana": "ちゅういてん",
+    "meaning_vi": "điểm cần lưu ý",
+    "workplace_context": "本日の会議では「注意点」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “điểm cần lưu ý” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「注意点」 theo kana ちゅういてん; giữ nhịp đọc đều.",
+      "Dùng 「注意点」 khi trao đổi về điểm cần lưu ý trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_horenso_writing_22",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "依頼事項",
+    "phonetic_or_kana": "いらいじこう",
+    "meaning_vi": "nội dung được yêu cầu",
+    "workplace_context": "本日の会議では「依頼事項」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “nội dung được yêu cầu” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「依頼事項」 theo kana いらいじこう; giữ nhịp đọc đều.",
+      "Dùng 「依頼事項」 khi trao đổi về nội dung được yêu cầu trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_horenso_writing_23",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "決定事項",
+    "phonetic_or_kana": "けっていじこう",
+    "meaning_vi": "nội dung đã quyết định",
+    "workplace_context": "本日の会議では「決定事項」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “nội dung đã quyết định” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「決定事項」 theo kana けっていじこう; giữ nhịp đọc đều.",
+      "Dùng 「決定事項」 khi trao đổi về nội dung đã quyết định trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_horenso_writing_24",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "未解決事項",
+    "phonetic_or_kana": "みかいけつじこう",
+    "meaning_vi": "nội dung chưa giải quyết",
+    "workplace_context": "本日の会議では「未解決事項」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “nội dung chưa giải quyết” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「未解決事項」 theo kana みかいけつじこう; giữ nhịp đọc đều.",
+      "Dùng 「未解決事項」 khi trao đổi về nội dung chưa giải quyết trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_horenso_writing_25",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "見積もり",
+    "phonetic_or_kana": "みつもり",
+    "meaning_vi": "bản ước tính",
+    "workplace_context": "本日の会議では「見積もり」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “bản ước tính” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「見積もり」 theo kana みつもり; giữ nhịp đọc đều.",
+      "Dùng 「見積もり」 khi trao đổi về bản ước tính trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_horenso_writing_26",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "日程",
+    "phonetic_or_kana": "にってい",
+    "meaning_vi": "lịch trình",
+    "workplace_context": "本日の会議では「日程」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “lịch trình” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「日程」 theo kana にってい; giữ nhịp đọc đều.",
+      "Dùng 「日程」 khi trao đổi về lịch trình trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_horenso_writing_27",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "予定",
+    "phonetic_or_kana": "よてい",
+    "meaning_vi": "dự kiến",
+    "workplace_context": "本日の会議では「予定」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “dự kiến” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「予定」 theo kana よてい; giữ nhịp đọc đều.",
+      "Dùng 「予定」 khi trao đổi về dự kiến trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_horenso_writing_28",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "対応状況",
+    "phonetic_or_kana": "たいおうじょうきょう",
+    "meaning_vi": "tình hình xử lý",
+    "workplace_context": "本日の会議では「対応状況」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “tình hình xử lý” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「対応状況」 theo kana たいおうじょうきょう; giữ nhịp đọc đều.",
+      "Dùng 「対応状況」 khi trao đổi về tình hình xử lý trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_horenso_writing_29",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "完了条件",
+    "phonetic_or_kana": "かんりょうじょうけん",
+    "meaning_vi": "điều kiện hoàn tất",
+    "workplace_context": "本日の会議では「完了条件」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “điều kiện hoàn tất” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「完了条件」 theo kana かんりょうじょうけん; giữ nhịp đọc đều.",
+      "Dùng 「完了条件」 khi trao đổi về điều kiện hoàn tất trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_horenso_writing_30",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "再発防止",
+    "phonetic_or_kana": "さいはつぼうし",
+    "meaning_vi": "ngăn tái diễn",
+    "workplace_context": "本日の会議では「再発防止」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “ngăn tái diễn” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「再発防止」 theo kana さいはつぼうし; giữ nhịp đọc đều.",
+      "Dùng 「再発防止」 khi trao đổi về ngăn tái diễn trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_horenso_writing_31",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "承認",
+    "phonetic_or_kana": "しょうにん",
+    "meaning_vi": "phê duyệt",
+    "workplace_context": "本日の会議では「承認」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “phê duyệt” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「承認」 theo kana しょうにん; giữ nhịp đọc đều.",
+      "Dùng 「承認」 khi trao đổi về phê duyệt trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_horenso_writing_32",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "差し戻し",
+    "phonetic_or_kana": "さしもどし",
+    "meaning_vi": "trả lại để chỉnh sửa",
+    "workplace_context": "本日の会議では「差し戻し」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “trả lại để chỉnh sửa” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「差し戻し」 theo kana さしもどし; giữ nhịp đọc đều.",
+      "Dùng 「差し戻し」 khi trao đổi về trả lại để chỉnh sửa trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_horenso_writing_33",
+    "language": "ja",
+    "category": "horenso_writing",
+    "target_text": "引き継ぎ",
+    "phonetic_or_kana": "ひきつぎ",
+    "meaning_vi": "bàn giao",
+    "workplace_context": "本日の会議では「引き継ぎ」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “bàn giao” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「引き継ぎ」 theo kana ひきつぎ; giữ nhịp đọc đều.",
+      "Dùng 「引き継ぎ」 khi trao đổi về bàn giao trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_cloud_systems_01",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "クラウド環境",
+    "phonetic_or_kana": "くらうどかんきょう",
+    "meaning_vi": "môi trường đám mây",
+    "workplace_context": "本日の会議では「クラウド環境」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “môi trường đám mây” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「クラウド環境」 theo kana くらうどかんきょう; giữ nhịp đọc đều.",
+      "Dùng 「クラウド環境」 khi trao đổi về môi trường đám mây trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_cloud_systems_02",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "仮想マシン",
+    "phonetic_or_kana": "かそうましん",
+    "meaning_vi": "máy ảo",
+    "workplace_context": "本日の会議では「仮想マシン」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “máy ảo” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「仮想マシン」 theo kana かそうましん; giữ nhịp đọc đều.",
+      "Dùng 「仮想マシン」 khi trao đổi về máy ảo trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_cloud_systems_03",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "コンテナ",
+    "phonetic_or_kana": "こんてな",
+    "meaning_vi": "container",
+    "workplace_context": "本日の会議では「コンテナ」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “container” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「コンテナ」 theo kana こんてな; giữ nhịp đọc đều.",
+      "Dùng 「コンテナ」 khi trao đổi về container trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_cloud_systems_04",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "クラスター",
+    "phonetic_or_kana": "くらすたー",
+    "meaning_vi": "cụm máy chủ",
+    "workplace_context": "本日の会議では「クラスター」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “cụm máy chủ” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「クラスター」 theo kana くらすたー; giữ nhịp đọc đều.",
+      "Dùng 「クラスター」 khi trao đổi về cụm máy chủ trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_cloud_systems_05",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "デプロイ",
+    "phonetic_or_kana": "でぷろい",
+    "meaning_vi": "triển khai",
+    "workplace_context": "本日の会議では「デプロイ」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “triển khai” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「デプロイ」 theo kana でぷろい; giữ nhịp đọc đều.",
+      "Dùng 「デプロイ」 khi trao đổi về triển khai trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_cloud_systems_06",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "ロールバック",
+    "phonetic_or_kana": "ろーるばっく",
+    "meaning_vi": "hoàn tác phiên bản",
+    "workplace_context": "本日の会議では「ロールバック」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “hoàn tác phiên bản” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「ロールバック」 theo kana ろーるばっく; giữ nhịp đọc đều.",
+      "Dùng 「ロールバック」 khi trao đổi về hoàn tác phiên bản trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_cloud_systems_07",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "監視",
+    "phonetic_or_kana": "かんし",
+    "meaning_vi": "giám sát",
+    "workplace_context": "本日の会議では「監視」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “giám sát” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「監視」 theo kana かんし; giữ nhịp đọc đều.",
+      "Dùng 「監視」 khi trao đổi về giám sát trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_cloud_systems_08",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "稼働率",
+    "phonetic_or_kana": "かどうりつ",
+    "meaning_vi": "tỷ lệ hoạt động",
+    "workplace_context": "本日の会議では「稼働率」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “tỷ lệ hoạt động” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「稼働率」 theo kana かどうりつ; giữ nhịp đọc đều.",
+      "Dùng 「稼働率」 khi trao đổi về tỷ lệ hoạt động trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_cloud_systems_09",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "障害",
+    "phonetic_or_kana": "しょうがい",
+    "meaning_vi": "sự cố",
+    "workplace_context": "本日の会議では「障害」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “sự cố” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「障害」 theo kana しょうがい; giữ nhịp đọc đều.",
+      "Dùng 「障害」 khi trao đổi về sự cố trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_cloud_systems_10",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "復旧",
+    "phonetic_or_kana": "ふっきゅう",
+    "meaning_vi": "khôi phục dịch vụ",
+    "workplace_context": "本日の会議では「復旧」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “khôi phục dịch vụ” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「復旧」 theo kana ふっきゅう; giữ nhịp đọc đều.",
+      "Dùng 「復旧」 khi trao đổi về khôi phục dịch vụ trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_cloud_systems_11",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "バックアップ",
+    "phonetic_or_kana": "ばっくあっぷ",
+    "meaning_vi": "bản sao lưu",
+    "workplace_context": "本日の会議では「バックアップ」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “bản sao lưu” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「バックアップ」 theo kana ばっくあっぷ; giữ nhịp đọc đều.",
+      "Dùng 「バックアップ」 khi trao đổi về bản sao lưu trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_cloud_systems_12",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "復元",
+    "phonetic_or_kana": "ふくげん",
+    "meaning_vi": "khôi phục dữ liệu",
+    "workplace_context": "本日の会議では「復元」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “khôi phục dữ liệu” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「復元」 theo kana ふくげん; giữ nhịp đọc đều.",
+      "Dùng 「復元」 khi trao đổi về khôi phục dữ liệu trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_cloud_systems_13",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "負荷",
+    "phonetic_or_kana": "ふか",
+    "meaning_vi": "tải hệ thống",
+    "workplace_context": "本日の会議では「負荷」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “tải hệ thống” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「負荷」 theo kana ふか; giữ nhịp đọc đều.",
+      "Dùng 「負荷」 khi trao đổi về tải hệ thống trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_cloud_systems_14",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "拡張性",
+    "phonetic_or_kana": "かくちょうせい",
+    "meaning_vi": "khả năng mở rộng",
+    "workplace_context": "本日の会議では「拡張性」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “khả năng mở rộng” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「拡張性」 theo kana かくちょうせい; giữ nhịp đọc đều.",
+      "Dùng 「拡張性」 khi trao đổi về khả năng mở rộng trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_cloud_systems_15",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "可用性",
+    "phonetic_or_kana": "かようせい",
+    "meaning_vi": "tính sẵn sàng",
+    "workplace_context": "本日の会議では「可用性」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “tính sẵn sàng” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「可用性」 theo kana かようせい; giữ nhịp đọc đều.",
+      "Dùng 「可用性」 khi trao đổi về tính sẵn sàng trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_cloud_systems_16",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "冗長化",
+    "phonetic_or_kana": "じょうちょうか",
+    "meaning_vi": "dự phòng",
+    "workplace_context": "本日の会議では「冗長化」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “dự phòng” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「冗長化」 theo kana じょうちょうか; giữ nhịp đọc đều.",
+      "Dùng 「冗長化」 khi trao đổi về dự phòng trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_cloud_systems_17",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "遅延",
+    "phonetic_or_kana": "ちえん",
+    "meaning_vi": "độ trễ",
+    "workplace_context": "本日の会議では「遅延」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “độ trễ” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「遅延」 theo kana ちえん; giữ nhịp đọc đều.",
+      "Dùng 「遅延」 khi trao đổi về độ trễ trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_cloud_systems_18",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "帯域幅",
+    "phonetic_or_kana": "たいいきはば",
+    "meaning_vi": "băng thông",
+    "workplace_context": "本日の会議では「帯域幅」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “băng thông” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「帯域幅」 theo kana たいいきはば; giữ nhịp đọc đều.",
+      "Dùng 「帯域幅」 khi trao đổi về băng thông trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_cloud_systems_19",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "認証",
+    "phonetic_or_kana": "にんしょう",
+    "meaning_vi": "xác thực",
+    "workplace_context": "本日の会議では「認証」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “xác thực” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「認証」 theo kana にんしょう; giữ nhịp đọc đều.",
+      "Dùng 「認証」 khi trao đổi về xác thực trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_cloud_systems_20",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "アクセス権",
+    "phonetic_or_kana": "あくせすけん",
+    "meaning_vi": "quyền truy cập",
+    "workplace_context": "本日の会議では「アクセス権」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “quyền truy cập” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「アクセス権」 theo kana あくせすけん; giữ nhịp đọc đều.",
+      "Dùng 「アクセス権」 khi trao đổi về quyền truy cập trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_cloud_systems_21",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "暗号化",
+    "phonetic_or_kana": "あんごうか",
+    "meaning_vi": "mã hóa",
+    "workplace_context": "本日の会議では「暗号化」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “mã hóa” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「暗号化」 theo kana あんごうか; giữ nhịp đọc đều.",
+      "Dùng 「暗号化」 khi trao đổi về mã hóa trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_cloud_systems_22",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "監査ログ",
+    "phonetic_or_kana": "かんさろぐ",
+    "meaning_vi": "nhật ký kiểm toán",
+    "workplace_context": "本日の会議では「監査ログ」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “nhật ký kiểm toán” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「監査ログ」 theo kana かんさろぐ; giữ nhịp đọc đều.",
+      "Dùng 「監査ログ」 khi trao đổi về nhật ký kiểm toán trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_cloud_systems_23",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "データベース",
+    "phonetic_or_kana": "でーたべーす",
+    "meaning_vi": "cơ sở dữ liệu",
+    "workplace_context": "本日の会議では「データベース」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “cơ sở dữ liệu” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「データベース」 theo kana でーたべーす; giữ nhịp đọc đều.",
+      "Dùng 「データベース」 khi trao đổi về cơ sở dữ liệu trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_cloud_systems_24",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "接続プール",
+    "phonetic_or_kana": "せつぞくぷーる",
+    "meaning_vi": "pool kết nối",
+    "workplace_context": "本日の会議では「接続プール」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “pool kết nối” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「接続プール」 theo kana せつぞくぷーる; giữ nhịp đọc đều.",
+      "Dùng 「接続プール」 khi trao đổi về pool kết nối trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_cloud_systems_25",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "キャッシュ",
+    "phonetic_or_kana": "きゃっしゅ",
+    "meaning_vi": "bộ nhớ đệm",
+    "workplace_context": "本日の会議では「キャッシュ」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “bộ nhớ đệm” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「キャッシュ」 theo kana きゃっしゅ; giữ nhịp đọc đều.",
+      "Dùng 「キャッシュ」 khi trao đổi về bộ nhớ đệm trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_cloud_systems_26",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "キュー",
+    "phonetic_or_kana": "きゅー",
+    "meaning_vi": "hàng đợi",
+    "workplace_context": "本日の会議では「キュー」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “hàng đợi” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「キュー」 theo kana きゅー; giữ nhịp đọc đều.",
+      "Dùng 「キュー」 khi trao đổi về hàng đợi trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_cloud_systems_27",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "メッセージ",
+    "phonetic_or_kana": "めっせーじ",
+    "meaning_vi": "thông điệp",
+    "workplace_context": "本日の会議では「メッセージ」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “thông điệp” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「メッセージ」 theo kana めっせーじ; giữ nhịp đọc đều.",
+      "Dùng 「メッセージ」 khi trao đổi về thông điệp trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_cloud_systems_28",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "イベント",
+    "phonetic_or_kana": "いべんと",
+    "meaning_vi": "sự kiện",
+    "workplace_context": "本日の会議では「イベント」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “sự kiện” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「イベント」 theo kana いべんと; giữ nhịp đọc đều.",
+      "Dùng 「イベント」 khi trao đổi về sự kiện trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_cloud_systems_29",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "エンドポイント",
+    "phonetic_or_kana": "えんどぽいんと",
+    "meaning_vi": "điểm cuối API",
+    "workplace_context": "本日の会議では「エンドポイント」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “điểm cuối API” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「エンドポイント」 theo kana えんどぽいんと; giữ nhịp đọc đều.",
+      "Dùng 「エンドポイント」 khi trao đổi về điểm cuối API trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_cloud_systems_30",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "リクエスト",
+    "phonetic_or_kana": "りくえすと",
+    "meaning_vi": "yêu cầu",
+    "workplace_context": "本日の会議では「リクエスト」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “yêu cầu” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「リクエスト」 theo kana りくえすと; giữ nhịp đọc đều.",
+      "Dùng 「リクエスト」 khi trao đổi về yêu cầu trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_cloud_systems_31",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "応答時間",
+    "phonetic_or_kana": "おうとうじかん",
+    "meaning_vi": "thời gian phản hồi",
+    "workplace_context": "本日の会議では「応答時間」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “thời gian phản hồi” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「応答時間」 theo kana おうとうじかん; giữ nhịp đọc đều.",
+      "Dùng 「応答時間」 khi trao đổi về thời gian phản hồi trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_cloud_systems_32",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "しきい値",
+    "phonetic_or_kana": "しきいち",
+    "meaning_vi": "ngưỡng cảnh báo",
+    "workplace_context": "本日の会議では「しきい値」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “ngưỡng cảnh báo” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「しきい値」 theo kana しきいち; giữ nhịp đọc đều.",
+      "Dùng 「しきい値」 khi trao đổi về ngưỡng cảnh báo trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_cloud_systems_33",
+    "language": "ja",
+    "category": "cloud_systems",
+    "target_text": "アラート",
+    "phonetic_or_kana": "あらーと",
+    "meaning_vi": "cảnh báo",
+    "workplace_context": "本日の会議では「アラート」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “cảnh báo” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「アラート」 theo kana あらーと; giữ nhịp đọc đều.",
+      "Dùng 「アラート」 khi trao đổi về cảnh báo trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_requirements_negotiation_01",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "要件",
+    "phonetic_or_kana": "ようけん",
+    "meaning_vi": "yêu cầu",
+    "workplace_context": "本日の会議では「要件」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “yêu cầu” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「要件」 theo kana ようけん; giữ nhịp đọc đều.",
+      "Dùng 「要件」 khi trao đổi về yêu cầu trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_requirements_negotiation_02",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "要件定義",
+    "phonetic_or_kana": "ようけんていぎ",
+    "meaning_vi": "định nghĩa yêu cầu",
+    "workplace_context": "本日の会議では「要件定義」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “định nghĩa yêu cầu” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「要件定義」 theo kana ようけんていぎ; giữ nhịp đọc đều.",
+      "Dùng 「要件定義」 khi trao đổi về định nghĩa yêu cầu trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_requirements_negotiation_03",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "仕様",
+    "phonetic_or_kana": "しよう",
+    "meaning_vi": "đặc tả",
+    "workplace_context": "本日の会議では「仕様」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “đặc tả” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「仕様」 theo kana しよう; giữ nhịp đọc đều.",
+      "Dùng 「仕様」 khi trao đổi về đặc tả trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_requirements_negotiation_04",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "範囲",
+    "phonetic_or_kana": "はんい",
+    "meaning_vi": "phạm vi",
+    "workplace_context": "本日の会議では「範囲」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “phạm vi” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「範囲」 theo kana はんい; giữ nhịp đọc đều.",
+      "Dùng 「範囲」 khi trao đổi về phạm vi trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_requirements_negotiation_05",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "対象ユーザー",
+    "phonetic_or_kana": "たいしょうゆーざー",
+    "meaning_vi": "người dùng mục tiêu",
+    "workplace_context": "本日の会議では「対象ユーザー」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “người dùng mục tiêu” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「対象ユーザー」 theo kana たいしょうゆーざー; giữ nhịp đọc đều.",
+      "Dùng 「対象ユーザー」 khi trao đổi về người dùng mục tiêu trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_requirements_negotiation_06",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "利用場面",
+    "phonetic_or_kana": "りようばめん",
+    "meaning_vi": "tình huống sử dụng",
+    "workplace_context": "本日の会議では「利用場面」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “tình huống sử dụng” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「利用場面」 theo kana りようばめん; giữ nhịp đọc đều.",
+      "Dùng 「利用場面」 khi trao đổi về tình huống sử dụng trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_requirements_negotiation_07",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "業務フロー",
+    "phonetic_or_kana": "ぎょうむふろー",
+    "meaning_vi": "quy trình nghiệp vụ",
+    "workplace_context": "本日の会議では「業務フロー」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “quy trình nghiệp vụ” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「業務フロー」 theo kana ぎょうむふろー; giữ nhịp đọc đều.",
+      "Dùng 「業務フロー」 khi trao đổi về quy trình nghiệp vụ trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_requirements_negotiation_08",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "制約条件",
+    "phonetic_or_kana": "せいやくじょうけん",
+    "meaning_vi": "điều kiện ràng buộc",
+    "workplace_context": "本日の会議では「制約条件」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “điều kiện ràng buộc” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「制約条件」 theo kana せいやくじょうけん; giữ nhịp đọc đều.",
+      "Dùng 「制約条件」 khi trao đổi về điều kiện ràng buộc trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_requirements_negotiation_09",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "前提条件",
+    "phonetic_or_kana": "ぜんていじょうけん",
+    "meaning_vi": "điều kiện tiên quyết",
+    "workplace_context": "本日の会議では「前提条件」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “điều kiện tiên quyết” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「前提条件」 theo kana ぜんていじょうけん; giữ nhịp đọc đều.",
+      "Dùng 「前提条件」 khi trao đổi về điều kiện tiên quyết trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_requirements_negotiation_10",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "受け入れ条件",
+    "phonetic_or_kana": "うけいれじょうけん",
+    "meaning_vi": "điều kiện nghiệm thu",
+    "workplace_context": "本日の会議では「受け入れ条件」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “điều kiện nghiệm thu” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「受け入れ条件」 theo kana うけいれじょうけん; giữ nhịp đọc đều.",
+      "Dùng 「受け入れ条件」 khi trao đổi về điều kiện nghiệm thu trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_requirements_negotiation_11",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "成功基準",
+    "phonetic_or_kana": "せいこうきじゅん",
+    "meaning_vi": "tiêu chí thành công",
+    "workplace_context": "本日の会議では「成功基準」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “tiêu chí thành công” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「成功基準」 theo kana せいこうきじゅん; giữ nhịp đọc đều.",
+      "Dùng 「成功基準」 khi trao đổi về tiêu chí thành công trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_requirements_negotiation_12",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "優先度",
+    "phonetic_or_kana": "ゆうせんど",
+    "meaning_vi": "mức độ ưu tiên",
+    "workplace_context": "本日の会議では「優先度」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “mức độ ưu tiên” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「優先度」 theo kana ゆうせんど; giữ nhịp đọc đều.",
+      "Dùng 「優先度」 khi trao đổi về mức độ ưu tiên trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_requirements_negotiation_13",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "必須要件",
+    "phonetic_or_kana": "ひっすようけん",
+    "meaning_vi": "yêu cầu bắt buộc",
+    "workplace_context": "本日の会議では「必須要件」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “yêu cầu bắt buộc” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「必須要件」 theo kana ひっすようけん; giữ nhịp đọc đều.",
+      "Dùng 「必須要件」 khi trao đổi về yêu cầu bắt buộc trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_requirements_negotiation_14",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "追加要件",
+    "phonetic_or_kana": "ついかようけん",
+    "meaning_vi": "yêu cầu bổ sung",
+    "workplace_context": "本日の会議では「追加要件」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “yêu cầu bổ sung” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「追加要件」 theo kana ついかようけん; giữ nhịp đọc đều.",
+      "Dùng 「追加要件」 khi trao đổi về yêu cầu bổ sung trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_requirements_negotiation_15",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "変更要求",
+    "phonetic_or_kana": "へんこうようきゅう",
+    "meaning_vi": "yêu cầu thay đổi",
+    "workplace_context": "本日の会議では「変更要求」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “yêu cầu thay đổi” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「変更要求」 theo kana へんこうようきゅう; giữ nhịp đọc đều.",
+      "Dùng 「変更要求」 khi trao đổi về yêu cầu thay đổi trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_requirements_negotiation_16",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "影響範囲",
+    "phonetic_or_kana": "えいきょうはんい",
+    "meaning_vi": "phạm vi ảnh hưởng",
+    "workplace_context": "本日の会議では「影響範囲」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “phạm vi ảnh hưởng” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「影響範囲」 theo kana えいきょうはんい; giữ nhịp đọc đều.",
+      "Dùng 「影響範囲」 khi trao đổi về phạm vi ảnh hưởng trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_requirements_negotiation_17",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "工数",
+    "phonetic_or_kana": "こうすう",
+    "meaning_vi": "khối lượng công việc",
+    "workplace_context": "本日の会議では「工数」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “khối lượng công việc” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「工数」 theo kana こうすう; giữ nhịp đọc đều.",
+      "Dùng 「工数」 khi trao đổi về khối lượng công việc trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_requirements_negotiation_18",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "費用",
+    "phonetic_or_kana": "ひよう",
+    "meaning_vi": "chi phí",
+    "workplace_context": "本日の会議では「費用」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “chi phí” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「費用」 theo kana ひよう; giữ nhịp đọc đều.",
+      "Dùng 「費用」 khi trao đổi về chi phí trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_requirements_negotiation_19",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "納期",
+    "phonetic_or_kana": "のうき",
+    "meaning_vi": "hạn bàn giao",
+    "workplace_context": "本日の会議では「納期」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “hạn bàn giao” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「納期」 theo kana のうき; giữ nhịp đọc đều.",
+      "Dùng 「納期」 khi trao đổi về hạn bàn giao trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_requirements_negotiation_20",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "予算",
+    "phonetic_or_kana": "よさん",
+    "meaning_vi": "ngân sách",
+    "workplace_context": "本日の会議では「予算」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “ngân sách” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「予算」 theo kana よさん; giữ nhịp đọc đều.",
+      "Dùng 「予算」 khi trao đổi về ngân sách trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_requirements_negotiation_21",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "リスク",
+    "phonetic_or_kana": "りすく",
+    "meaning_vi": "rủi ro",
+    "workplace_context": "本日の会議では「リスク」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “rủi ro” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「リスク」 theo kana りすく; giữ nhịp đọc đều.",
+      "Dùng 「リスク」 khi trao đổi về rủi ro trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_requirements_negotiation_22",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "代替案",
+    "phonetic_or_kana": "だいたいあん",
+    "meaning_vi": "phương án thay thế",
+    "workplace_context": "本日の会議では「代替案」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “phương án thay thế” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「代替案」 theo kana だいたいあん; giữ nhịp đọc đều.",
+      "Dùng 「代替案」 khi trao đổi về phương án thay thế trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_requirements_negotiation_23",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "妥協案",
+    "phonetic_or_kana": "だきょうあん",
+    "meaning_vi": "phương án thỏa hiệp",
+    "workplace_context": "本日の会議では「妥協案」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “phương án thỏa hiệp” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「妥協案」 theo kana だきょうあん; giữ nhịp đọc đều.",
+      "Dùng 「妥協案」 khi trao đổi về phương án thỏa hiệp trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_requirements_negotiation_24",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "提案",
+    "phonetic_or_kana": "ていあん",
+    "meaning_vi": "đề xuất",
+    "workplace_context": "本日の会議では「提案」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “đề xuất” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「提案」 theo kana ていあん; giữ nhịp đọc đều.",
+      "Dùng 「提案」 khi trao đổi về đề xuất trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_requirements_negotiation_25",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "交渉",
+    "phonetic_or_kana": "こうしょう",
+    "meaning_vi": "đàm phán",
+    "workplace_context": "本日の会議では「交渉」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “đàm phán” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「交渉」 theo kana こうしょう; giữ nhịp đọc đều.",
+      "Dùng 「交渉」 khi trao đổi về đàm phán trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_requirements_negotiation_26",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "合意",
+    "phonetic_or_kana": "ごうい",
+    "meaning_vi": "thỏa thuận",
+    "workplace_context": "本日の会議では「合意」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “thỏa thuận” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「合意」 theo kana ごうい; giữ nhịp đọc đều.",
+      "Dùng 「合意」 khi trao đổi về thỏa thuận trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_requirements_negotiation_27",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "保留事項",
+    "phonetic_or_kana": "ほりゅうじこう",
+    "meaning_vi": "nội dung tạm hoãn",
+    "workplace_context": "本日の会議では「保留事項」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “nội dung tạm hoãn” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「保留事項」 theo kana ほりゅうじこう; giữ nhịp đọc đều.",
+      "Dùng 「保留事項」 khi trao đổi về nội dung tạm hoãn trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_requirements_negotiation_28",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "確認事項",
+    "phonetic_or_kana": "かくにんじこう",
+    "meaning_vi": "nội dung cần xác nhận",
+    "workplace_context": "本日の会議では「確認事項」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “nội dung cần xác nhận” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「確認事項」 theo kana かくにんじこう; giữ nhịp đọc đều.",
+      "Dùng 「確認事項」 khi trao đổi về nội dung cần xác nhận trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_requirements_negotiation_29",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "責任範囲",
+    "phonetic_or_kana": "せきにんはんい",
+    "meaning_vi": "phạm vi trách nhiệm",
+    "workplace_context": "本日の会議では「責任範囲」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “phạm vi trách nhiệm” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「責任範囲」 theo kana せきにんはんい; giữ nhịp đọc đều.",
+      "Dùng 「責任範囲」 khi trao đổi về phạm vi trách nhiệm trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_requirements_negotiation_30",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "役割分担",
+    "phonetic_or_kana": "やくわりぶんたん",
+    "meaning_vi": "phân công vai trò",
+    "workplace_context": "本日の会議では「役割分担」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “phân công vai trò” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「役割分担」 theo kana やくわりぶんたん; giữ nhịp đọc đều.",
+      "Dùng 「役割分担」 khi trao đổi về phân công vai trò trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_requirements_negotiation_31",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "依存関係",
+    "phonetic_or_kana": "いぞんかんけい",
+    "meaning_vi": "mối phụ thuộc",
+    "workplace_context": "本日の会議では「依存関係」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “mối phụ thuộc” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「依存関係」 theo kana いぞんかんけい; giữ nhịp đọc đều.",
+      "Dùng 「依存関係」 khi trao đổi về mối phụ thuộc trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_requirements_negotiation_32",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "移行計画",
+    "phonetic_or_kana": "いこうけいかく",
+    "meaning_vi": "kế hoạch chuyển đổi",
+    "workplace_context": "本日の会議では「移行計画」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “kế hoạch chuyển đổi” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「移行計画」 theo kana いこうけいかく; giữ nhịp đọc đều.",
+      "Dùng 「移行計画」 khi trao đổi về kế hoạch chuyển đổi trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "ja_work_requirements_negotiation_33",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "運用要件",
+    "phonetic_or_kana": "うんようようけん",
+    "meaning_vi": "yêu cầu vận hành",
+    "workplace_context": "本日の会議では「運用要件」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “yêu cầu vận hành” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「運用要件」 theo kana うんようようけん; giữ nhịp đọc đều.",
+      "Dùng 「運用要件」 khi trao đổi về yêu cầu vận hành trong công việc."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "ja_work_requirements_negotiation_34",
+    "language": "ja",
+    "category": "requirements_negotiation",
+    "target_text": "保守契約",
+    "phonetic_or_kana": "ほしゅけいやく",
+    "meaning_vi": "hợp đồng bảo trì",
+    "workplace_context": "本日の会議では「保守契約」を確認し、必要な対応を共有します。",
+    "workplace_context_vi": "Trong cuộc họp hôm nay, chúng ta sẽ kiểm tra “hợp đồng bảo trì” và chia sẻ việc cần xử lý.",
+    "stroke_order_hints": [
+      "Đọc 「保守契約」 theo kana ほしゅけいやく; giữ nhịp đọc đều.",
+      "Dùng 「保守契約」 khi trao đổi về hợp đồng bảo trì trong công việc."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_horenso_writing_01",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "progress",
+    "phonetic_or_kana": "/ˈprɑːɡrɛs/",
+    "meaning_vi": "tiến độ",
+    "workplace_context": "At today's review, the team will confirm the progress and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “tiến độ” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say progress clearly as /ˈprɑːɡrɛs/.",
+      "Use “progress” when discussing tiến độ at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_horenso_writing_02",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "status report",
+    "phonetic_or_kana": "/ˈsteɪtəs rɪˈpɔːrt/",
+    "meaning_vi": "báo cáo tình hình",
+    "workplace_context": "At today's review, the team will confirm the status report and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “báo cáo tình hình” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say status report clearly as /ˈsteɪtəs rɪˈpɔːrt/.",
+      "Use “status report” when discussing báo cáo tình hình at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_horenso_writing_03",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "update",
+    "phonetic_or_kana": "/ˈʌpdeɪt/",
+    "meaning_vi": "cập nhật",
+    "workplace_context": "At today's review, the team will confirm the update and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “cập nhật” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say update clearly as /ˈʌpdeɪt/.",
+      "Use “update” when discussing cập nhật at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_horenso_writing_04",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "meeting minutes",
+    "phonetic_or_kana": "/ˈmiːtɪŋ ˈmɪnɪts/",
+    "meaning_vi": "biên bản họp",
+    "workplace_context": "At today's review, the team will confirm the meeting minutes and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “biên bản họp” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say meeting minutes clearly as /ˈmiːtɪŋ ˈmɪnɪts/.",
+      "Use “meeting minutes” when discussing biên bản họp at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_horenso_writing_05",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "agenda",
+    "phonetic_or_kana": "/əˈdʒɛndə/",
+    "meaning_vi": "chương trình họp",
+    "workplace_context": "At today's review, the team will confirm the agenda and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “chương trình họp” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say agenda clearly as /əˈdʒɛndə/.",
+      "Use “agenda” when discussing chương trình họp at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_horenso_writing_06",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "key point",
+    "phonetic_or_kana": "/kiː pɔɪnt/",
+    "meaning_vi": "ý chính",
+    "workplace_context": "At today's review, the team will confirm the key point and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “ý chính” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say key point clearly as /kiː pɔɪnt/.",
+      "Use “key point” when discussing ý chính at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_horenso_writing_07",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "conclusion",
+    "phonetic_or_kana": "/kənˈkluːʒən/",
+    "meaning_vi": "kết luận",
+    "workplace_context": "At today's review, the team will confirm the conclusion and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “kết luận” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say conclusion clearly as /kənˈkluːʒən/.",
+      "Use “conclusion” when discussing kết luận at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_horenso_writing_08",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "background",
+    "phonetic_or_kana": "/ˈbækɡraʊnd/",
+    "meaning_vi": "bối cảnh",
+    "workplace_context": "At today's review, the team will confirm the background and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “bối cảnh” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say background clearly as /ˈbækɡraʊnd/.",
+      "Use “background” when discussing bối cảnh at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_horenso_writing_09",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "timeline",
+    "phonetic_or_kana": "/ˈtaɪmlaɪn/",
+    "meaning_vi": "dòng thời gian",
+    "workplace_context": "At today's review, the team will confirm the timeline and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “dòng thời gian” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say timeline clearly as /ˈtaɪmlaɪn/.",
+      "Use “timeline” when discussing dòng thời gian at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_horenso_writing_10",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "deadline",
+    "phonetic_or_kana": "/ˈdɛdlaɪn/",
+    "meaning_vi": "hạn chót",
+    "workplace_context": "At today's review, the team will confirm the deadline and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “hạn chót” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say deadline clearly as /ˈdɛdlaɪn/.",
+      "Use “deadline” when discussing hạn chót at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_horenso_writing_11",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "owner",
+    "phonetic_or_kana": "/ˈoʊnər/",
+    "meaning_vi": "người phụ trách",
+    "workplace_context": "At today's review, the team will confirm the owner and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “người phụ trách” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say owner clearly as /ˈoʊnər/.",
+      "Use “owner” when discussing người phụ trách at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_horenso_writing_12",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "blocker",
+    "phonetic_or_kana": "/ˈblɑːkər/",
+    "meaning_vi": "trở ngại",
+    "workplace_context": "At today's review, the team will confirm the blocker and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “trở ngại” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say blocker clearly as /ˈblɑːkər/.",
+      "Use “blocker” when discussing trở ngại at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_horenso_writing_13",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "root cause",
+    "phonetic_or_kana": "/ruːt kɔːz/",
+    "meaning_vi": "nguyên nhân gốc",
+    "workplace_context": "At today's review, the team will confirm the root cause and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “nguyên nhân gốc” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say root cause clearly as /ruːt kɔːz/.",
+      "Use “root cause” when discussing nguyên nhân gốc at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_horenso_writing_14",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "action item",
+    "phonetic_or_kana": "/ˈækʃən ˈaɪtəm/",
+    "meaning_vi": "việc cần thực hiện",
+    "workplace_context": "At today's review, the team will confirm the action item and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “việc cần thực hiện” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say action item clearly as /ˈækʃən ˈaɪtəm/.",
+      "Use “action item” when discussing việc cần thực hiện at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_horenso_writing_15",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "follow-up",
+    "phonetic_or_kana": "/ˈfɑːloʊ ʌp/",
+    "meaning_vi": "việc tiếp nối",
+    "workplace_context": "At today's review, the team will confirm the follow-up and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “việc tiếp nối” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say follow-up clearly as /ˈfɑːloʊ ʌp/.",
+      "Use “follow-up” when discussing việc tiếp nối at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_horenso_writing_16",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "decision",
+    "phonetic_or_kana": "/dɪˈsɪʒən/",
+    "meaning_vi": "quyết định",
+    "workplace_context": "At today's review, the team will confirm the decision and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “quyết định” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say decision clearly as /dɪˈsɪʒən/.",
+      "Use “decision” when discussing quyết định at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_horenso_writing_17",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "open question",
+    "phonetic_or_kana": "/ˈoʊpən ˈkwɛstʃən/",
+    "meaning_vi": "câu hỏi còn mở",
+    "workplace_context": "At today's review, the team will confirm the open question and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “câu hỏi còn mở” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say open question clearly as /ˈoʊpən ˈkwɛstʃən/.",
+      "Use “open question” when discussing câu hỏi còn mở at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_horenso_writing_18",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "estimate",
+    "phonetic_or_kana": "/ˈɛstəmeɪt/",
+    "meaning_vi": "ước tính",
+    "workplace_context": "At today's review, the team will confirm the estimate and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “ước tính” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say estimate clearly as /ˈɛstəmeɪt/.",
+      "Use “estimate” when discussing ước tính at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_horenso_writing_19",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "priority",
+    "phonetic_or_kana": "/praɪˈɔːrəti/",
+    "meaning_vi": "mức ưu tiên",
+    "workplace_context": "At today's review, the team will confirm the priority and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “mức ưu tiên” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say priority clearly as /praɪˈɔːrəti/.",
+      "Use “priority” when discussing mức ưu tiên at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_horenso_writing_20",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "dependency",
+    "phonetic_or_kana": "/dɪˈpɛndənsi/",
+    "meaning_vi": "việc phụ thuộc",
+    "workplace_context": "At today's review, the team will confirm the dependency and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “việc phụ thuộc” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say dependency clearly as /dɪˈpɛndənsi/.",
+      "Use “dependency” when discussing việc phụ thuộc at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_horenso_writing_21",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "change log",
+    "phonetic_or_kana": "/tʃeɪndʒ lɔːɡ/",
+    "meaning_vi": "nhật ký thay đổi",
+    "workplace_context": "At today's review, the team will confirm the change log and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “nhật ký thay đổi” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say change log clearly as /tʃeɪndʒ lɔːɡ/.",
+      "Use “change log” when discussing nhật ký thay đổi at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_horenso_writing_22",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "handover",
+    "phonetic_or_kana": "/ˈhændoʊvər/",
+    "meaning_vi": "bàn giao",
+    "workplace_context": "At today's review, the team will confirm the handover and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “bàn giao” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say handover clearly as /ˈhændoʊvər/.",
+      "Use “handover” when discussing bàn giao at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_horenso_writing_23",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "approval",
+    "phonetic_or_kana": "/əˈpruːvəl/",
+    "meaning_vi": "phê duyệt",
+    "workplace_context": "At today's review, the team will confirm the approval and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “phê duyệt” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say approval clearly as /əˈpruːvəl/.",
+      "Use “approval” when discussing phê duyệt at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_horenso_writing_24",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "revision",
+    "phonetic_or_kana": "/rɪˈvɪʒən/",
+    "meaning_vi": "bản chỉnh sửa",
+    "workplace_context": "At today's review, the team will confirm the revision and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “bản chỉnh sửa” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say revision clearly as /rɪˈvɪʒən/.",
+      "Use “revision” when discussing bản chỉnh sửa at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_horenso_writing_25",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "summary",
+    "phonetic_or_kana": "/ˈsʌməri/",
+    "meaning_vi": "bản tóm tắt",
+    "workplace_context": "At today's review, the team will confirm the summary and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “bản tóm tắt” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say summary clearly as /ˈsʌməri/.",
+      "Use “summary” when discussing bản tóm tắt at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_horenso_writing_26",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "finding",
+    "phonetic_or_kana": "/ˈfaɪndɪŋ/",
+    "meaning_vi": "phát hiện",
+    "workplace_context": "At today's review, the team will confirm the finding and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “phát hiện” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say finding clearly as /ˈfaɪndɪŋ/.",
+      "Use “finding” when discussing phát hiện at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_horenso_writing_27",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "metric",
+    "phonetic_or_kana": "/ˈmɛtrɪk/",
+    "meaning_vi": "chỉ số",
+    "workplace_context": "At today's review, the team will confirm the metric and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “chỉ số” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say metric clearly as /ˈmɛtrɪk/.",
+      "Use “metric” when discussing chỉ số at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_horenso_writing_28",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "forecast",
+    "phonetic_or_kana": "/ˈfɔːrkæst/",
+    "meaning_vi": "dự báo",
+    "workplace_context": "At today's review, the team will confirm the forecast and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “dự báo” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say forecast clearly as /ˈfɔːrkæst/.",
+      "Use “forecast” when discussing dự báo at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_horenso_writing_29",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "completion",
+    "phonetic_or_kana": "/kəmˈpliːʃən/",
+    "meaning_vi": "việc hoàn tất",
+    "workplace_context": "At today's review, the team will confirm the completion and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “việc hoàn tất” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say completion clearly as /kəmˈpliːʃən/.",
+      "Use “completion” when discussing việc hoàn tất at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_horenso_writing_30",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "incident report",
+    "phonetic_or_kana": "/ˈɪnsɪdənt rɪˈpɔːrt/",
+    "meaning_vi": "báo cáo sự cố",
+    "workplace_context": "At today's review, the team will confirm the incident report and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “báo cáo sự cố” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say incident report clearly as /ˈɪnsɪdənt rɪˈpɔːrt/.",
+      "Use “incident report” when discussing báo cáo sự cố at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_horenso_writing_31",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "mitigation",
+    "phonetic_or_kana": "/ˌmɪtəˈɡeɪʃən/",
+    "meaning_vi": "biện pháp giảm thiểu",
+    "workplace_context": "At today's review, the team will confirm the mitigation and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “biện pháp giảm thiểu” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say mitigation clearly as /ˌmɪtəˈɡeɪʃən/.",
+      "Use “mitigation” when discussing biện pháp giảm thiểu at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_horenso_writing_32",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "escalation",
+    "phonetic_or_kana": "/ˌɛskəˈleɪʃən/",
+    "meaning_vi": "việc báo cấp cao",
+    "workplace_context": "At today's review, the team will confirm the escalation and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “việc báo cấp cao” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say escalation clearly as /ˌɛskəˈleɪʃən/.",
+      "Use “escalation” when discussing việc báo cấp cao at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_horenso_writing_33",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "consensus",
+    "phonetic_or_kana": "/kənˈsɛnsəs/",
+    "meaning_vi": "đồng thuận",
+    "workplace_context": "At today's review, the team will confirm the consensus and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “đồng thuận” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say consensus clearly as /kənˈsɛnsəs/.",
+      "Use “consensus” when discussing đồng thuận at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_horenso_writing_34",
+    "language": "en",
+    "category": "horenso_writing",
+    "target_text": "decision record",
+    "phonetic_or_kana": "/dɪˈsɪʒən ˈrɛkərd/",
+    "meaning_vi": "biên bản quyết định",
+    "workplace_context": "At today's review, the team will confirm the decision record and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “biên bản quyết định” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say decision record clearly as /dɪˈsɪʒən ˈrɛkərd/.",
+      "Use “decision record” when discussing biên bản quyết định at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_cloud_systems_01",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "cloud environment",
+    "phonetic_or_kana": "/klaʊd ɪnˈvaɪrənmənt/",
+    "meaning_vi": "môi trường đám mây",
+    "workplace_context": "At today's review, the team will confirm the cloud environment and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “môi trường đám mây” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say cloud environment clearly as /klaʊd ɪnˈvaɪrənmənt/.",
+      "Use “cloud environment” when discussing môi trường đám mây at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_cloud_systems_02",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "virtual machine",
+    "phonetic_or_kana": "/ˈvɜːrtʃuəl məˈʃiːn/",
+    "meaning_vi": "máy ảo",
+    "workplace_context": "At today's review, the team will confirm the virtual machine and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “máy ảo” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say virtual machine clearly as /ˈvɜːrtʃuəl məˈʃiːn/.",
+      "Use “virtual machine” when discussing máy ảo at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_cloud_systems_03",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "container",
+    "phonetic_or_kana": "/kənˈteɪnər/",
+    "meaning_vi": "container",
+    "workplace_context": "At today's review, the team will confirm the container and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “container” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say container clearly as /kənˈteɪnər/.",
+      "Use “container” when discussing container at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_cloud_systems_04",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "cluster",
+    "phonetic_or_kana": "/ˈklʌstər/",
+    "meaning_vi": "cụm máy chủ",
+    "workplace_context": "At today's review, the team will confirm the cluster and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “cụm máy chủ” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say cluster clearly as /ˈklʌstər/.",
+      "Use “cluster” when discussing cụm máy chủ at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_cloud_systems_05",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "deployment",
+    "phonetic_or_kana": "/dɪˈplɔɪmənt/",
+    "meaning_vi": "triển khai",
+    "workplace_context": "At today's review, the team will confirm the deployment and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “triển khai” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say deployment clearly as /dɪˈplɔɪmənt/.",
+      "Use “deployment” when discussing triển khai at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_cloud_systems_06",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "rollback",
+    "phonetic_or_kana": "/ˈroʊlbæk/",
+    "meaning_vi": "hoàn tác phiên bản",
+    "workplace_context": "At today's review, the team will confirm the rollback and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “hoàn tác phiên bản” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say rollback clearly as /ˈroʊlbæk/.",
+      "Use “rollback” when discussing hoàn tác phiên bản at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_cloud_systems_07",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "monitoring",
+    "phonetic_or_kana": "/ˈmɑːnɪtərɪŋ/",
+    "meaning_vi": "giám sát",
+    "workplace_context": "At today's review, the team will confirm the monitoring and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “giám sát” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say monitoring clearly as /ˈmɑːnɪtərɪŋ/.",
+      "Use “monitoring” when discussing giám sát at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_cloud_systems_08",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "uptime",
+    "phonetic_or_kana": "/ˈʌptaɪm/",
+    "meaning_vi": "thời gian hoạt động",
+    "workplace_context": "At today's review, the team will confirm the uptime and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “thời gian hoạt động” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say uptime clearly as /ˈʌptaɪm/.",
+      "Use “uptime” when discussing thời gian hoạt động at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_cloud_systems_09",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "outage",
+    "phonetic_or_kana": "/ˈaʊtɪdʒ/",
+    "meaning_vi": "sự cố gián đoạn",
+    "workplace_context": "At today's review, the team will confirm the outage and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “sự cố gián đoạn” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say outage clearly as /ˈaʊtɪdʒ/.",
+      "Use “outage” when discussing sự cố gián đoạn at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_cloud_systems_10",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "recovery",
+    "phonetic_or_kana": "/rɪˈkʌvəri/",
+    "meaning_vi": "khôi phục",
+    "workplace_context": "At today's review, the team will confirm the recovery and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “khôi phục” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say recovery clearly as /rɪˈkʌvəri/.",
+      "Use “recovery” when discussing khôi phục at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_cloud_systems_11",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "backup",
+    "phonetic_or_kana": "/ˈbækʌp/",
+    "meaning_vi": "bản sao lưu",
+    "workplace_context": "At today's review, the team will confirm the backup and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “bản sao lưu” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say backup clearly as /ˈbækʌp/.",
+      "Use “backup” when discussing bản sao lưu at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_cloud_systems_12",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "scalability",
+    "phonetic_or_kana": "/ˌskeɪləˈbɪləti/",
+    "meaning_vi": "khả năng mở rộng",
+    "workplace_context": "At today's review, the team will confirm the scalability and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “khả năng mở rộng” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say scalability clearly as /ˌskeɪləˈbɪləti/.",
+      "Use “scalability” when discussing khả năng mở rộng at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_cloud_systems_13",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "availability",
+    "phonetic_or_kana": "/əˌveɪləˈbɪləti/",
+    "meaning_vi": "tính sẵn sàng",
+    "workplace_context": "At today's review, the team will confirm the availability and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “tính sẵn sàng” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say availability clearly as /əˌveɪləˈbɪləti/.",
+      "Use “availability” when discussing tính sẵn sàng at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_cloud_systems_14",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "redundancy",
+    "phonetic_or_kana": "/rɪˈdʌndənsi/",
+    "meaning_vi": "dự phòng",
+    "workplace_context": "At today's review, the team will confirm the redundancy and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “dự phòng” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say redundancy clearly as /rɪˈdʌndənsi/.",
+      "Use “redundancy” when discussing dự phòng at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_cloud_systems_15",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "latency",
+    "phonetic_or_kana": "/ˈleɪtənsi/",
+    "meaning_vi": "độ trễ",
+    "workplace_context": "At today's review, the team will confirm the latency and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “độ trễ” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say latency clearly as /ˈleɪtənsi/.",
+      "Use “latency” when discussing độ trễ at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_cloud_systems_16",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "bandwidth",
+    "phonetic_or_kana": "/ˈbændwɪdθ/",
+    "meaning_vi": "băng thông",
+    "workplace_context": "At today's review, the team will confirm the bandwidth and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “băng thông” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say bandwidth clearly as /ˈbændwɪdθ/.",
+      "Use “bandwidth” when discussing băng thông at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_cloud_systems_17",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "authentication",
+    "phonetic_or_kana": "/ɔːˌθɛntɪˈkeɪʃən/",
+    "meaning_vi": "xác thực",
+    "workplace_context": "At today's review, the team will confirm the authentication and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “xác thực” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say authentication clearly as /ɔːˌθɛntɪˈkeɪʃən/.",
+      "Use “authentication” when discussing xác thực at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_cloud_systems_18",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "access control",
+    "phonetic_or_kana": "/ˈæksɛs kənˈtroʊl/",
+    "meaning_vi": "kiểm soát truy cập",
+    "workplace_context": "At today's review, the team will confirm the access control and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “kiểm soát truy cập” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say access control clearly as /ˈæksɛs kənˈtroʊl/.",
+      "Use “access control” when discussing kiểm soát truy cập at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_cloud_systems_19",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "encryption",
+    "phonetic_or_kana": "/ɪnˈkrɪpʃən/",
+    "meaning_vi": "mã hóa",
+    "workplace_context": "At today's review, the team will confirm the encryption and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “mã hóa” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say encryption clearly as /ɪnˈkrɪpʃən/.",
+      "Use “encryption” when discussing mã hóa at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_cloud_systems_20",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "audit log",
+    "phonetic_or_kana": "/ˈɔːdɪt lɔːɡ/",
+    "meaning_vi": "nhật ký kiểm toán",
+    "workplace_context": "At today's review, the team will confirm the audit log and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “nhật ký kiểm toán” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say audit log clearly as /ˈɔːdɪt lɔːɡ/.",
+      "Use “audit log” when discussing nhật ký kiểm toán at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_cloud_systems_21",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "database",
+    "phonetic_or_kana": "/ˈdeɪtəbeɪs/",
+    "meaning_vi": "cơ sở dữ liệu",
+    "workplace_context": "At today's review, the team will confirm the database and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “cơ sở dữ liệu” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say database clearly as /ˈdeɪtəbeɪs/.",
+      "Use “database” when discussing cơ sở dữ liệu at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_cloud_systems_22",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "connection pool",
+    "phonetic_or_kana": "/kəˈnɛkʃən puːl/",
+    "meaning_vi": "pool kết nối",
+    "workplace_context": "At today's review, the team will confirm the connection pool and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “pool kết nối” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say connection pool clearly as /kəˈnɛkʃən puːl/.",
+      "Use “connection pool” when discussing pool kết nối at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_cloud_systems_23",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "cache",
+    "phonetic_or_kana": "/kæʃ/",
+    "meaning_vi": "bộ nhớ đệm",
+    "workplace_context": "At today's review, the team will confirm the cache and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “bộ nhớ đệm” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say cache clearly as /kæʃ/.",
+      "Use “cache” when discussing bộ nhớ đệm at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_cloud_systems_24",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "queue",
+    "phonetic_or_kana": "/kjuː/",
+    "meaning_vi": "hàng đợi",
+    "workplace_context": "At today's review, the team will confirm the queue and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “hàng đợi” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say queue clearly as /kjuː/.",
+      "Use “queue” when discussing hàng đợi at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_cloud_systems_25",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "message broker",
+    "phonetic_or_kana": "/ˈmɛsɪdʒ ˈbroʊkər/",
+    "meaning_vi": "bộ điều phối thông điệp",
+    "workplace_context": "At today's review, the team will confirm the message broker and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “bộ điều phối thông điệp” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say message broker clearly as /ˈmɛsɪdʒ ˈbroʊkər/.",
+      "Use “message broker” when discussing bộ điều phối thông điệp at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_cloud_systems_26",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "event stream",
+    "phonetic_or_kana": "/ɪˈvɛnt striːm/",
+    "meaning_vi": "luồng sự kiện",
+    "workplace_context": "At today's review, the team will confirm the event stream and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “luồng sự kiện” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say event stream clearly as /ɪˈvɛnt striːm/.",
+      "Use “event stream” when discussing luồng sự kiện at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_cloud_systems_27",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "endpoint",
+    "phonetic_or_kana": "/ˈɛndpɔɪnt/",
+    "meaning_vi": "điểm cuối API",
+    "workplace_context": "At today's review, the team will confirm the endpoint and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “điểm cuối API” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say endpoint clearly as /ˈɛndpɔɪnt/.",
+      "Use “endpoint” when discussing điểm cuối API at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_cloud_systems_28",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "request",
+    "phonetic_or_kana": "/rɪˈkwɛst/",
+    "meaning_vi": "yêu cầu",
+    "workplace_context": "At today's review, the team will confirm the request and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “yêu cầu” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say request clearly as /rɪˈkwɛst/.",
+      "Use “request” when discussing yêu cầu at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_cloud_systems_29",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "response time",
+    "phonetic_or_kana": "/rɪˈspɑːns taɪm/",
+    "meaning_vi": "thời gian phản hồi",
+    "workplace_context": "At today's review, the team will confirm the response time and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “thời gian phản hồi” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say response time clearly as /rɪˈspɑːns taɪm/.",
+      "Use “response time” when discussing thời gian phản hồi at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_cloud_systems_30",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "threshold",
+    "phonetic_or_kana": "/ˈθrɛʃhoʊld/",
+    "meaning_vi": "ngưỡng",
+    "workplace_context": "At today's review, the team will confirm the threshold and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “ngưỡng” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say threshold clearly as /ˈθrɛʃhoʊld/.",
+      "Use “threshold” when discussing ngưỡng at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_cloud_systems_31",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "alert",
+    "phonetic_or_kana": "/əˈlɜːrt/",
+    "meaning_vi": "cảnh báo",
+    "workplace_context": "At today's review, the team will confirm the alert and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “cảnh báo” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say alert clearly as /əˈlɜːrt/.",
+      "Use “alert” when discussing cảnh báo at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_cloud_systems_32",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "maintenance window",
+    "phonetic_or_kana": "/ˈmeɪntənəns ˈwɪndoʊ/",
+    "meaning_vi": "khung bảo trì",
+    "workplace_context": "At today's review, the team will confirm the maintenance window and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “khung bảo trì” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say maintenance window clearly as /ˈmeɪntənəns ˈwɪndoʊ/.",
+      "Use “maintenance window” when discussing khung bảo trì at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_cloud_systems_33",
+    "language": "en",
+    "category": "cloud_systems",
+    "target_text": "service account",
+    "phonetic_or_kana": "/ˈsɜːrvɪs əˈkaʊnt/",
+    "meaning_vi": "tài khoản dịch vụ",
+    "workplace_context": "At today's review, the team will confirm the service account and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “tài khoản dịch vụ” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say service account clearly as /ˈsɜːrvɪs əˈkaʊnt/.",
+      "Use “service account” when discussing tài khoản dịch vụ at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_requirements_negotiation_01",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "requirement",
+    "phonetic_or_kana": "/rɪˈkwaɪərmənt/",
+    "meaning_vi": "yêu cầu",
+    "workplace_context": "At today's review, the team will confirm the requirement and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “yêu cầu” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say requirement clearly as /rɪˈkwaɪərmənt/.",
+      "Use “requirement” when discussing yêu cầu at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_requirements_negotiation_02",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "requirements definition",
+    "phonetic_or_kana": "/rɪˈkwaɪərmənts ˌdɛfəˈnɪʃən/",
+    "meaning_vi": "định nghĩa yêu cầu",
+    "workplace_context": "At today's review, the team will confirm the requirements definition and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “định nghĩa yêu cầu” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say requirements definition clearly as /rɪˈkwaɪərmənts ˌdɛfəˈnɪʃən/.",
+      "Use “requirements definition” when discussing định nghĩa yêu cầu at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_requirements_negotiation_03",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "specification",
+    "phonetic_or_kana": "/ˌspɛsɪfɪˈkeɪʃən/",
+    "meaning_vi": "đặc tả",
+    "workplace_context": "At today's review, the team will confirm the specification and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “đặc tả” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say specification clearly as /ˌspɛsɪfɪˈkeɪʃən/.",
+      "Use “specification” when discussing đặc tả at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_requirements_negotiation_04",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "scope",
+    "phonetic_or_kana": "/skoʊp/",
+    "meaning_vi": "phạm vi",
+    "workplace_context": "At today's review, the team will confirm the scope and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “phạm vi” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say scope clearly as /skoʊp/.",
+      "Use “scope” when discussing phạm vi at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_requirements_negotiation_05",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "target user",
+    "phonetic_or_kana": "/ˈtɑːrɡɪt ˈjuːzər/",
+    "meaning_vi": "người dùng mục tiêu",
+    "workplace_context": "At today's review, the team will confirm the target user and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “người dùng mục tiêu” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say target user clearly as /ˈtɑːrɡɪt ˈjuːzər/.",
+      "Use “target user” when discussing người dùng mục tiêu at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_requirements_negotiation_06",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "use case",
+    "phonetic_or_kana": "/ˈjuːs keɪs/",
+    "meaning_vi": "trường hợp sử dụng",
+    "workplace_context": "At today's review, the team will confirm the use case and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “trường hợp sử dụng” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say use case clearly as /ˈjuːs keɪs/.",
+      "Use “use case” when discussing trường hợp sử dụng at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_requirements_negotiation_07",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "workflow",
+    "phonetic_or_kana": "/ˈwɜːrkfloʊ/",
+    "meaning_vi": "quy trình nghiệp vụ",
+    "workplace_context": "At today's review, the team will confirm the workflow and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “quy trình nghiệp vụ” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say workflow clearly as /ˈwɜːrkfloʊ/.",
+      "Use “workflow” when discussing quy trình nghiệp vụ at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_requirements_negotiation_08",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "constraint",
+    "phonetic_or_kana": "/kənˈstreɪnt/",
+    "meaning_vi": "điều kiện ràng buộc",
+    "workplace_context": "At today's review, the team will confirm the constraint and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “điều kiện ràng buộc” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say constraint clearly as /kənˈstreɪnt/.",
+      "Use “constraint” when discussing điều kiện ràng buộc at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_requirements_negotiation_09",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "assumption",
+    "phonetic_or_kana": "/əˈsʌmpʃən/",
+    "meaning_vi": "giả định",
+    "workplace_context": "At today's review, the team will confirm the assumption and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “giả định” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say assumption clearly as /əˈsʌmpʃən/.",
+      "Use “assumption” when discussing giả định at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_requirements_negotiation_10",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "acceptance criteria",
+    "phonetic_or_kana": "/əkˈsɛptəns kraɪˈtɪriə/",
+    "meaning_vi": "điều kiện nghiệm thu",
+    "workplace_context": "At today's review, the team will confirm the acceptance criteria and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “điều kiện nghiệm thu” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say acceptance criteria clearly as /əkˈsɛptəns kraɪˈtɪriə/.",
+      "Use “acceptance criteria” when discussing điều kiện nghiệm thu at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_requirements_negotiation_11",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "success metric",
+    "phonetic_or_kana": "/səkˈsɛs ˈmɛtrɪk/",
+    "meaning_vi": "chỉ số thành công",
+    "workplace_context": "At today's review, the team will confirm the success metric and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “chỉ số thành công” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say success metric clearly as /səkˈsɛs ˈmɛtrɪk/.",
+      "Use “success metric” when discussing chỉ số thành công at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_requirements_negotiation_12",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "ranking",
+    "phonetic_or_kana": "/ˈræŋkɪŋ/",
+    "meaning_vi": "thứ hạng ưu tiên",
+    "workplace_context": "At today's review, the team will confirm the ranking and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “thứ hạng ưu tiên” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say ranking clearly as /ˈræŋkɪŋ/.",
+      "Use “ranking” when discussing thứ hạng ưu tiên at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_requirements_negotiation_13",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "mandatory feature",
+    "phonetic_or_kana": "/ˈmændətɔːri ˈfiːtʃər/",
+    "meaning_vi": "tính năng bắt buộc",
+    "workplace_context": "At today's review, the team will confirm the mandatory feature and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “tính năng bắt buộc” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say mandatory feature clearly as /ˈmændətɔːri ˈfiːtʃər/.",
+      "Use “mandatory feature” when discussing tính năng bắt buộc at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_requirements_negotiation_14",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "change request",
+    "phonetic_or_kana": "/tʃeɪndʒ rɪˈkwɛst/",
+    "meaning_vi": "yêu cầu thay đổi",
+    "workplace_context": "At today's review, the team will confirm the change request and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “yêu cầu thay đổi” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say change request clearly as /tʃeɪndʒ rɪˈkwɛst/.",
+      "Use “change request” when discussing yêu cầu thay đổi at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_requirements_negotiation_15",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "impact analysis",
+    "phonetic_or_kana": "/ˈɪmpækt əˈnæləsɪs/",
+    "meaning_vi": "phân tích ảnh hưởng",
+    "workplace_context": "At today's review, the team will confirm the impact analysis and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “phân tích ảnh hưởng” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say impact analysis clearly as /ˈɪmpækt əˈnæləsɪs/.",
+      "Use “impact analysis” when discussing phân tích ảnh hưởng at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_requirements_negotiation_16",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "effort estimate",
+    "phonetic_or_kana": "/ˈɛfərt ˈɛstəmeɪt/",
+    "meaning_vi": "ước tính công sức",
+    "workplace_context": "At today's review, the team will confirm the effort estimate and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “ước tính công sức” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say effort estimate clearly as /ˈɛfərt ˈɛstəmeɪt/.",
+      "Use “effort estimate” when discussing ước tính công sức at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_requirements_negotiation_17",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "budget",
+    "phonetic_or_kana": "/ˈbʌdʒɪt/",
+    "meaning_vi": "ngân sách",
+    "workplace_context": "At today's review, the team will confirm the budget and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “ngân sách” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say budget clearly as /ˈbʌdʒɪt/.",
+      "Use “budget” when discussing ngân sách at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_requirements_negotiation_18",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "delivery date",
+    "phonetic_or_kana": "/dɪˈlɪvəri deɪt/",
+    "meaning_vi": "ngày bàn giao",
+    "workplace_context": "At today's review, the team will confirm the delivery date and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “ngày bàn giao” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say delivery date clearly as /dɪˈlɪvəri deɪt/.",
+      "Use “delivery date” when discussing ngày bàn giao at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_requirements_negotiation_19",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "risk",
+    "phonetic_or_kana": "/rɪsk/",
+    "meaning_vi": "rủi ro",
+    "workplace_context": "At today's review, the team will confirm the risk and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “rủi ro” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say risk clearly as /rɪsk/.",
+      "Use “risk” when discussing rủi ro at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_requirements_negotiation_20",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "alternative",
+    "phonetic_or_kana": "/ɔːlˈtɜːrnətɪv/",
+    "meaning_vi": "phương án thay thế",
+    "workplace_context": "At today's review, the team will confirm the alternative and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “phương án thay thế” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say alternative clearly as /ɔːlˈtɜːrnətɪv/.",
+      "Use “alternative” when discussing phương án thay thế at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_requirements_negotiation_21",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "trade-off",
+    "phonetic_or_kana": "/ˈtreɪd ɔːf/",
+    "meaning_vi": "sự đánh đổi",
+    "workplace_context": "At today's review, the team will confirm the trade-off and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “sự đánh đổi” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say trade-off clearly as /ˈtreɪd ɔːf/.",
+      "Use “trade-off” when discussing sự đánh đổi at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_requirements_negotiation_22",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "proposal",
+    "phonetic_or_kana": "/prəˈpoʊzəl/",
+    "meaning_vi": "đề xuất",
+    "workplace_context": "At today's review, the team will confirm the proposal and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “đề xuất” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say proposal clearly as /prəˈpoʊzəl/.",
+      "Use “proposal” when discussing đề xuất at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_requirements_negotiation_23",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "negotiation",
+    "phonetic_or_kana": "/nɪˌɡoʊʃiˈeɪʃən/",
+    "meaning_vi": "đàm phán",
+    "workplace_context": "At today's review, the team will confirm the negotiation and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “đàm phán” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say negotiation clearly as /nɪˌɡoʊʃiˈeɪʃən/.",
+      "Use “negotiation” when discussing đàm phán at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_requirements_negotiation_24",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "agreement",
+    "phonetic_or_kana": "/əˈɡriːmənt/",
+    "meaning_vi": "thỏa thuận",
+    "workplace_context": "At today's review, the team will confirm the agreement and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “thỏa thuận” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say agreement clearly as /əˈɡriːmənt/.",
+      "Use “agreement” when discussing thỏa thuận at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_requirements_negotiation_25",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "pending item",
+    "phonetic_or_kana": "/ˈpɛndɪŋ ˈaɪtəm/",
+    "meaning_vi": "nội dung tạm hoãn",
+    "workplace_context": "At today's review, the team will confirm the pending item and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “nội dung tạm hoãn” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say pending item clearly as /ˈpɛndɪŋ ˈaɪtəm/.",
+      "Use “pending item” when discussing nội dung tạm hoãn at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_requirements_negotiation_26",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "clarification",
+    "phonetic_or_kana": "/ˌklærəfɪˈkeɪʃən/",
+    "meaning_vi": "điểm cần làm rõ",
+    "workplace_context": "At today's review, the team will confirm the clarification and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “điểm cần làm rõ” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say clarification clearly as /ˌklærəfɪˈkeɪʃən/.",
+      "Use “clarification” when discussing điểm cần làm rõ at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_requirements_negotiation_27",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "responsibility",
+    "phonetic_or_kana": "/rɪˌspɑːnsəˈbɪləti/",
+    "meaning_vi": "trách nhiệm",
+    "workplace_context": "At today's review, the team will confirm the responsibility and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “trách nhiệm” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say responsibility clearly as /rɪˌspɑːnsəˈbɪləti/.",
+      "Use “responsibility” when discussing trách nhiệm at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_requirements_negotiation_28",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "role assignment",
+    "phonetic_or_kana": "/roʊl əˈsaɪnmənt/",
+    "meaning_vi": "phân công vai trò",
+    "workplace_context": "At today's review, the team will confirm the role assignment and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “phân công vai trò” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say role assignment clearly as /roʊl əˈsaɪnmənt/.",
+      "Use “role assignment” when discussing phân công vai trò at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_requirements_negotiation_29",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "integration point",
+    "phonetic_or_kana": "/ˌɪntɪˈɡreɪʃən pɔɪnt/",
+    "meaning_vi": "điểm tích hợp",
+    "workplace_context": "At today's review, the team will confirm the integration point and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “điểm tích hợp” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say integration point clearly as /ˌɪntɪˈɡreɪʃən pɔɪnt/.",
+      "Use “integration point” when discussing điểm tích hợp at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_requirements_negotiation_30",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "migration plan",
+    "phonetic_or_kana": "/maɪˈɡreɪʃən plæn/",
+    "meaning_vi": "kế hoạch chuyển đổi",
+    "workplace_context": "At today's review, the team will confirm the migration plan and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “kế hoạch chuyển đổi” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say migration plan clearly as /maɪˈɡreɪʃən plæn/.",
+      "Use “migration plan” when discussing kế hoạch chuyển đổi at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_requirements_negotiation_31",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "operational requirement",
+    "phonetic_or_kana": "/ˌɑːpəˈreɪʃənəl rɪˈkwaɪərmənt/",
+    "meaning_vi": "yêu cầu vận hành",
+    "workplace_context": "At today's review, the team will confirm the operational requirement and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “yêu cầu vận hành” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say operational requirement clearly as /ˌɑːpəˈreɪʃənəl rɪˈkwaɪərmənt/.",
+      "Use “operational requirement” when discussing yêu cầu vận hành at work."
+    ],
+    "difficulty_level": 2
+  },
+  {
+    "id": "en_work_requirements_negotiation_32",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "support contract",
+    "phonetic_or_kana": "/səˈpɔːrt ˈkɑːntrækt/",
+    "meaning_vi": "hợp đồng hỗ trợ",
+    "workplace_context": "At today's review, the team will confirm the support contract and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “hợp đồng hỗ trợ” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say support contract clearly as /səˈpɔːrt ˈkɑːntrækt/.",
+      "Use “support contract” when discussing hợp đồng hỗ trợ at work."
+    ],
+    "difficulty_level": 3
+  },
+  {
+    "id": "en_work_requirements_negotiation_33",
+    "language": "en",
+    "category": "requirements_negotiation",
+    "target_text": "stakeholder",
+    "phonetic_or_kana": "/ˈsteɪkhoʊldər/",
+    "meaning_vi": "bên liên quan",
+    "workplace_context": "At today's review, the team will confirm the stakeholder and agree on any follow-up.",
+    "workplace_context_vi": "Trong buổi rà soát hôm nay, nhóm sẽ xác nhận “bên liên quan” và thống nhất việc tiếp theo.",
+    "stroke_order_hints": [
+      "Say stakeholder clearly as /ˈsteɪkhoʊldər/.",
+      "Use “stakeholder” when discussing bên liên quan at work."
+    ],
+    "difficulty_level": 2
+  }
+]

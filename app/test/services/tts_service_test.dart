@@ -1,3 +1,4 @@
+import 'package:app/services/storage/credential_vault.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +13,8 @@ import 'package:app/services/local_database.dart';
 import 'package:app/services/tts_service.dart';
 import 'package:app/widgets/tts_speaker_button.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
+final testCredentialVault = InMemoryCredentialVault();
 
 class MockTestApiService extends ApiService {
   @override
@@ -60,6 +63,7 @@ class MockTestApiService extends ApiService {
     required String message,
     String profession = 'it',
     String userLevel = 'beginner',
+    List<Map<String, String>> recentTurns = const [],
   }) async => {
     'reply': '了解しました。',
     'romaji': 'Ryoukai shimashita.',
@@ -437,7 +441,10 @@ void main() {
     late MockTestApiService apiService;
 
     setUp(() async {
-      await LocalDatabase.instance.initCustom(customPath: inMemoryDatabasePath);
+      await LocalDatabase.instance.initCustom(
+        credentialVault: testCredentialVault,
+        customPath: inMemoryDatabasePath,
+      );
       mockEngine = MockTTSEngine();
       ttsService = TtsService(engine: mockEngine);
       apiService = MockTestApiService();

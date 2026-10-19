@@ -1,7 +1,7 @@
 use crate::models::LessonItem;
 
 pub fn get_seed_lessons() -> Vec<LessonItem> {
-    vec![
+    let mut lessons = vec![
         LessonItem {
             id: "ja_hira_a".to_string(),
             language: "ja".to_string(),
@@ -2146,5 +2146,10 @@ pub fn get_seed_lessons() -> Vec<LessonItem> {
             stroke_order_hints: vec!["Viết objective từ trái sang phải, giữ khoảng cách giữa các chữ đều nhau.".to_string(), "Căn chữ thường theo dòng kẻ; phân biệt nét cao và nét đuôi.".to_string()],
             difficulty_level: 3,
         },
-    ]
+    ];
+    let workplace_lessons: Vec<LessonItem> =
+        serde_json::from_str(include_str!("../../curriculum/workplace_expansion.json"))
+            .expect("the checked-in workplace curriculum JSON must be valid");
+    lessons.extend(workplace_lessons);
+    lessons
 }

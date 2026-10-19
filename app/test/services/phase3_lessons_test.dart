@@ -31,8 +31,20 @@ void main() {
   };
 
   test('offline phase 3 catalog supplies each required lesson once', () {
-    expect(phase3Lessons, hasLength(20));
-    expect(phase3Lessons.map((l) => l.id).toSet(), hasLength(20));
+    expect(phase3Lessons, hasLength(220));
+    expect(phase3Lessons.map((l) => l.id).toSet(), hasLength(220));
+    final expansion =
+        jsonDecode(
+              File('../curriculum/workplace_expansion.json').readAsStringSync(),
+            )
+            as List<dynamic>;
+    expect(expansion, hasLength(200));
+    expect(expansion.where((row) => row['language'] == 'ja'), hasLength(100));
+    expect(expansion.where((row) => row['language'] == 'en'), hasLength(100));
+    expect(
+      phase3Lessons.where((lesson) => lesson.id.contains('_work_')).length,
+      200,
+    );
     for (final entry in {...japanese, ...english}.entries) {
       final lesson = phase3Lessons.singleWhere((l) => l.id == entry.key);
       expect(lesson.targetText, entry.value);
@@ -56,7 +68,19 @@ void main() {
       r'LessonItem \{(.*?)\n        \}',
       dotAll: true,
     ).allMatches(source).map((match) => match.group(1)!);
+    final expansion =
+        jsonDecode(
+              File('../curriculum/workplace_expansion.json').readAsStringSync(),
+            )
+            as List<dynamic>;
     for (final lesson in phase3Lessons) {
+      if (lesson.id.contains('_work_')) {
+        final sourceRow =
+            expansion.singleWhere((row) => row['id'] == lesson.id)
+                as Map<String, dynamic>;
+        expect(lesson.toJson(), sourceRow, reason: lesson.id);
+        continue;
+      }
       final block = blocks.singleWhere((b) => b.contains('id: "${lesson.id}"'));
       for (final entry in lesson.toJson().entries) {
         if (entry.key == 'stroke_order_hints') {

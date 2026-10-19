@@ -7,6 +7,11 @@ import 'package:app/services/speech_practice_service.dart';
 import 'widget_test.dart' show PracticeApiService;
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(() async {
+    expect(await StrokeGuideService.initialize(), isTrue);
+  });
+
   testWidgets('guide animation completes and leaves user strokes untouched', (
     tester,
   ) async {

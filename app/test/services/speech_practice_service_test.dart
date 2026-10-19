@@ -52,6 +52,18 @@ void main() {
       expect(result.feedbackVi, contains('cat'));
       expect(result.recognizedTranscript, 'dog');
       expect(result.targetText, 'cat');
+      expect(result.feedbackVi, contains('không chẩn đoán âm thanh'));
+    });
+
+    test('English transcript mismatch is reported by word', () {
+      final result = service.evaluatePronunciation(
+        recognized: 'I like dogs',
+        targetText: 'I like cats',
+        phoneticOrKana: '',
+        language: 'en',
+      );
+      expect(result.mismatchedSegments, ['cats']);
+      expect(result.feedbackVi, contains('cats'));
     });
   });
 

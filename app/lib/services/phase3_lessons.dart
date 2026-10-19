@@ -1,4 +1,5 @@
 import '../models/lesson_item.dart';
+import 'generated_workplace_lessons.dart';
 
 /// Workplace curriculum shared by the offline fallback and server seed data.
 final List<LessonItem> phase3Lessons = List.unmodifiable([
@@ -307,4 +308,5 @@ final List<LessonItem> phase3Lessons = List.unmodifiable([
     ],
     difficultyLevel: 3,
   ),
+  ...generatedWorkplaceLessons,
 ]);

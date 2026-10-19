@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'digital_ink_engine.dart';
+import 'stroke_guide_service.dart';
 import '../models/handwriting_stroke.dart';
 export '../models/handwriting_stroke.dart';
 
@@ -131,10 +132,17 @@ class HandwritingRecognizer {
       candidateScore = (bestLevRatio * 0.70).clamp(0.0, 0.70);
     }
 
-    // 3. Stroke Count Difference Penalty (20% weight)
-    int expectedStrokes = strokeOrderHints.isNotEmpty
-        ? strokeOrderHints.length
-        : targetText.length;
+    // Canonical counts take priority over prose hints, especially for compounds.
+    // Other languages and unavailable glyphs retain the existing scoring fallback.
+    if (languageTag.startsWith('ja')) await StrokeGuideService.initialize();
+    final canonicalCount = languageTag.startsWith('ja')
+        ? StrokeGuideService.coverageFor(normTarget).expectedStrokeCount
+        : null;
+    int expectedStrokes =
+        canonicalCount ??
+        (strokeOrderHints.isNotEmpty
+            ? strokeOrderHints.length
+            : targetText.length);
     if (expectedStrokes <= 0) expectedStrokes = 1;
 
     final strokeDiff = (totalStrokes - expectedStrokes).abs();
@@ -168,18 +176,52 @@ class HandwritingRecognizer {
       }
     }
 
-    // 5. Composite Score Formula: 70% candidate + 20% stroke + 10% bounding box
+    // A start/end vector is invariant under translation and positive uniform scale.
+    // Skip nearly closed strokes and mismatched counts: alignment is ambiguous.
+    final guides = canonicalCount == null
+        ? const <StrokeGuidePath>[]
+        : StrokeGuideService.guidesFor(normTarget);
+    var reversedStrokes = 0;
+    var comparableStrokes = 0;
+    if (guides.length == strokes.length) {
+      for (var i = 0; i < guides.length; i++) {
+        final points = strokes[i].points;
+        if (points.length < 2) continue;
+        final expected =
+            guides[i].normalizedPoints.last - guides[i].normalizedPoints.first;
+        final dx = points.last.x - points.first.x;
+        final dy = points.last.y - points.first.y;
+        if (expected.distance < .025 || sqrt(dx * dx + dy * dy) < 2) continue;
+        comparableStrokes++;
+        // Angles above 90 degrees identify a basic reversed direction while
+        // allowing substantial slant and imperfect pen endpoints.
+        if (dx * expected.dx + dy * expected.dy < 0) reversedStrokes++;
+      }
+    }
+    final directionPenalty = comparableStrokes == 0
+        ? 0.0
+        : .20 * reversedStrokes / comparableStrokes;
+
+    // Preserve the original formula when canonical direction data is unavailable.
     final similarityScore =
-        ((candidateScore * 0.70) + (strokeScore * 0.20) + (boxScore * 0.10))
+        ((candidateScore * 0.70) +
+                (strokeScore * 0.20) +
+                (boxScore * 0.10) -
+                directionPenalty)
             .clamp(0.0, 1.0);
 
     // Accuracy threshold: composite score >= 0.75 and either exact match in top 5 or Levenshtein ratio >= 0.80
     final isAccurate =
-        similarityScore >= 0.75 && (matchRank >= 0 || bestLevRatio >= 0.80);
+        similarityScore >= 0.75 &&
+        (matchRank >= 0 || bestLevRatio >= 0.80) &&
+        reversedStrokes == 0;
 
     // 6. Contextual Vietnamese Feedback
     String feedback;
-    if (isAccurate) {
+    if (reversedStrokes > 0) {
+      feedback =
+          "Có $reversedStrokes nét ngược hướng. Hãy viết theo hướng đầu đến cuối của nét mẫu.";
+    } else if (isAccurate) {
       if (matchRank == 0) {
         feedback =
             "Tuyệt vời! Nhận diện chính xác '$normTarget'. Nét chữ rất chuẩn.";

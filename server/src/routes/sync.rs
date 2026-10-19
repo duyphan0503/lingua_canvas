@@ -37,6 +37,18 @@ pub struct MemorySync {
     receipts: RwLock<HashMap<String, private::Receipt>>,
 }
 impl MemorySync {
+    pub(super) async fn due_private_lesson(
+        &self,
+        user: &str,
+        lesson_id: &str,
+    ) -> Option<crate::models::LessonItem> {
+        self.private_lessons
+            .read()
+            .await
+            .get(&key(user, lesson_id))
+            .and_then(|(state, _)| (!state.deleted).then(|| state.lesson.clone()))
+    }
+
     pub async fn user_lock(&self, user: &str) -> Arc<Mutex<()>> {
         self.locks
             .lock()
@@ -57,6 +69,7 @@ pub fn key(user: &str, item: &str) -> String {
         format!("\0{}", serde_json::to_string(&(user, item)).unwrap())
     }
 }
+
 fn owns(user: &str, key: &str) -> bool {
     if user == DEFAULT_USER {
         !key.starts_with('\0')
@@ -88,6 +101,34 @@ pub async fn card_lock(
         .execute(tx)
         .await
         .map_err(error)?;
+    Ok(())
+}
+/// Acquire a complete batch in actual advisory-key order, including hash collisions.
+/// Review writers and multi-card progress imports share this order.
+async fn batch_locks(
+    tx: &mut sqlx::PgConnection,
+    user: &str,
+    namespace: i32,
+    items: &[String],
+) -> Result<(), StatusCode> {
+    let keys: Vec<String> = items
+        .iter()
+        .map(|item| serde_json::to_string(&(user, item)).unwrap())
+        .collect();
+    let hashes: Vec<i32> =
+        sqlx::query_scalar("SELECT DISTINCT hashtext(k) FROM unnest($1::text[]) AS k ORDER BY 1")
+            .bind(keys)
+            .fetch_all(&mut *tx)
+            .await
+            .map_err(error)?;
+    for key in hashes {
+        sqlx::query("SELECT pg_advisory_xact_lock($1,$2)")
+            .bind(namespace)
+            .bind(key)
+            .execute(&mut *tx)
+            .await
+            .map_err(error)?;
+    }
     Ok(())
 }
 pub async fn record_memory_card(state: &AppState, user: &str, card: FSRSCard) {
@@ -213,6 +254,35 @@ pub async fn push_sync(
     }
     let mut ids = Vec::new();
     let mut updated = HashMap::new();
+    let review_ids: Vec<_> = req
+        .reviews
+        .iter()
+        .filter(|rev| !blocked.contains(&rev.item_id))
+        .map(|rev| {
+            rev.review_id.clone().unwrap_or_else(|| {
+                format!("rev_{}_{}", rev.review_time.timestamp_millis(), rev.item_id)
+            })
+        })
+        .collect();
+    let review_items: Vec<_> = req
+        .reviews
+        .iter()
+        .filter(|rev| !blocked.contains(&rev.item_id))
+        .map(|rev| rev.item_id.clone())
+        .collect();
+    let mut tx = if let Some(pool) = &state.pool {
+        if review_ids.is_empty() {
+            None
+        } else {
+            let mut tx = pool.begin().await.map_err(error)?;
+            writer_lock(&mut tx, &user).await?;
+            batch_locks(&mut tx, &user, 1, &review_ids).await?;
+            batch_locks(&mut tx, &user, 2, &review_items).await?;
+            Some(tx)
+        }
+    } else {
+        None
+    };
     for rev in req.reviews {
         if blocked.contains(&rev.item_id) {
             continue;
@@ -233,19 +303,6 @@ pub async fn push_sync(
         });
         let card_key = key(&user, &rev.item_id);
         let review_key = key(&user, &id);
-        let mut tx = if let Some(p) = &state.pool {
-            let mut tx = p.begin().await.map_err(error)?;
-            writer_lock(&mut tx, &user).await?;
-            sqlx::query("SELECT pg_advisory_xact_lock(1,hashtext($1))")
-                .bind(serde_json::to_string(&(&user, &id)).unwrap())
-                .execute(&mut *tx)
-                .await
-                .map_err(error)?;
-            card_lock(&mut tx, &user, &rev.item_id).await?;
-            Some(tx)
-        } else {
-            None
-        };
         let seen = if let Some(tx) = &mut tx {
             sqlx::query_scalar::<_, String>(
                 "SELECT item_id FROM review_logs WHERE user_id=$1 AND id=$2",
@@ -288,9 +345,7 @@ pub async fn push_sync(
                 sqlx::query("INSERT INTO review_logs(user_id,id,item_id,client_id,rating,state,review_time,elapsed_days,scheduled_days,server_received_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,clock_timestamp()) ON CONFLICT(user_id,id) DO NOTHING").bind(&user).bind(&id).bind(&rev.item_id).bind(client).bind(rev.rating as i16).bind(card.state as i16).bind(time).bind(rev.elapsed_days.unwrap_or(0.0)).bind(rev.scheduled_days.unwrap_or_else(||((card.next_review-time).num_seconds() as f64/86400.0).round() as i32)).execute(&mut **tx).await.map_err(error)?;
             }
         }
-        if let Some(tx) = tx {
-            tx.commit().await.map_err(error)?;
-        } else {
+        if tx.is_none() {
             if changed {
                 record_memory_card(&state, &user, card.clone()).await;
             }
@@ -302,6 +357,9 @@ pub async fn push_sync(
         }
         ids.push(id);
         updated.insert(rev.item_id, FsrsCardDto::from_card(&card, Some(now)));
+    }
+    if let Some(tx) = tx {
+        tx.commit().await.map_err(error)?;
     }
     let mut completed_ids = Vec::new();
     for comp in req.completed_lessons.unwrap_or_default() {
@@ -370,7 +428,12 @@ pub async fn pull_sync(
         },
     )
     .await?;
-    if query.since_seq.is_some_and(|s| s < 0) {
+    if query.since_seq.is_some_and(|s| s < 0)
+        || query
+            .catalog_version
+            .as_ref()
+            .is_some_and(|v| v.len() > 128)
+    {
         return Err(StatusCode::BAD_REQUEST);
     }
     let since = query.since.or(query.last_sync_time);
@@ -378,6 +441,8 @@ pub async fn pull_sync(
     let mut now = Utc::now();
     let mut cards = Vec::new();
     let lessons;
+    let catalog_version;
+    let catalog_complete;
     let mut completed = Vec::new();
     let mut private_lessons = Vec::new();
     let latest_sync_seq;
@@ -400,10 +465,24 @@ pub async fn pull_sync(
             cards.push(FsrsCardDto::from_card(&row.into(), Some(at)));
         }
         completed=sqlx::query_as::<_,SyncCompletedLessonItem>("SELECT lesson_id,completed_at,score FROM completed_lessons WHERE user_id=$1 AND (($2::BIGINT IS NOT NULL AND sync_seq>$2) OR ($2 IS NULL AND ($3::TIMESTAMPTZ IS NULL OR updated_at >= $3))) ORDER BY lesson_id").bind(&user).bind(seq).bind(since).fetch_all(&mut *tx).await.map_err(error)?;
-        // Only the public curriculum belongs in the global catalog; custom rows back private FSRS cards.
-        // Always send a complete public catalog statement snapshot with sequence pulls.
-        // A catalog insert committing out of sequence cannot be skipped by an account's cursor.
-        lessons=sqlx::query_as::<_,DbLessonItem>("SELECT id,language,category,target_text,phonetic_or_kana,meaning_vi,workplace_context,workplace_context_vi,stroke_order_hints,difficulty_level,created_at FROM lessons WHERE category <> 'custom' AND ($1::BIGINT IS NOT NULL OR $2::TIMESTAMPTZ IS NULL OR created_at >= $2) ORDER BY id").bind(seq).bind(since).fetch_all(&mut *tx).await.map_err(error)?.into_iter().map(Into::into).collect();
+        // Public writers must update this same revision row before committing.
+        // Hold its shared lock until rows are read so the version labels exactly
+        // the delivered catalog, independent of the account's progress cursor.
+        let (epoch, revision): (String, i64) = sqlx::query_as(
+            "SELECT epoch,revision FROM public_catalog_revision WHERE singleton FOR SHARE",
+        )
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(error)?;
+        catalog_version = format!("{epoch}:{revision}");
+        catalog_complete = query.catalog_version.is_some()
+            && query.catalog_version.as_deref() != Some(&catalog_version);
+        lessons = if query.catalog_version.as_deref() == Some(&catalog_version) {
+            vec![]
+        } else {
+            sqlx::query_as::<_,DbLessonItem>("SELECT id,language,category,target_text,phonetic_or_kana,meaning_vi,workplace_context,workplace_context_vi,stroke_order_hints,difficulty_level,created_at FROM lessons WHERE category <> 'custom' AND ($1::BOOLEAN OR $2::TIMESTAMPTZ IS NULL OR created_at >= $2) ORDER BY id")
+                .bind(query.catalog_version.is_some() || seq.is_some()).bind(since).fetch_all(&mut *tx).await.map_err(error)?.into_iter().map(Into::into).collect()
+        };
         private_lessons = private::pull(&mut tx, &user, seq, since).await?;
         tx.commit().await.map_err(error)?;
     } else {
@@ -444,7 +523,22 @@ pub async fn pull_sync(
             }
         }
         latest_sync_seq = latest;
-        lessons = if seq.is_some() || since.is_none() {
+        let mut catalog: Vec<_> = state
+            .lessons
+            .iter()
+            .filter(|l| l.category != "custom")
+            .cloned()
+            .collect();
+        catalog.sort_by(|a, b| a.id.cmp(&b.id));
+        catalog_version = format!(
+            "memory:{}",
+            crate::pin::hex(&crate::pin::sha256(&serde_json::to_vec(&catalog).unwrap()))
+        );
+        catalog_complete = query.catalog_version.is_some()
+            && query.catalog_version.as_deref() != Some(&catalog_version);
+        lessons = if query.catalog_version.as_deref() == Some(&catalog_version) {
+            vec![]
+        } else if query.catalog_version.is_some() || seq.is_some() || since.is_none() {
             state
                 .lessons
                 .iter()
@@ -459,6 +553,8 @@ pub async fn pull_sync(
     private_lessons.sort_by(|a, b| a.lesson.id.cmp(&b.lesson.id));
     auth::seen_device(&state, &user, query.client_id.as_deref(), latest_sync_seq).await?;
     Ok(Json(SyncPullResponse {
+        catalog_version,
+        catalog_complete,
         private_lessons,
         latest_sync_seq,
         completed_lessons: completed,
@@ -469,4 +565,64 @@ pub async fn pull_sync(
         server_time: now,
         timestamp: now,
     }))
+}
+
+#[cfg(test)]
+mod memory_due_vocabulary_tests {
+    use super::*;
+    use crate::models::{LessonItem, PrivateLessonWireState};
+
+    fn lesson() -> LessonItem {
+        LessonItem {
+            id: "private-word".into(),
+            language: "ja".into(),
+            category: "custom".into(),
+            target_text: "予約".into(),
+            phonetic_or_kana: "よやく".into(),
+            meaning_vi: "đặt trước".into(),
+            workplace_context: String::new(),
+            workplace_context_vi: String::new(),
+            stroke_order_hints: Vec::new(),
+            difficulty_level: 1,
+        }
+    }
+
+    #[tokio::test]
+    async fn due_private_lesson_is_account_scoped_and_excludes_tombstones() {
+        let memory = MemorySync::default();
+        let state = PrivateLessonWireState {
+            lesson: lesson(),
+            revision: 1,
+            deleted: false,
+            updated_at: chrono::Utc::now(),
+        };
+        memory
+            .private_lessons
+            .write()
+            .await
+            .insert(key("account-a", "private-word"), (state.clone(), 1));
+        assert_eq!(
+            memory
+                .due_private_lesson("account-a", "private-word")
+                .await
+                .map(|entry| entry.target_text),
+            Some("予約".into())
+        );
+        assert!(memory
+            .due_private_lesson("account-b", "private-word")
+            .await
+            .is_none());
+
+        let mut tombstone = state;
+        tombstone.deleted = true;
+        memory
+            .private_lessons
+            .write()
+            .await
+            .insert(key("account-a", "deleted-word"), (tombstone, 2));
+        assert!(memory
+            .due_private_lesson("account-a", "deleted-word")
+            .await
+            .is_none());
+    }
 }

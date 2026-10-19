@@ -80,6 +80,9 @@ class AccountService {
     Map<String, dynamic> credentials,
   ) async {
     final baseUrl = apiService.baseUrl;
+    final generation = await apiService.localDatabase.getMetadata(
+      '__generation',
+    );
     final deviceId = await apiService.localDatabase.getOrCreateClientId();
     final platform = devicePlatform();
     final body = jsonEncode({
@@ -112,37 +115,188 @@ class AccountService {
         'Máy chủ đã thay đổi. Vui lòng liên kết lại.',
       );
     }
-    await apiService.syncCoordinator.changeAccount({
-      'user_id': payload['user_id'],
-      'username': payload['username'],
-      'display_name': payload['display_name'],
-      'sync_token': payload['sync_token'],
-      'devices': devices,
-      'server_url': baseUrl,
+    await apiService.localDatabase.withProfileLock(() async {
+      final currentGeneration = await apiService.localDatabase.getMetadata(
+        '__generation',
+      );
+      if (apiService.baseUrl != baseUrl || currentGeneration != generation) {
+        throw const AccountException(
+          'Hồ sơ đã thay đổi. Vui lòng liên kết lại.',
+        );
+      }
+      await apiService.localDatabase.switchAccount({
+        'user_id': payload['user_id'],
+        'username': payload['username'],
+        'display_name': payload['display_name'],
+        'sync_token': payload['sync_token'],
+        'devices': devices,
+        'server_url': baseUrl,
+      });
+      apiService.syncCoordinator.lastSyncTime = null;
+    });
+  }
+
+  Future<void> rotateToken({required String currentPin}) =>
+      _changeCredentials('token/rotate', {'current_pin': currentPin});
+
+  Future<void> changePin({
+    required String currentPin,
+    required String newPin,
+  }) async {
+    _validatePin(newPin);
+    await _changeCredentials('pin/change', {
+      'current_pin': currentPin,
+      'new_pin': newPin,
+    });
+  }
+
+  static void _validatePin(String pin) {
+    if (!RegExp(r'^[0-9]{4,12}$').hasMatch(pin)) {
+      throw const AccountException('PIN cần 4–12 chữ số.');
+    }
+  }
+
+  Future<void> _changeCredentials(
+    String endpoint,
+    Map<String, String> body,
+  ) async {
+    _validatePin(body['current_pin']!);
+    await apiService.localDatabase.withProfileLock(() async {
+      final baseUrl = apiService.baseUrl;
+      final account = await _requireAccount(baseUrl);
+      _checkServer(baseUrl);
+      final response = await sendRequest(
+        method: 'POST',
+        uri: Uri.parse('$baseUrl/auth/$endpoint'),
+        client: _httpClient,
+        headers: {
+          'X-Sync-Token': account['sync_token'] as String,
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(body),
+      );
+      _checkStatus(response);
+      _checkServer(baseUrl);
+      final payload = _object(response.body);
+      for (final field in [
+        'user_id',
+        'username',
+        'display_name',
+        'sync_token',
+      ]) {
+        if (payload[field] is! String || (payload[field] as String).isEmpty) {
+          throw const AccountException(
+            'Máy chủ trả về tài khoản không hợp lệ.',
+          );
+        }
+      }
+      if (payload['user_id'] != account['user_id'] ||
+          !_validToken(payload['sync_token'] as String)) {
+        throw const AccountException('Máy chủ trả về tài khoản không hợp lệ.');
+      }
+      final devices = _devices(payload['devices']);
+      try {
+        await apiService.localDatabase.switchAccount({
+          for (final field in [
+            'user_id',
+            'username',
+            'display_name',
+            'sync_token',
+          ])
+            field: payload[field],
+          'devices': devices,
+          'server_url': baseUrl,
+        });
+      } catch (_) {
+        throw const AccountException(
+          'Máy chủ đã đổi thông tin đăng nhập nhưng kho an toàn chưa lưu được. '
+          'Dữ liệu học vẫn được giữ. Hãy liên kết lại bằng PIN.',
+        );
+      }
+      apiService.syncCoordinator.lastSyncTime = null;
+    });
+  }
+
+  Future<Map<String, dynamic>> _requireAccount(String baseUrl) async {
+    final account = await currentAccount();
+    if (account == null ||
+        account['server_url'] != baseUrl ||
+        account['sync_token'] is! String ||
+        !_validToken(account['sync_token'] as String)) {
+      throw const AccountException(
+        'Liên kết lại tài khoản với máy chủ hiện tại.',
+      );
+    }
+    return account;
+  }
+
+  void _checkServer(String baseUrl) {
+    if (apiService.baseUrl != baseUrl) {
+      throw const AccountException(
+        'Máy chủ đã thay đổi. Vui lòng liên kết lại.',
+      );
+    }
+  }
+
+  Future<void> revokeDevice(String deviceId) async {
+    if (deviceId.isEmpty || deviceId.length > 256) {
+      throw const AccountException('Thiết bị không hợp lệ.');
+    }
+    await apiService.localDatabase.withProfileLock(() async {
+      final baseUrl = apiService.baseUrl;
+      final account = await _requireAccount(baseUrl);
+      _checkServer(baseUrl);
+      final response = await sendRequest(
+        method: 'DELETE',
+        uri: Uri.parse(
+          '$baseUrl/auth/devices/${Uri.encodeComponent(deviceId)}',
+        ),
+        client: _httpClient,
+        headers: {'X-Sync-Token': account['sync_token'] as String},
+      );
+      if (response.statusCode != 204) {
+        _checkStatus(response);
+        throw const AccountException('Máy chủ chưa xác nhận thu hồi thiết bị.');
+      }
+      _checkServer(baseUrl);
+      if (deviceId == await apiService.localDatabase.getOrCreateClientId()) {
+        await apiService.localDatabase.switchAccount(null);
+        apiService.syncCoordinator.lastSyncTime = null;
+      } else {
+        await apiService.localDatabase.switchAccount({
+          ...account,
+          'devices': (account['devices'] as List)
+              .where((device) => device['device_id'] != deviceId)
+              .toList(),
+        });
+      }
     });
   }
 
   Future<List<Map<String, dynamic>>> refreshDevices() async {
-    final account = await currentAccount();
-    if (account == null || !matchesServer(account)) {
-      throw const AccountException(
-        'Liên kết lại tài khoản với máy chủ hiện tại hoặc đăng xuất hồ sơ.',
+    return apiService.localDatabase.withProfileLock(() async {
+      final account = await currentAccount();
+      if (account == null || !matchesServer(account)) {
+        throw const AccountException(
+          'Liên kết lại tài khoản với máy chủ hiện tại hoặc đăng xuất hồ sơ.',
+        );
+      }
+      final baseUrl = apiService.baseUrl;
+      final headers = await currentHeaders(serverUrl: baseUrl);
+      if (headers.isEmpty) {
+        throw const AccountException('Sync Token không hợp lệ.');
+      }
+      final uri = Uri.parse('$baseUrl/auth/devices');
+      final response = await sendRequest(
+        method: 'GET',
+        uri: uri,
+        client: _httpClient,
+        headers: headers,
       );
-    }
-    final baseUrl = apiService.baseUrl;
-    final headers = await currentHeaders(serverUrl: baseUrl);
-    if (headers.isEmpty) {
-      throw const AccountException('Sync Token không hợp lệ.');
-    }
-    final uri = Uri.parse('$baseUrl/auth/devices');
-    final response = await sendRequest(
-      method: 'GET',
-      uri: uri,
-      client: _httpClient,
-      headers: headers,
-    );
-    _checkStatus(response);
-    return _devices(_object(response.body)['devices']);
+      _checkStatus(response);
+      _checkServer(baseUrl);
+      return _devices(_object(response.body)['devices']);
+    });
   }
 
   Future<void> logout() => apiService.syncCoordinator.changeAccount(null);

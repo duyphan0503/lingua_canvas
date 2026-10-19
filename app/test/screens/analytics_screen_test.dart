@@ -1,3 +1,4 @@
+import 'package:app/services/storage/credential_vault.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -6,6 +7,8 @@ import 'package:app/screens/analytics_screen.dart';
 import 'package:app/services/api_service.dart';
 import 'package:app/services/local_database.dart';
 import 'package:app/services/sync_coordinator.dart';
+
+final testCredentialVault = InMemoryCredentialVault();
 
 class MockAnalyticsApiService extends ApiService {
   @override
@@ -118,7 +121,10 @@ void main() {
     setUp(() async {
       LocalDatabase.initFfiIfNeeded();
       localDb = LocalDatabase.instance;
-      await localDb.initCustom(customPath: inMemoryDatabasePath);
+      await localDb.initCustom(
+        credentialVault: testCredentialVault,
+        customPath: inMemoryDatabasePath,
+      );
       await localDb.clearAll();
     });
 

@@ -169,7 +169,7 @@ void main() {
         ),
         isEmpty,
       );
-      expect(await isolated.getLessons(), hasLength(155));
+      expect(await isolated.getLessons(), hasLength(355));
 
       final crossAccountPreview = await isolated.previewProfileBackup(
         ProfileBackup.fromBytes(firstBackup.toBytes()),

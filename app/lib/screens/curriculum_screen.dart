@@ -282,6 +282,11 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
     }
   }
 
+  Future<void> _showRecall(LessonItem lesson) => showDialog<void>(
+    context: context,
+    builder: (_) => _ClozeRecallDialog(lesson: lesson),
+  );
+
   void _showMessage(String message) {
     if (mounted) {
       ScaffoldMessenger.of(
@@ -708,6 +713,15 @@ class _CurriculumScreenState extends State<CurriculumScreen> {
                         ),
                       ),
                     ],
+                    if (privateState?.deleted != true)
+                      IconButton(
+                        tooltip: 'Luyện nhớ từ ${item.targetText}',
+                        onPressed: () => _showRecall(item),
+                        icon: const Icon(
+                          Icons.psychology_alt_outlined,
+                          color: Color(0xFFA5B4FC),
+                        ),
+                      ),
                     ElevatedButton.icon(
                       onPressed: privateState?.deleted == true
                           ? null
@@ -977,6 +991,96 @@ class _CustomLessonDialogState extends State<_CustomLessonDialog> {
       ],
     );
   }
+}
+
+class _ClozeRecallDialog extends StatefulWidget {
+  const _ClozeRecallDialog({required this.lesson});
+
+  final LessonItem lesson;
+
+  @override
+  State<_ClozeRecallDialog> createState() => _ClozeRecallDialogState();
+}
+
+class _ClozeRecallDialogState extends State<_ClozeRecallDialog> {
+  final _answer = TextEditingController();
+  bool _checked = false;
+  bool _correct = false;
+  bool _revealed = false;
+
+  @override
+  void dispose() {
+    _answer.dispose();
+    super.dispose();
+  }
+
+  String get _prompt {
+    final sentence = widget.lesson.workplaceContext.trim();
+    if (sentence.isEmpty) return 'Gợi ý: ${widget.lesson.meaningVi}';
+    final expression = RegExp(
+      RegExp.escape(widget.lesson.targetText),
+      caseSensitive: false,
+    );
+    final cloze = sentence.replaceAll(expression, '____');
+    return cloze == sentence ? 'Gợi ý: ${widget.lesson.meaningVi}' : cloze;
+  }
+
+  void _check() {
+    final normalized = _answer.text.trim().toLowerCase();
+    setState(() {
+      _checked = true;
+      _correct = normalized == widget.lesson.targetText.trim().toLowerCase();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Luyện nhớ từ'),
+    content: SizedBox(
+      width: 440,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(_prompt),
+          const SizedBox(height: 12),
+          TextField(
+            key: const Key('recall-answer'),
+            controller: _answer,
+            autofocus: true,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _check(),
+            decoration: const InputDecoration(labelText: 'Điền từ còn thiếu'),
+          ),
+          if (_checked && !_correct) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'Chưa đúng. Hãy thử lại hoặc xem đáp án.',
+              style: TextStyle(color: Colors.orange),
+            ),
+          ],
+          if (_correct) ...[
+            const SizedBox(height: 8),
+            const Text('Chính xác!', style: TextStyle(color: Colors.green)),
+          ],
+          if (_revealed) ...[
+            const SizedBox(height: 8),
+            Text('Đáp án: ${widget.lesson.targetText}'),
+          ],
+        ],
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => setState(() => _revealed = true),
+        child: const Text('Xem đáp án'),
+      ),
+      FilledButton(
+        onPressed: _correct ? () => Navigator.pop(context) : _check,
+        child: Text(_correct ? 'Hoàn tất' : 'Kiểm tra'),
+      ),
+    ],
+  );
 }
 
 class _ConflictVersionCard extends StatelessWidget {

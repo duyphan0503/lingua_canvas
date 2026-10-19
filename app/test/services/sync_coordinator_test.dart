@@ -1,3 +1,4 @@
+import 'package:app/services/storage/credential_vault.dart';
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -6,6 +7,8 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:app/services/fsrs_engine.dart';
 import 'package:app/services/local_database.dart';
 import 'package:app/services/sync_coordinator.dart';
+
+final testCredentialVault = InMemoryCredentialVault();
 
 void main() {
   setUpAll(() {
@@ -17,7 +20,10 @@ void main() {
 
   setUp(() async {
     localDb = LocalDatabase.instance;
-    await localDb.initCustom(customPath: inMemoryDatabasePath);
+    await localDb.initCustom(
+      credentialVault: testCredentialVault,
+      customPath: inMemoryDatabasePath,
+    );
     await localDb.clearAll();
   });
 

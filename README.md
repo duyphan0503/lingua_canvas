@@ -76,8 +76,33 @@ lingua_canvas/
 - (Optional for native dev) **Rust** 1.85+ / 1.92+ (`rustup`)
 - **Flutter** 3.47.6 / **Dart** 3.13.5 (pinned in `.fvmrc`; use `tools/flutter`)
 - For Android builds: Android SDK and Java 21
-- For Linux desktop builds: Flutter's Linux desktop prerequisites
+- For Linux desktop builds: Flutter's Linux desktop prerequisites plus `libsecret-1-dev` (Debian/Ubuntu). Running the app requires `libsecret-1-0` and an unlocked Secret Service keyring, such as GNOME Keyring or KWallet with Secret Service enabled.
 - (Optional for native dev) **Python** 3.10+ (for E2E tests)
+
+Native account credentials use Android Keystore or Linux Secret Service through
+[`flutter_secure_storage`](https://pub.dev/packages/flutter_secure_storage).
+For a Debian/Ubuntu Linux desktop, install the development/runtime prerequisites:
+
+```bash
+sudo apt-get install libsecret-1-dev libsecret-1-0 gnome-keyring
+```
+
+Start the app within your normal desktop/D-Bus session and unlock its login
+keyring. A headless shell without Secret Service cannot exercise native account
+storage. If storage is unavailable, restore/unlock the keyring and retry; do not
+delete the SQLite database. Credential migration verifies each vault write before
+scrubbing plaintext metadata, so a failed migration can be retried while retaining
+local lessons, reviews and queued changes. Android automatic backup is disabled
+to prevent restoring encrypted credential files without their Keystore keys.
+
+Account settings support device revocation, token rotation and PIN changes.
+Device tokens expire after 30 days; rotation requires the current PIN and replaces
+that device's token. Changing the PIN revokes other sessions. Existing server
+tokens have a seven-day migration/exchange window and should be exchanged by
+signing in again. If a remote rotation succeeds but local vault persistence fails,
+sign in again with the PIN; learning data remains local. Browser credentials remain
+accessible to the browser origin and do not have native Keystore/Secret Service
+protection.
 
 ### 1. Environment Setup
 

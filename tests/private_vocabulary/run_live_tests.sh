@@ -55,6 +55,10 @@ TEST_DATABASE_URL="$TEST_DATABASE_URL" cargo test \
   --manifest-path server/Cargo.toml \
   --test private_vocabulary_live -- --ignored --nocapture
 
+echo "Running auth and sync hardening regressions against PostgreSQL."
+TEST_DATABASE_URL="$TEST_DATABASE_URL" cargo test \
+  --manifest-path server/Cargo.toml --test auth_security --test sync_hardening -- --include-ignored
+
 echo "Building the API server against PostgreSQL."
 cargo build --manifest-path server/Cargo.toml --offline --release
 DATABASE_URL="$TEST_DATABASE_URL" \

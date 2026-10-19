@@ -1,0 +1,13 @@
+{
+  "project": "KanjiVG",
+  "commit": "70a0b7ae0c18ceb5cb358274b029cce0234a43bc",
+  "license": "CC-BY-SA-3.0",
+  "base_svg_sha256": "3162fb37a42b5eaf1695a51eea018c986ff495a51bbf8a8a7d70c8594f37dd53",
+  "glyphs": 6984,
+  "strokes": 83990,
+  "bytes": 5512246,
+  "data_sha256": "bb114c1c466abd77d4aae57ce102d5385795488965a95114b0cf9f3b64b5df8c",
+  "svg_tolerance_px": 0.25,
+  "normalization": "isotropic fit of union of 109px viewBox and sampled bounds; round to 1/10000",
+  "archive_sha256": "d6a17d77902b863d7524e24d11c44ae628c5d5ba4f09cb3af90c1190bf78bcca"
+}

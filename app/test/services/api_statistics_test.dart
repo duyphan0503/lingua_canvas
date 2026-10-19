@@ -1,13 +1,19 @@
+import 'package:app/services/storage/credential_vault.dart';
 import 'package:app/services/api_service.dart';
 import 'package:app/services/fsrs_engine.dart';
 import 'package:app/services/local_database.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+final testCredentialVault = InMemoryCredentialVault();
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() async {
-    await LocalDatabase.instance.initCustom(customPath: inMemoryDatabasePath);
+    await LocalDatabase.instance.initCustom(
+      credentialVault: testCredentialVault,
+      customPath: inMemoryDatabasePath,
+    );
     await LocalDatabase.instance.clearAll();
   });
   tearDown(() => LocalDatabase.instance.close());

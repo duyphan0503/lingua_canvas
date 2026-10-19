@@ -9,6 +9,7 @@ fn state() -> AppState {
     AppState {
         cache: Arc::new(server::redis_cache::RedisCache::default()),
         accounts: Default::default(),
+        auth_sessions: Default::default(),
         memory: Default::default(),
         lessons: server::data::get_seed_lessons(),
         cards: Arc::new(RwLock::new(HashMap::new())),

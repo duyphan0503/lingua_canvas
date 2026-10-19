@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'screens/main_shell_screen.dart';
 import 'widgets/platform_bootstrap_gate.dart';
+import 'services/stroke_guide_service.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await StrokeGuideService.initialize();
   runApp(const PlatformBootstrapGate(child: MyApp()));
 }
 

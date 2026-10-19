@@ -11,6 +11,19 @@ python3 tools/serve_web.py --directory app/build/web --port 28190 --api-origin h
 
 The development server binds loopback by default. Start the Rust API separately on port 28191. Browser requests use `/api/v1` on the page origin; no CORS setup or embedded credentials are required. Requests are bounded to 1 MiB, upstream responses to 16 MiB and incoming socket I/O to five seconds and upstream I/O to fifteen seconds. The proxy preserves authentication headers but never follows redirects or logs credentials.
 
+The installed web app registers `app/web/sw.js`. It versions its app-shell cache,
+keeps API traffic out of Cache Storage, and applies byte and entry limits to
+runtime assets. It pre-caches the page entry points and offline KanjiVG guide;
+other learned assets enter the cache only when loaded. Bump `SHELL_CACHE` in
+`app/web/sw.js` when changing the offline shell contract. Browser storage can be
+evicted at any time, so offline access is best effort and sync is still needed.
+
+Run the cold-start offline browser check after building the web release:
+
+```sh
+CHROME_EXECUTABLE=/path/to/chromium python3 -m unittest tests.web.test_offline_shell
+```
+
 For containers, build from the repository root after compiling the assets:
 
 ```sh

@@ -53,6 +53,18 @@ pub struct RoleplayRequest {
     pub user_message: String,
     #[serde(default = "default_profession", alias = "domain")]
     pub profession: String, // "it" | "hospitality" | "business" | "general"
+    /// Only a bounded recent window is forwarded to the model. Older clients may omit it.
+    #[serde(default)]
+    pub recent_turns: Vec<RoleplayTurn>,
+    /// Filled by the authenticated server route, never trusted from client JSON.
+    #[serde(skip)]
+    pub due_vocabulary: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RoleplayTurn {
+    pub role: String,
+    pub content: String,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -393,6 +405,7 @@ where
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct SyncPullQuery {
+    pub catalog_version: Option<String>,
     pub user_id: Option<String>,
     pub sync_token: Option<String>,
     pub client_id: Option<String>,
@@ -405,6 +418,8 @@ pub struct SyncPullQuery {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SyncPullResponse {
+    pub catalog_version: String,
+    pub catalog_complete: bool,
     pub private_lessons: Vec<PrivateLessonWireState>,
     pub latest_sync_seq: i64,
     pub completed_lessons: Vec<SyncCompletedLessonItem>,

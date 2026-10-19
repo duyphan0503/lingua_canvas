@@ -1,3 +1,4 @@
+import 'package:app/services/storage/credential_vault.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:app/services/local_database.dart';
@@ -8,12 +9,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'private_vocabulary_test.dart' show word, remote;
 
+final testCredentialVault = InMemoryCredentialVault();
+
 void main() {
   late LocalDatabase db;
   setUp(() async {
     LocalDatabase.initFfiIfNeeded();
     db = LocalDatabase.instance;
-    await db.initCustom(customPath: inMemoryDatabasePath);
+    await db.initCustom(
+      credentialVault: testCredentialVault,
+      customPath: inMemoryDatabasePath,
+    );
   });
   tearDown(() => db.close());
   test(
@@ -71,7 +77,10 @@ void main() {
       final path = '${directory.path}/legacy.db';
       // Build the actual old schema from a current store then remove additive v5 structures.
       await db.close();
-      await db.initCustom(customPath: path);
+      await db.initCustom(
+        credentialVault: testCredentialVault,
+        customPath: path,
+      );
       await db.selectBackend('http://test/api/v1');
       final oldId = 'custom_ja_${'x' * 90}';
       await db.saveLesson(word(oldId));
@@ -90,7 +99,10 @@ void main() {
       await sql.execute('ALTER TABLE local_sync_queue DROP COLUMN sent');
       await sql.setVersion(4);
       await db.close();
-      await db.initCustom(customPath: path);
+      await db.initCustom(
+        credentialVault: testCredentialVault,
+        customPath: path,
+      );
       expect(await (await db.database).getVersion(), 5);
       await db.switchAccount(null);
       final state = (await db.getPrivateLessons()).single;
@@ -113,7 +125,10 @@ void main() {
       addTearDown(() => directory.delete(recursive: true));
       final path = '${directory.path}/legacy.db';
       await db.close();
-      await db.initCustom(customPath: path);
+      await db.initCustom(
+        credentialVault: testCredentialVault,
+        customPath: path,
+      );
       await db.saveLesson(word('custom_ja_legacy'));
       final sql = await db.database;
       await sql.execute('DROP TABLE local_private_profile');
@@ -124,7 +139,7 @@ void main() {
       await sql.setVersion(4);
       await db.close();
       await expectLater(
-        db.initCustom(customPath: path),
+        db.initCustom(credentialVault: testCredentialVault, customPath: path),
         throwsA(isA<DatabaseException>()),
       );
       final original = await databaseFactory.openDatabase(path);
@@ -141,7 +156,10 @@ void main() {
       );
       await original.execute('DROP TRIGGER prevent_migration');
       await original.close();
-      await db.initCustom(customPath: path);
+      await db.initCustom(
+        credentialVault: testCredentialVault,
+        customPath: path,
+      );
       expect(
         (await db.getPrivateLessons()).single.lesson.id,
         'custom_ja_legacy',

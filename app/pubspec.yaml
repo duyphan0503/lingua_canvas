@@ -28,6 +28,7 @@ dependencies:
 
   file_selector: 1.1.0
   crypto: 3.0.7
+  flutter_secure_storage: 11.2.0
   http: ^1.6.0
   shared_preferences: ^2.5.5
   google_mlkit_digital_ink_recognition: ^0.15.0
@@ -36,6 +37,8 @@ dependencies:
   path_provider: ^2.1.5
   sqflite_common_ffi: ^2.3.4+4
   flutter_tts: ^4.2.5
+  record: ^7.1.2
+  audioplayers: ^6.8.1
 
 dev_dependencies:
   flutter_test:
@@ -53,6 +56,8 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  assets:
+    - assets/kanjivg/
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

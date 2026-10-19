@@ -1,3 +1,4 @@
+import 'package:app/services/storage/credential_vault.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:app/models/lesson_item.dart';
@@ -11,6 +12,8 @@ import 'package:app/services/local_database.dart';
 import 'package:app/services/sync_coordinator.dart';
 
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
+final testCredentialVault = InMemoryCredentialVault();
 
 class MockNavigationApiService extends ApiService {
   final customLessons = <LessonItem>[];
@@ -147,7 +150,10 @@ void main() {
   late MockNavigationApiService service;
 
   setUp(() async {
-    await LocalDatabase.instance.initCustom(customPath: inMemoryDatabasePath);
+    await LocalDatabase.instance.initCustom(
+      credentialVault: testCredentialVault,
+      customPath: inMemoryDatabasePath,
+    );
     service = MockNavigationApiService();
   });
 

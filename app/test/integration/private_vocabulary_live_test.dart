@@ -2,6 +2,7 @@
 library;
 
 import 'dart:io';
+import 'package:app/services/storage/credential_vault.dart';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:app/models/lesson_item.dart';
@@ -9,6 +10,8 @@ import 'package:app/services/account_service.dart';
 import 'package:app/services/api_service.dart';
 import 'package:app/services/fsrs_engine.dart';
 import 'package:app/services/storage/local_database_native.dart';
+
+final testCredentialVault = InMemoryCredentialVault();
 
 const backend = String.fromEnvironment('PRIVATE_VOCABULARY_TEST_API_BASE');
 
@@ -24,7 +27,10 @@ void main() {
 
       Future<(LocalDatabase, ApiService)> openDevice(String suffix) async {
         final db = LocalDatabase.instance;
-        await db.initCustom(customPath: '${directory.path}/$suffix.sqlite');
+        await db.initCustom(
+          credentialVault: testCredentialVault,
+          customPath: '${directory.path}/$suffix.sqlite',
+        );
         await db.initialize();
         final api = ApiService(baseUrl: backend, localDb: db);
         await api.configureServer(backend);
@@ -184,7 +190,10 @@ void main() {
 
       final thirdDb = LocalDatabase.instance;
       await thirdDb.close();
-      await thirdDb.initCustom(customPath: '${directory.path}/isolated.sqlite');
+      await thirdDb.initCustom(
+        credentialVault: testCredentialVault,
+        customPath: '${directory.path}/isolated.sqlite',
+      );
       await thirdDb.initialize();
       addTearDown(thirdDb.close);
       final third = ApiService(baseUrl: backend, localDb: thirdDb);
@@ -198,7 +207,7 @@ void main() {
         (await third.getLessons()).where((l) => l.id == created.id),
         isEmpty,
       );
-      expect(await third.getLessons(), hasLength(155));
+      expect(await third.getLessons(), hasLength(355));
     },
     skip: backend.isEmpty
         ? 'Use tests/private_vocabulary/run_live_tests.sh with disposable PostgreSQL'

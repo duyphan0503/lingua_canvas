@@ -1,3 +1,4 @@
+import 'package:app/services/storage/credential_vault.dart';
 import 'dart:convert';
 import 'package:app/screens/settings_screen.dart';
 import 'package:app/services/account_service.dart';
@@ -9,6 +10,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
+final testCredentialVault = InMemoryCredentialVault();
 
 class HealthyApi extends ApiService {
   HealthyApi(LocalDatabase db)
@@ -30,7 +33,10 @@ void main() {
         sqfliteFfiInit();
         databaseFactory = databaseFactoryFfi;
         db = LocalDatabase.instance;
-        await db.initCustom(customPath: inMemoryDatabasePath);
+        await db.initCustom(
+          credentialVault: testCredentialVault,
+          customPath: inMemoryDatabasePath,
+        );
       });
       addTearDown(() => db.close());
       final api = HealthyApi(db);

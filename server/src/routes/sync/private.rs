@@ -317,8 +317,14 @@ pub(super) async fn import(
                 return Err(StatusCode::BAD_REQUEST);
             }
         }
+        batch_locks(
+            &mut tx,
+            user,
+            2,
+            &ids.iter().map(|id| (*id).to_owned()).collect::<Vec<_>>(),
+        )
+        .await?;
         for id in ids {
-            card_lock(&mut tx, user, id).await?;
             ensure_parent(&mut tx, id).await?;
         }
         for c in &i.cards {

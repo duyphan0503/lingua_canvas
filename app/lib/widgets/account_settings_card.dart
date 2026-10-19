@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import '../services/account_service.dart';
 import '../models/profile_backup.dart';
@@ -221,6 +222,51 @@ class _AccountSettingsCardState extends State<AccountSettingsCard> {
     );
   }
 
+  Future<void> _changeCredentials(bool changePin) async {
+    final values = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (_) => _CredentialChangeDialog(changePin: changePin),
+    );
+    if (values == null || !mounted) return;
+    await _run(
+      () => changePin
+          ? widget.service.changePin(
+              currentPin: values['current_pin']!,
+              newPin: values['new_pin']!,
+            )
+          : widget.service.rotateToken(currentPin: values['current_pin']!),
+      changed: true,
+    );
+  }
+
+  Future<void> _revokeDevice(Map<String, dynamic> device) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Thu hồi thiết bị?'),
+        content: Text(
+          '${device['device_name']} sẽ cần liên kết lại để đồng bộ. '
+          'Dữ liệu học cục bộ vẫn được giữ.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Thu hồi'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await _run(
+      () => widget.service.revokeDevice(device['device_id'] as String),
+      changed: true,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final account = _account;
@@ -246,6 +292,15 @@ class _AccountSettingsCardState extends State<AccountSettingsCard> {
               ),
             ),
             const SizedBox(height: 12),
+            if (kIsWeb)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'Web lưu thông tin đăng nhập trong hồ sơ trình duyệt; '
+                  'không có bảo vệ khóa hệ điều hành như Android/Linux. '
+                  'Chỉ liên kết trên trình duyệt bạn tin cậy.',
+                ),
+              ),
             if (_busy) const LinearProgressIndicator(),
             if (account == null) ...[
               const Text('Đang dùng hồ sơ cục bộ (Chưa liên kết tài khoản)'),
@@ -323,19 +378,44 @@ class _AccountSettingsCardState extends State<AccountSettingsCard> {
               for (final device in _devices)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 6),
-                  child: Text(
-                    '${device['device_name']} (${switch (device['platform']) {
-                      'android' => 'Android',
-                      'linux' => 'Linux Desktop',
-                      'web' => 'Web Browser',
-                      _ => 'Thiết bị khác',
-                    }})\nLần cuối: ${device['last_seen_at'] ?? 'Chưa đồng bộ'} • Seq: ${device['last_sync_seq']}',
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${device['device_name']} (${switch (device['platform']) {
+                            'android' => 'Android',
+                            'linux' => 'Linux Desktop',
+                            'web' => 'Web Browser',
+                            _ => 'Thiết bị khác',
+                          }})\nLần cuối: ${device['last_seen_at'] ?? 'Chưa đồng bộ'} • Seq: ${device['last_sync_seq']}',
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Thu hồi thiết bị',
+                        onPressed: _busy || mismatch
+                            ? null
+                            : () => _revokeDevice(device),
+                        icon: const Icon(Icons.link_off),
+                      ),
+                    ],
                   ),
                 ),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: [
+                  OutlinedButton(
+                    onPressed: _busy || mismatch
+                        ? null
+                        : () => _changeCredentials(false),
+                    child: const Text('Đổi Sync Token'),
+                  ),
+                  OutlinedButton(
+                    onPressed: _busy || mismatch
+                        ? null
+                        : () => _changeCredentials(true),
+                    child: const Text('Đổi PIN'),
+                  ),
                   OutlinedButton.icon(
                     onPressed: _busy || mismatch
                         ? null
@@ -384,6 +464,68 @@ class _AccountSettingsCardState extends State<AccountSettingsCard> {
       ),
     );
   }
+}
+
+class _CredentialChangeDialog extends StatefulWidget {
+  final bool changePin;
+  const _CredentialChangeDialog({required this.changePin});
+  @override
+  State<_CredentialChangeDialog> createState() =>
+      _CredentialChangeDialogState();
+}
+
+class _CredentialChangeDialogState extends State<_CredentialChangeDialog> {
+  final _current = TextEditingController();
+  final _next = TextEditingController();
+  @override
+  void dispose() {
+    _current.dispose();
+    _next.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: Text(widget.changePin ? 'Đổi PIN' : 'Đổi Sync Token'),
+    content: SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            widget.changePin
+                ? 'Đổi PIN sẽ đăng xuất các phiên khác. Thiết bị này nhận Sync Token mới.'
+                : 'Sync Token hiện tại sẽ hết hiệu lực. Thiết bị này nhận token mới.',
+          ),
+          TextField(
+            controller: _current,
+            obscureText: true,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: 'PIN hiện tại'),
+          ),
+          if (widget.changePin)
+            TextField(
+              controller: _next,
+              obscureText: true,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'PIN mới'),
+            ),
+        ],
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Hủy'),
+      ),
+      FilledButton(
+        onPressed: () => Navigator.pop(context, {
+          'current_pin': _current.text,
+          if (widget.changePin) 'new_pin': _next.text,
+        }),
+        child: const Text('Xác nhận'),
+      ),
+    ],
+  );
 }
 
 class _AccountDialog extends StatefulWidget {

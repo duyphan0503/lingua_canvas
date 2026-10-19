@@ -4,6 +4,7 @@ import 'package:app/screens/ai_roleplay_screen.dart';
 import 'package:app/services/api_service.dart';
 
 class MockRoleplayApiService extends ApiService {
+  List<Map<String, String>> lastRecentTurns = const [];
   @override
   Future<Map<String, dynamic>> sendRoleplayMessage({
     required String targetLanguage,
@@ -11,7 +12,9 @@ class MockRoleplayApiService extends ApiService {
     required String message,
     String profession = 'it',
     String userLevel = 'beginner',
+    List<Map<String, String>> recentTurns = const [],
   }) async {
+    lastRecentTurns = recentTurns;
     return {
       'reply': 'テスト返信です (Test response)',
       'romaji': 'Tesuto henshin desu',
@@ -140,6 +143,9 @@ void main() {
       expect(find.text('今日の進捗を報告します。'), findsOneWidget);
       expect(find.text('テスト返信です (Test response)'), findsOneWidget);
       expect(find.text('Dịch: Đây là câu trả lời thử nghiệm'), findsOneWidget);
+      expect(service.lastRecentTurns, hasLength(1));
+      expect(service.lastRecentTurns.single['role'], 'assistant');
+      expect(service.lastRecentTurns.single['content'], contains('進捗'));
 
       // Verify writing challenge triggers onPracticeWord
       final challengeBtn = find.textContaining('Thử thách viết: "返信"');

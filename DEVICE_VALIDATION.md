@@ -44,6 +44,15 @@ USB reverse forwarding still carries HTTP independently of Wi-Fi. To make the ba
 
 ## Linux desktop
 
+Build prerequisites include `libsecret-1-dev`; runtime requires `libsecret-1-0`
+and an unlocked Secret Service keyring (GNOME Keyring or compatible KWallet).
+Install with `sudo apt-get install libsecret-1-dev libsecret-1-0 gnome-keyring` on
+Debian/Ubuntu and launch within the desktop's D-Bus session. If the keyring is
+missing or locked, unlock/start it and retry without deleting application data.
+Record both the locked-keyring failure and successful retry when validating
+credential migration. A mocked vault in automated tests does not establish that
+the physical desktop keyring works.
+
 From `app/`, launch with the pinned Flutter wrapper and a reachable backend:
 
 ```bash

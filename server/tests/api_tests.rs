@@ -15,6 +15,7 @@ fn setup_test_app() -> axum::Router {
     let state = AppState {
         cache: Arc::new(server::redis_cache::RedisCache::default()),
         accounts: Default::default(),
+        auth_sessions: Default::default(),
         memory: Default::default(),
         lessons: get_seed_lessons(),
         cards: Arc::new(RwLock::new(HashMap::new())),
@@ -203,6 +204,7 @@ async fn test_fsrs_due_queue_and_eviction() {
     let state = AppState {
         cache: Arc::new(server::redis_cache::RedisCache::default()),
         accounts: Default::default(),
+        auth_sessions: Default::default(),
         memory: Default::default(),
         lessons: get_seed_lessons(),
         cards: Arc::new(RwLock::new(HashMap::new())),
@@ -673,6 +675,7 @@ async fn test_ai_roleplay_fallback_disabled_returns_503() {
     let state = AppState {
         cache: Arc::new(server::redis_cache::RedisCache::default()),
         accounts: Default::default(),
+        auth_sessions: Default::default(),
         memory: Default::default(),
         lessons: server::data::get_seed_lessons(),
         cards: Arc::new(RwLock::new(HashMap::new())),
@@ -815,6 +818,7 @@ async fn test_sync_duplicate_review_id_does_not_advance_card() {
     let state = AppState {
         cache: Arc::new(server::redis_cache::RedisCache::default()),
         accounts: Default::default(),
+        auth_sessions: Default::default(),
         memory: Default::default(),
         lessons: get_seed_lessons(),
         cards: Arc::new(RwLock::new(HashMap::new())),
@@ -882,6 +886,7 @@ async fn test_sync_future_clock_retry_without_id_is_idempotent() {
     let state = AppState {
         cache: Arc::new(server::redis_cache::RedisCache::default()),
         accounts: Default::default(),
+        auth_sessions: Default::default(),
         memory: Default::default(),
         lessons: get_seed_lessons(),
         cards: Arc::new(RwLock::new(HashMap::new())),
@@ -925,6 +930,7 @@ async fn test_sync_does_not_ack_failed_postgres_lesson_write() {
     let state = AppState {
         cache: Arc::new(server::redis_cache::RedisCache::default()),
         accounts: Default::default(),
+        auth_sessions: Default::default(),
         memory: Default::default(),
         lessons: get_seed_lessons(),
         cards: Arc::new(RwLock::new(HashMap::new())),
@@ -962,6 +968,7 @@ async fn test_sync_review_and_log_are_atomic_in_postgres() {
     let state = AppState {
         cache: Arc::new(server::redis_cache::RedisCache::default()),
         accounts: Default::default(),
+        auth_sessions: Default::default(),
         memory: Default::default(),
         lessons: get_seed_lessons(),
         cards: Arc::new(RwLock::new(HashMap::new())),
@@ -1004,6 +1011,7 @@ async fn test_direct_review_does_not_ack_failed_postgres_write() {
     let state = AppState {
         cache: Arc::new(server::redis_cache::RedisCache::default()),
         accounts: Default::default(),
+        auth_sessions: Default::default(),
         memory: Default::default(),
         lessons: get_seed_lessons(),
         cards: Arc::new(RwLock::new(HashMap::new())),
@@ -1038,6 +1046,7 @@ async fn test_pull_waits_for_inflight_postgres_review_before_advancing_cursor() 
     let state = AppState {
         cache: Arc::new(server::redis_cache::RedisCache::default()),
         accounts: Default::default(),
+        auth_sessions: Default::default(),
         memory: Default::default(),
         lessons: get_seed_lessons(),
         cards: Arc::new(RwLock::new(HashMap::new())),
@@ -1097,6 +1106,7 @@ async fn test_postgres_sync_persists_lww_and_idempotency_across_app_restart() {
         create_app(AppState {
             cache: Arc::new(server::redis_cache::RedisCache::default()),
             accounts: Default::default(),
+            auth_sessions: Default::default(),
             memory: Default::default(),
             lessons: get_seed_lessons(),
             cards: Arc::new(RwLock::new(HashMap::new())),
@@ -1164,6 +1174,7 @@ async fn test_sync_push_last_write_wins_conflict_resolution() {
     let state = AppState {
         cache: Arc::new(server::redis_cache::RedisCache::default()),
         accounts: Default::default(),
+        auth_sessions: Default::default(),
         memory: Default::default(),
         lessons: server::data::get_seed_lessons(),
         cards: std::sync::Arc::new(tokio::sync::RwLock::new(HashMap::new())),
@@ -1238,6 +1249,7 @@ async fn test_sync_pull_delta_high_water_mark() {
     let state = AppState {
         cache: Arc::new(server::redis_cache::RedisCache::default()),
         accounts: Default::default(),
+        auth_sessions: Default::default(),
         memory: Default::default(),
         lessons: server::data::get_seed_lessons(),
         cards: std::sync::Arc::new(tokio::sync::RwLock::new(HashMap::new())),

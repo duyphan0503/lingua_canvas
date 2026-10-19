@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/tts_service.dart';
 import '../services/speech_practice_service.dart';
+import '../widgets/local_practice_audio_controls.dart';
+import '../widgets/japanese_pitch_accent_hint.dart';
 import '../widgets/speech_capture_dialog.dart';
 import '../widgets/tts_speaker_button.dart';
 
@@ -167,6 +169,24 @@ class _AIRoleplayScreenState extends State<AIRoleplayScreen>
         message: text,
         profession: _selectedProfession,
         userLevel: _selectedLevel,
+        recentTurns: _messages
+            .take(_messages.isEmpty ? 0 : _messages.length - 1)
+            .where(
+              (message) =>
+                  message['sender'] == 'user' || message['sender'] == 'ai',
+            )
+            .toList()
+            .reversed
+            .take(8)
+            .toList()
+            .reversed
+            .map(
+              (message) => {
+                'role': message['sender'] == 'ai' ? 'assistant' : 'user',
+                'content': message['text']?.toString() ?? '',
+              },
+            )
+            .toList(),
       );
 
       if (mounted && epoch == _conversationEpoch) {
@@ -320,13 +340,13 @@ class _AIRoleplayScreenState extends State<AIRoleplayScreen>
           indicatorColor: const Color(0xFF6366F1),
           labelColor: Colors.white,
           unselectedLabelColor: const Color(0xFF94A3B8),
-          tabs: const [
+          tabs: [
             Tab(
-              icon: Icon(Icons.chat_bubble_outline_rounded, size: 18),
+              icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
               text: 'Đối Thoại Trực Tiếp',
             ),
             Tab(
-              icon: Icon(Icons.menu_book_rounded, size: 18),
+              icon: const Icon(Icons.menu_book_rounded, size: 18),
               text: 'Kịch Bản Tình Huống',
             ),
           ],
@@ -712,6 +732,11 @@ class _AIRoleplayScreenState extends State<AIRoleplayScreen>
               ],
             ),
 
+            const Padding(
+              padding: EdgeInsets.only(top: 2, bottom: 2),
+              child: LocalPracticeAudioControls(),
+            ),
+
             // Romaji or Phonetic subtitle
             if (romaji.isNotEmpty) ...[
               const SizedBox(height: 4),
@@ -798,6 +823,11 @@ class _AIRoleplayScreenState extends State<AIRoleplayScreen>
                             ),
                           ),
                         ],
+                        if (_selectedLanguage == 'ja')
+                          JapanesePitchAccentHint(
+                            word: word,
+                            reading: phonetic,
+                          ),
                         Text(
                           '• $meaning',
                           style: const TextStyle(

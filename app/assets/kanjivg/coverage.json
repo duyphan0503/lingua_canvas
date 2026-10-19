@@ -1,0 +1,13 @@
+{
+  "scope": "upstream non-variant base glyphs; current literal public Japanese targets; Unicode hiragana/katakana letters",
+  "jlpt_level_coverage": "unverified: no official N5–N3 character list supplied",
+  "glyphs": 6984,
+  "strokes": 83990,
+  "public_target_count": 112,
+  "public_unique_characters": 133,
+  "public_supported_characters": 133,
+  "public_targets_with_gaps": {},
+  "kana_letter_count": 176,
+  "kana_supported": 176,
+  "kana_gaps": []
+}

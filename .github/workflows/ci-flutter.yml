@@ -12,6 +12,7 @@ on:
       - 'tools/serve_web.py'
       - 'tests/web/**'
       - 'deploy/web/**'
+      - 'deploy/production/**'
       - '.github/workflows/ci-flutter.yml'
       - '.fvmrc'
   pull_request:
@@ -26,6 +27,7 @@ on:
       - 'tools/serve_web.py'
       - 'tests/web/**'
       - 'deploy/web/**'
+      - 'deploy/production/**'
       - '.github/workflows/ci-flutter.yml'
       - '.fvmrc'
 
@@ -58,7 +60,7 @@ jobs:
           cache: true
 
       - name: Install Linux desktop build dependencies
-        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
+        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
 
       - name: Install dependencies (flutter pub get)
         run: flutter pub get
@@ -79,6 +81,11 @@ jobs:
 
       - name: Build web release
         run: flutter build web --no-pub --release --no-web-resources-cdn --pwa-strategy=none
+
+      - name: Verify cold-start offline web shell
+        env:
+          CHROME_EXECUTABLE: /usr/bin/google-chrome
+        run: python3 -m unittest tests.web.test_offline_shell
 
       - name: Upload web release
         uses: actions/upload-artifact@v4

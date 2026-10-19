@@ -20,6 +20,9 @@ class PronunciationResult {
   final double accuracyScore;
   final bool isPassed;
   final String feedbackVi;
+  /// Text segments that the recognizer transcript could not align to the target.
+  /// These are not an acoustic or phoneme-level diagnosis.
+  final List<String> mismatchedSegments;
 
   const PronunciationResult({
     required this.recognizedTranscript,
@@ -27,5 +30,6 @@ class PronunciationResult {
     required this.accuracyScore,
     required this.isPassed,
     required this.feedbackVi,
+    this.mismatchedSegments = const [],
   });
 }

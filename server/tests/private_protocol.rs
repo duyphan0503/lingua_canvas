@@ -10,6 +10,7 @@ fn app(pool: Option<sqlx::PgPool>) -> Router {
     server::create_app(AppState {
         cache: Arc::new(server::redis_cache::RedisCache::new(None)),
         accounts: Default::default(),
+        auth_sessions: Default::default(),
         memory: Default::default(),
         lessons: server::data::get_seed_lessons(),
         cards: Default::default(),
@@ -107,7 +108,7 @@ async fn protocol_cases(a: &Router, suffix: &str) {
         json!(["custom_private"])
     );
     let public = request(a, "/api/v1/lessons", None, None).await.1;
-    assert_eq!(public.as_array().unwrap().len(), 155);
+    assert_eq!(public.as_array().unwrap().len(), 355);
     assert!(!public
         .as_array()
         .unwrap()
@@ -491,7 +492,7 @@ async fn postgres_private_pull_waits_for_writers_and_import_receipts_are_atomic(
     let a = app(Some(p.clone()));
     let suffix = Utc::now().timestamp_micros();
     let t = account(&a, &format!("barrier{suffix}")).await;
-    let u: String = sqlx::query_scalar("SELECT user_id FROM user_accounts WHERE sync_token=$1")
+    let u: String = sqlx::query_scalar("SELECT user_id FROM auth_sessions WHERE token_hash=encode(sha256(convert_to($1,'UTF8')),'hex')")
         .bind(&t)
         .fetch_one(&p)
         .await

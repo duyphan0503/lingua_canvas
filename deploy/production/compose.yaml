@@ -1,0 +1,121 @@
+services:
+  server:
+    build:
+      context: ../..
+      dockerfile: server/Dockerfile
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8080
+      DATABASE_URL_FILE: /run/secrets/database_url
+      REDIS_URL: redis://redis:6379
+      AI_PROVIDER: ${AI_PROVIDER:-llama_cpp}
+      AI_ENDPOINT: ${AI_ENDPOINT:?Set the approved AI provider endpoint}
+      AI_MODEL: ${AI_MODEL:-llama-3.2-3b-instruct}
+      AI_FALLBACK_ENABLED: "true"
+      RUST_LOG: info,server=info
+    secrets:
+      - database_url
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - edge
+      - data
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  web:
+    build:
+      context: ../..
+      dockerfile: deploy/production/Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    secrets:
+      - tls_certificate
+      - tls_private_key
+    depends_on:
+      - server
+    networks:
+      - edge
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:size=16m,noexec,nosuid
+      - /var/run:size=1m,noexec,nosuid
+      - /tmp:size=1m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+      - SETUID
+      - SETGID
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: lingua_canvas
+      POSTGRES_USER: lingua
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lingua -d lingua_canvas"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--protected-mode", "yes"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  edge:
+    driver: bridge
+  data:
+    driver: bridge
+    internal: true
+
+volumes:
+  postgres_data:
+  redis_data:
+
+secrets:
+  database_url:
+    file: ${LINGUA_DATABASE_URL_FILE:?Provide a protected DATABASE_URL secret file}
+  postgres_password:
+    file: ${LINGUA_POSTGRES_PASSWORD_FILE:?Provide a protected PostgreSQL password file}
+  tls_certificate:
+    file: ${LINGUA_TLS_CERT_FILE:?Provide a TLS certificate chain}
+  tls_private_key:
+    file: ${LINGUA_TLS_KEY_FILE:?Provide the matching TLS private key}

@@ -412,6 +412,9 @@ class SyncCoordinator {
     try {
       final pullParams = <String, String>{
         'client_id': clientId ?? await localDb.getOrCreateClientId(),
+        // A missing token explicitly requests a complete initial catalog, even
+        // when this profile was previously using timestamp-only progress pulls.
+        'catalog_version': await localDb.getMetadata('catalog_version') ?? '0',
       };
       if (sequence != null) pullParams['since_seq'] = '$sequence';
       if (account != null) pullParams['user_id'] = account['user_id'] as String;
@@ -461,7 +464,24 @@ class SyncCoordinator {
             LessonItem.fromJson(lessonJson as Map<String, dynamic>),
           );
         }
-        if (lessonsToSave.isNotEmpty) {
+        final catalogVersion = pullData['catalog_version'];
+        if (pullData['catalog_complete'] == true) {
+          if (catalogVersion is! String ||
+              catalogVersion.isEmpty || catalogVersion.length > 128) {
+            throw const FormatException('Invalid catalog version');
+          }
+          await localDb.editPrivateProfile((profile) {
+            final lessons = profile['lessons'] as Map;
+            final own = profile['private_lessons'] as Map;
+            lessons.removeWhere((id, row) =>
+              (row as Map)['category'] != 'custom' && !own.containsKey(id));
+            for (final lesson in lessonsToSave) {
+              if (!own.containsKey(lesson.id)) lessons[lesson.id] = lesson.toJson();
+            }
+            (profile['metadata'] as Map)['catalog_version'] = catalogVersion;
+          });
+          pulledLessonsCount = lessonsToSave.length;
+        } else if (lessonsToSave.isNotEmpty) {
           await localDb.saveLessons(lessonsToSave);
           pulledLessonsCount = lessonsToSave.length;
         }

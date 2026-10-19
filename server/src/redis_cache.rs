@@ -1,3 +1,4 @@
+use crate::metrics::{self, CacheOutcome};
 use std::{
     collections::HashMap,
     sync::Arc,
@@ -18,6 +19,7 @@ const MAX_VALUE: usize = 1_048_576;
 #[derive(Clone)]
 pub struct RedisCache {
     address: Option<String>,
+    connection: Arc<Mutex<Option<BufReader<TcpStream>>>>,
     memory: Arc<Mutex<HashMap<String, (String, Instant)>>>,
     counts: Arc<Mutex<HashMap<String, (u32, Instant)>>>,
 }
@@ -41,14 +43,25 @@ impl RedisCache {
             });
         Self {
             address,
+            connection: Default::default(),
             memory: Default::default(),
             counts: Default::default(),
         }
     }
     async fn command(&self, args: &[&str]) -> Option<Reply> {
-        let address = self.address.as_ref()?;
-        timeout(Duration::from_millis(300), async {
-            let mut stream = TcpStream::connect(address).await.ok()?;
+        let Some(address) = self.address.as_ref() else {
+            metrics::record_cache_outcome(CacheOutcome::MemoryFallback);
+            return None;
+        };
+        let result = timeout(Duration::from_millis(300), async {
+            // The single connection serializes complete request/reply pairs across clones.
+            // Take it out of the slot so errors, timeouts, and caller cancellation drop
+            // the socket instead of returning a potentially partial reply to the pool.
+            let mut connection = self.connection.lock().await;
+            let mut stream = match connection.take() {
+                Some(stream) => stream,
+                None => BufReader::new(TcpStream::connect(address).await.ok()?),
+            };
             let mut command = format!("*{}\r\n", args.len()).into_bytes();
             for arg in args {
                 command.extend_from_slice(format!("${}\r\n", arg.len()).as_bytes());
@@ -56,45 +69,62 @@ impl RedisCache {
                 command.extend_from_slice(b"\r\n");
             }
             stream.write_all(&command).await.ok()?;
-            let mut stream = BufReader::new(stream);
-            let kind = stream.read_u8().await.ok()?;
-            let mut line = Vec::new();
-            loop {
-                let byte = stream.read_u8().await.ok()?;
-                line.push(byte);
-                if line.len() > 128 {
-                    return None;
-                }
-                if line.ends_with(b"\r\n") {
-                    break;
-                }
-            }
-            let text = std::str::from_utf8(&line[..line.len() - 2]).ok()?;
-            match kind {
-                b'+' => Some(Reply::Text(text.to_owned())),
-                b':' => text.parse().ok().map(Reply::Integer),
-                b'$' => {
-                    let len: i64 = text.parse().ok()?;
-                    if len == -1 {
-                        return Some(Reply::Nil);
-                    }
-                    if !(0..=MAX_VALUE as i64).contains(&len) {
+            let reply = async {
+                let kind = stream.read_u8().await.ok()?;
+                let mut line = Vec::new();
+                loop {
+                    let byte = stream.read_u8().await.ok()?;
+                    line.push(byte);
+                    if line.len() > 128 {
                         return None;
                     }
-                    let mut body = vec![0; len as usize + 2];
-                    stream.read_exact(&mut body).await.ok()?;
-                    if !body.ends_with(b"\r\n") {
-                        return None;
+                    if line.ends_with(b"\r\n") {
+                        break;
                     }
-                    body.truncate(len as usize);
-                    String::from_utf8(body).ok().map(Reply::Text)
                 }
-                _ => None,
+                let text = std::str::from_utf8(&line[..line.len() - 2]).ok()?;
+                match kind {
+                    b'+' => Some(Reply::Text(text.to_owned())),
+                    b':' => text.parse().ok().map(Reply::Integer),
+                    b'$' => {
+                        let len: i64 = text.parse().ok()?;
+                        if len == -1 {
+                            return Some(Reply::Nil);
+                        }
+                        if !(0..=MAX_VALUE as i64).contains(&len) {
+                            return None;
+                        }
+                        let mut body = vec![0; len as usize + 2];
+                        stream.read_exact(&mut body).await.ok()?;
+                        if !body.ends_with(b"\r\n") {
+                            return None;
+                        }
+                        body.truncate(len as usize);
+                        String::from_utf8(body).ok().map(Reply::Text)
+                    }
+                    _ => None,
+                }
             }
+            .await;
+            // Never retry a command after writing: EVAL may already have incremented
+            // the remote counter even when its reply was lost.
+            // We never pipeline, so extra buffered bytes are an unsolicited reply.
+            if reply.is_some() && stream.buffer().is_empty() {
+                *connection = Some(stream);
+            }
+            reply
         })
-        .await
-        .ok()
-        .flatten()
+        .await;
+        match result {
+            Ok(Some(reply)) => {
+                metrics::record_cache_outcome(CacheOutcome::RedisOk);
+                Some(reply)
+            }
+            Ok(None) | Err(_) => {
+                metrics::record_cache_outcome(CacheOutcome::RedisError);
+                None
+            }
+        }
     }
     pub async fn get(&self, key: &str) -> Option<String> {
         if key.len() > 8192 {

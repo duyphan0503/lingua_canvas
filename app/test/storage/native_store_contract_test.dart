@@ -1,3 +1,4 @@
+import 'package:app/services/storage/credential_vault.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:app/services/local_database.dart';
@@ -6,13 +7,18 @@ import 'package:app/services/phase3_lessons.dart';
 import 'package:app/services/sync_coordinator.dart';
 import 'package:app/services/fsrs_engine.dart';
 
+final testCredentialVault = InMemoryCredentialVault();
+
 void main() {
   late LocalDatabase db;
   setUp(() async {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
     db = LocalDatabase.instance;
-    await db.initCustom(customPath: inMemoryDatabasePath);
+    await db.initCustom(
+      credentialVault: testCredentialVault,
+      customPath: inMemoryDatabasePath,
+    );
   });
   tearDown(() => db.close());
   test(

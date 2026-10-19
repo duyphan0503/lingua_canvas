@@ -1,11 +1,15 @@
+import 'package:app/services/storage/credential_vault.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:app/models/lesson_item.dart';
+import 'package:app/models/public_lesson_ids.dart';
 import 'package:app/services/api_service.dart';
 import 'package:app/services/fsrs_engine.dart';
 import 'package:app/services/local_database.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
+final testCredentialVault = InMemoryCredentialVault();
 
 void main() {
   setUpAll(() {
@@ -16,7 +20,10 @@ void main() {
   late LocalDatabase database;
   setUp(() async {
     database = LocalDatabase.instance;
-    await database.initCustom(customPath: inMemoryDatabasePath);
+    await database.initCustom(
+      credentialVault: testCredentialVault,
+      customPath: inMemoryDatabasePath,
+    );
   });
   tearDown(() async => database.close());
 
@@ -107,6 +114,8 @@ void main() {
       baseUrl: 'http://127.0.0.1:9/api/v1',
     );
     final lessons = await service.getLessons();
+    expect(lessons, hasLength(355));
+    expect(lessons.map((lesson) => lesson.id).toSet(), publicLessonIds);
     expect(
       lessons.where((l) => l.id.startsWith('ja_extra_')).length,
       greaterThanOrEqualTo(30),
